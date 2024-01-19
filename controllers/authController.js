@@ -1,10 +1,11 @@
 const bcrypt = require("bcrypt");
 const { generateAccessToken } = require("../utils/jwt");
 const sendEmail = require("../utils/email.js");
-const User = require("../models/User");
-const School = require("../models/School");
-const Invite = require("../models/Invite");
+const { User } = require("../models");
+const { School } = require("../models");
+const { Invite } = require("../models");
 const { findSchoolById } = require("./schoolController.js");
+const AppError = require("../utils/appError.js");
 
 const signup = async (req, res) => {
   const { name, password, email, role } = req.body;
@@ -12,6 +13,13 @@ const signup = async (req, res) => {
 
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
+    const isEmailRegisterd = await User.findOne({ where: { email } });
+
+    if (isEmailRegisterd) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Email already registered" });
+    }
 
     const user = await User.create({
       name,
@@ -26,10 +34,21 @@ const signup = async (req, res) => {
       id: user.id,
     });
 
-    res.json({ accessToken });
+    res.status(200).json({
+      status: "success",
+      result: {
+        accessToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
   } catch (error) {
     console.error("Error creating user:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
 
@@ -41,7 +60,9 @@ const login = async (req, res) => {
     console.log(user);
 
     if (!user || !bcrypt.compareSync(password, user.password)) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ status: "error", message: "Invalid credentials" });
     }
 
     const accessToken = generateAccessToken({
@@ -49,10 +70,21 @@ const login = async (req, res) => {
       id: user.id,
     });
 
-    res.json({ accessToken });
+    res.status(200).json({
+      status: "success",
+      result: {
+        accessToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
   } catch (error) {
     console.error("Error finding user:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
 
@@ -71,7 +103,7 @@ const createSchoolProfile = async (req, res) => {
       createdBy: userId,
     });
 
-    res.status(201).json({ school });
+    res.status(200).json({ status: "success", result: { school } });
   } catch (error) {
     console.error("Error creating school profile:", error);
     res.status(500).json({ message: "Internal Server Error" });

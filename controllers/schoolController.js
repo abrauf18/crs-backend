@@ -1,4 +1,4 @@
-const School = require("../models/School");
+const { School } = require("../models");
 
 const findSchoolById = async (schoolId) => {
   try {

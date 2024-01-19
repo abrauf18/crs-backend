@@ -1,24 +1,28 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../dbConfig");
-const User = require("./User");
+module.exports = (sequelize, DataTypes) => {
+  const Invite = sequelize.define("Invite", {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+  });
 
-const Invite = sequelize.define("Invite", {
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    // unique: true,
-  },
-  createdBy: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-});
-Invite.belongsTo(User, { foreignKey: "createdBy" });
+  Invite.associate = (models) => {
+    Invite.belongsTo(models.User, {
+      foreignKey: "createdBy",
+      onDelete: "CASCADE",
+    });
+  };
 
-// Invite.sync({ force: true });
+  // Invite.sync({ force: true });
 
-module.exports = Invite;
+  return Invite;
+};
