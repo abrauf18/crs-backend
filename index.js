@@ -1,23 +1,32 @@
+// src/index.js
 const express = require("express");
 const dotenv = require("dotenv");
 const authRouter = require("./routes/auth.route");
+const userRouter = require("./routes/user.route");
+const sequelize = require("./dbConfig");
 
-// Load environment variables from .env file
 dotenv.config();
 
-// Creating an Express application
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log("Connected to the database");
+  })
+  .catch((error) => {
+    console.error("Error connecting to the database:", error);
+  });
+
 const app = express();
 
-// Set up JSON body parsing middleware
 app.use(express.json());
 app.use("/auth", authRouter);
+app.use("/user", userRouter);
 
-// Define a route
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 
-const port = process.env.PORT || 3000; // Use the environment port if available, or default to 3000
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
