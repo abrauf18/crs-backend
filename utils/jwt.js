@@ -6,6 +6,16 @@ function generateAccessToken(payload) {
   });
 }
 
+function verifyAccessToken(token) {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded;
+  } catch (error) {
+    return null; // Token verification failed
+  }
+}
+
 module.exports = {
   generateAccessToken,
+  verifyAccessToken,
 };
