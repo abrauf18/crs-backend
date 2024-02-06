@@ -193,14 +193,14 @@ const sendOTP = async (req, res) => {
       otp: OTP,
     });
 
-    const accessToken = generateAccessToken({
+    const accessToken = generateForgotPasswordToken({
       email: req.user.email,
       userID: req.user.id,
     });
 
     res
       .status(200)
-      .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
+      .cookie("validationCookie", accessToken, { maxAge: 900000, httpOnly: true })
       .json({
         status: "success",
         result: {
@@ -222,7 +222,6 @@ const sendOTP = async (req, res) => {
 
 const verifyOTP = async (req, res) => {
   try {
-    console.log("inside verify otp ")
     const { OTP } = req.body;
 
     const forgotRequest = await ForgotPasswordRequest.findOne({
@@ -260,9 +259,11 @@ const verifyOTP = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { userId, newPassword } = req.body;
+    const { newPassword } = req.body;
 
-    const user = await User.findByPk(userId);
+    console.log("new password: ",  newPassword);
+
+    const user = await User.findByPk(req.userID);
 
     if (!user) {
       return res
