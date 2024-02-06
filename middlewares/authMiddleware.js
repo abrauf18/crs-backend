@@ -86,6 +86,8 @@ const decodeAuthAndSetUser = async (req, res, next) => {
 
 const decodeForgotPasswordAuth = async (req, res, next) => {
     try {
+        validationCookie = req.cookies.validationCookie;
+
         const { email, userID } = jwt.verifyForgotPasswordToken(validationCookie);
 
         req.email = email;
