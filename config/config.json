@@ -2,7 +2,7 @@
   "development": {
     "database": "crs",
     "username": "postgres",
-    "password": "saad123",
+    "password": "password",
     "dialect": "postgres"
   },
   "test": {

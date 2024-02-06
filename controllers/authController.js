@@ -1,23 +1,15 @@
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
-const { generateAccessToken } = require("../utils/jwt");
 const sendEmail = require("../utils/email.js");
-const { User, School, Invite, ForgotPasswordRequest } = require("../models");
+const { generateAccessToken } = require("../utils/jwt");
 const { findSchoolById } = require("./schoolController.js");
+const { User, School, Invite, ForgotPasswordRequest } = require("../models");
 
 const signup = async (req, res) => {
-  const { name, password, email, role } = req.body;
-  console.log(req.body);
-
   try {
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const isEmailRegisterd = await User.findOne({ where: { email } });
+    const { name, password, email, role } = req.body;
 
-    if (isEmailRegisterd) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Email already registered" });
-    }
+    const hashedPassword = bcrypt.hashSync(password, 10);
 
     const user = await User.create({
       name,
@@ -27,62 +19,55 @@ const signup = async (req, res) => {
     });
 
     const accessToken = generateAccessToken({
-      name,
-      email,
-      id: user.id,
+      email: user.email,
+      userID: user.id,
     });
 
-    res.status(200).json({
-      status: "success",
-      result: {
-        accessToken,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
+    res
+      .status(200)
+      .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
+      .json({
+        status: "success",
+        result: {
+          accessToken,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
         },
-      },
-    });
+      });
   } catch (error) {
-    console.error("Error creating user:", error);
     res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
 
 const login = async (req, res) => {
-  console.log("I am here");
-  const { email, password } = req.body;
-
   try {
-    const user = await User.findOne({ where: { email } });
-    console.log(user);
-
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-      return res
-        .status(401)
-        .json({ status: "error", message: "Invalid credentials" });
-    }
+    const user = req.user;
 
     const accessToken = generateAccessToken({
       email: user.email,
-      id: user.id,
+      userID: user.id,
     });
 
-    res.status(200).json({
-      status: "success",
-      result: {
-        accessToken,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
+    res
+      .status(200)
+      .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
+      .json({
+        status: "success",
+        result: {
+          accessToken,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
         },
-      },
-    });
+      });
   } catch (error) {
-    console.error("Error finding user:", error);
     res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
@@ -91,8 +76,8 @@ const createSchoolProfile = async (req, res) => {
   try {
     const { name, numberOfTeachers, studentsPopulation, courses } = req.body;
 
-    // const userId = req.user.id;
-    const userId = 1;
+    const userId = req.user.id;
+    // const userId = 1;
 
     const school = await School.create({
       name,
