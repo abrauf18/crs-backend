@@ -1,8 +1,7 @@
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const sendEmail = require("../utils/email.js");
-const { generateAccessToken } = require("../utils/jwt");
-const { findSchoolById } = require("./schoolController.js");
+const { generateAccessToken, generateForgotPasswordToken } = require("../utils/jwt");
 const { User, School, Invite, ForgotPasswordRequest } = require("../models");
 
 const signup = async (req, res) => {
@@ -77,7 +76,6 @@ const createSchoolProfile = async (req, res) => {
     const { name, numberOfTeachers, studentsPopulation, courses } = req.body;
 
     const userId = req.user.id;
-    // const userId = 1;
 
     const school = await School.create({
       name,
@@ -95,51 +93,39 @@ const createSchoolProfile = async (req, res) => {
 };
 
 const sendInviteToTeacher = async (req, res) => {
-  console.log(req);
   try {
     const { invites } = req.body;
-
-    // const createdBy = req.user.id;
-    const createdBy = 1;
-    await Invite.destroy({
-      where: {
-        id: 4,
-      },
-    });
-
-    const school = await findSchoolById(createdBy);
-    console.log(school);
 
     invites.map(async (invite) => {
       const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-        <h2>Welcome to ${school.name}</h2>
+        <h2>Welcome to ${req.school.name}</h2>
         <p>Dear ${invite.name},</p>
-        <p>You have received an invitation to join ${school.name} as a teacher.</p>
+        <p>You have received an invitation to join ${req.school.name} as a teacher.</p>
         <p>We are excited to welcome you to our educational platform!</p>
         <p>Please follow the instructions below to complete your registration:</p>
         
         <ol>
             <li>Click on the following link to set up your account: [Registration Link]</li>
             <li>Create the password and use those credentials to login to your account.</li>
-            <li>Explore the features and resources available on ${school.name}.</li>
+            <li>Explore the features and resources available on ${req.school.name}.</li>
         </ol>
 
         <p>If you have any questions or need assistance, feel free to contact us.</p>
 
-        <p>Best regards,<br>${school.name} Team</p>
+        <p>Best regards,<br>${req.school.name} Team</p>
     </div>`;
       await sendEmail({
-        from: `${invite.name}>`,
+        from: req.school.name,
         email: invite.email,
         subject: "Invitation from School",
         message: "",
         html,
       });
     });
-    // Create invites for each teacher
+
     const createdInvites = await Invite.bulkCreate(
-      invites.map((invite) => ({ ...invite, createdBy }))
+      invites.map((invite) => ({ name: invite.name, email: invite.email, createdBy: req.user.id }))
     );
 
     res
@@ -152,31 +138,18 @@ const sendInviteToTeacher = async (req, res) => {
 };
 
 const sendOTP = async (req, res) => {
-  const { email } = req.body;
-
   try {
-    const user = await User.findOne({ where: { email } });
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Email not registered" });
-    }
-
     let OTP;
     let isOTPUsed;
 
-    // Check if there's an existing forgot password request for the user
     const existingRequest = await ForgotPasswordRequest.findOne({
-      where: { userId: user.id },
+      where: { userId: req.user.id },
     });
 
-    // If an existing request is found, remove it
     if (existingRequest) {
       await existingRequest.destroy();
     }
 
-    // Generate a unique OTP
     do {
       OTP = otpGenerator.generate(4, {
         digits: true,
@@ -185,7 +158,6 @@ const sendOTP = async (req, res) => {
         specialChars: false,
       });
 
-      // Check if the generated OTP is already in use
       isOTPUsed = await ForgotPasswordRequest.findOne({
         where: { otp: OTP },
       });
@@ -198,7 +170,7 @@ const sendOTP = async (req, res) => {
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
       <h2>Reset Password Request</h2>
-      <p>Dear ${user.name},</p>
+      <p>Dear ${req.user.name},</p>
       <p>We received a request to reset your password for your account at CRS.</p>
       <p>Your One-Time Password (OTP) for password reset is: <b>${OTP}</b></p>
       <p>Please use this OTP to verify your identity and reset your password.</p>
@@ -209,29 +181,36 @@ const sendOTP = async (req, res) => {
     </div>`;
 
     await sendEmail({
-      from: `${user.name}>`,
-      email: user.email,
+      from: `${req.user.name}>`,
+      email: req.user.email,
       subject: "Reset Password Request",
       message: "",
       html,
     });
 
-    // Create a new ForgotPasswordRequest
     await ForgotPasswordRequest.create({
-      userId: user.id,
+      userId: req.user.id,
       otp: OTP,
     });
 
-    res.status(200).json({
-      status: "success",
-      result: {
-        message: "OTP sent successfully to your email",
-        user: {
-          id: user.id,
-          email: user.email,
-        },
-      },
+    const accessToken = generateAccessToken({
+      email: req.user.email,
+      userID: req.user.id,
     });
+
+    res
+      .status(200)
+      .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
+      .json({
+        status: "success",
+        result: {
+          message: "OTP sent successfully to your email",
+          user: {
+            id: req.user.id,
+            email: req.user.email,
+          },
+        },
+      });
   } catch (error) {
     console.error("Error while fulfilling request:", error);
     res.status(500).json({
@@ -242,11 +221,15 @@ const sendOTP = async (req, res) => {
 };
 
 const verifyOTP = async (req, res) => {
-  const { OTP } = req.body;
-
   try {
+    console.log("inside verify otp ")
+    const { OTP } = req.body;
+
     const forgotRequest = await ForgotPasswordRequest.findOne({
-      where: { otp: OTP.toString() },
+      where: { 
+        userId: req.userID,
+        otp: OTP.toString()
+      },
     });
 
     if (!forgotRequest) {
@@ -276,9 +259,9 @@ const verifyOTP = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
-  const { userId, newPassword } = req.body;
-
   try {
+    const { userId, newPassword } = req.body;
+
     const user = await User.findByPk(userId);
 
     if (!user) {

@@ -6,10 +6,10 @@ const router = express.Router();
 
 router.post("/signup", authMiddleware.UserShouldNotPreExist, authController.signup);
 router.post("/login", authMiddleware.UserShouldPreExist, authMiddleware.VerifyPassword, authController.login);
-router.post("/register-school", authMiddleware.decodeAuthToken, authController.createSchoolProfile);
-router.post("/invite-teachers", authController.sendInviteToTeacher);
-router.post("/forgot-password", authController.sendOTP);
-router.post("/verify-otp", authController.verifyOTP);
-router.post("/reset-password", authController.resetPassword);
+router.post("/register-school", authMiddleware.decodeAuthAndSetUser, authController.createSchoolProfile);
+router.post("/invite-teachers", authMiddleware.decodeAuthAndSetUser, authMiddleware.setSchoolWithDecodedUser, authController.sendInviteToTeacher);
+router.post("/forgot-password", authMiddleware.deStructureBodyAndSetUser, authController.sendOTP);
+router.post("/verify-otp", authMiddleware.decodeAuthAndSetUser, authController.verifyOTP);
+router.post("/reset-password", authMiddleware.decodeAuthAndSetUser, authController.resetPassword);
 
 module.exports = router;
