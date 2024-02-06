@@ -66,8 +66,7 @@ const VerifyPassword = async (req, res, next) => {
 
 const decodeAuthAndSetUser = async (req, res, next) => {
     try {
-        console.log("authcookie", authcookie)
-        console.log("req.authcookie", req.authcookie)
+        authcookie = req.cookies.authcookie;
 
         const { email, userID } = jwt.verifyAccessToken(authcookie);
 
