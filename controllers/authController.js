@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const sendEmail = require("../utils/email.js");
-const { generateAccessToken, generateForgotPasswordToken } = require("../utils/jwt");
+const { generateAccessToken } = require("../utils/jwt");
 const { User, School, Invite, ForgotPasswordRequest } = require("../models");
 
 const signup = async (req, res) => {
@@ -19,7 +19,7 @@ const signup = async (req, res) => {
 
     const accessToken = generateAccessToken({
       email: user.email,
-      userID: user.id,
+      userId: user.id,
     });
 
     res
@@ -48,7 +48,7 @@ const login = async (req, res) => {
 
     const accessToken = generateAccessToken({
       email: user.email,
-      userID: user.id,
+      userId: user.id,
     });
 
     res
@@ -193,14 +193,8 @@ const sendOTP = async (req, res) => {
       otp: OTP,
     });
 
-    const accessToken = generateForgotPasswordToken({
-      email: req.user.email,
-      userID: req.user.id,
-    });
-
     res
       .status(200)
-      .cookie("validationCookie", accessToken, { maxAge: 900000, httpOnly: true })
       .json({
         status: "success",
         result: {
@@ -222,11 +216,12 @@ const sendOTP = async (req, res) => {
 
 const verifyOTP = async (req, res) => {
   try {
-    const { OTP } = req.body;
+    const OTP = req.params.OTP;
+    const userId = req.params.userId
 
     const forgotRequest = await ForgotPasswordRequest.findOne({
       where: { 
-        userId: req.userID,
+        userId: userId,
         otp: OTP.toString()
       },
     });
@@ -258,12 +253,12 @@ const verifyOTP = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
-  try {
+  try {  
+    const { userId } = req.body
+
     const { newPassword } = req.body;
 
-    console.log("new password: ",  newPassword);
-
-    const user = await User.findByPk(req.userID);
+    const user = await User.findByPk(userId);
 
     if (!user) {
       return res
@@ -287,6 +282,26 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  try {
+    if (req.cookies.authcookie) {
+      return res
+      .clearCookie("authcookie")
+      .status(200)
+      .json({ message: "Successfully logged out" }); 
+    }
+    return res.status(200).json({
+      status: 'success',
+      message: 'User is already logged out',
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error logging out, please try again later.",
+    });
+  }
+}
+
 module.exports = {
   signup,
   login,
@@ -295,4 +310,5 @@ module.exports = {
   sendOTP,
   verifyOTP,
   resetPassword,
+  logout
 };
