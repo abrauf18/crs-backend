@@ -1,212 +1,201 @@
-const bcrypt = require("bcrypt");
-const otpGenerator = require("otp-generator");
-const sendEmail = require("../utils/email.js");
+const authService = require("../services/auth.js");
 const { generateAccessToken } = require("../utils/jwt");
-const { User, School, Invite, ForgotPasswordRequest } = require("../models");
+
+
+const handleInternalServerError = (res) => {
+  res.status(500).json({
+    status: "error",
+    message: "Internal Server Error: sorry for the inconvenience, please try again later.",
+  });
+}
 
 const signup = async (req, res) => {
   try {
-    const { name, password, email, role } = req.body;
+    const { name, password, email, role } = req.body
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const reply = await authService.createUser({ name, password, email, role });
 
-    const user = await User.create({
-      name,
-      email,
-      role,
-      password: hashedPassword,
-    });
-
-    const accessToken = generateAccessToken({
-      email: user.email,
-      userId: user.id,
-    });
-
-    res
-      .status(200)
-      .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
-      .json({
+    if (reply.code == 200) {
+      res.status(200).json({
         status: "success",
         result: {
-          accessToken,
           user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
+            id: reply.data.id,
+            name: reply.data.name,
+            email: reply.data.email,
+            role: reply.data.role,
           },
         },
       });
-  } catch (error) {
-    res.status(500).json({ status: "error", message: "Internal Server Error" });
+    }
+    else if (reply.code == 403) {
+      res.status(403).json({
+        status: "error",
+        message: "Email already in use, please try another"
+      });
+    }
+    else {
+      handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    handleInternalServerError(res);
   }
 };
 
 const login = async (req, res) => {
   try {
-    const user = req.user;
+    const { email, password } = req.body;
 
-    const accessToken = generateAccessToken({
-      email: user.email,
-      userId: user.id,
-    });
+    const reply = await authService.authenticateUser({ email, password });
 
-    res
-      .status(200)
-      .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
-      .json({
-        status: "success",
-        result: {
-          accessToken,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-        },
+    if (reply.code == 200) {
+      const accessToken = generateAccessToken({
+        email: reply.data.email,
+        userId: reply.data.id,
       });
-  } catch (error) {
-    res.status(500).json({ status: "error", message: "Internal Server Error" });
+
+      res
+        .status(200)
+        .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
+        .json({
+          status: "success",
+          result: {
+            accessToken,
+            user: {
+              id: reply.data.id,
+              name: reply.data.name,
+              email: reply.data.email,
+              role: reply.data.role,
+            },
+          },
+        });
+    }
+    else if (reply.code == 404) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Invalid email" });
+    }
+    else if (reply.code == 409) {
+      return res
+        .status(409)
+        .json({ status: "error", message: "Incorrect password" });
+    }
+    else {
+      handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    handleInternalServerError(res);
   }
 };
 
 const createSchoolProfile = async (req, res) => {
   try {
-    const { name, numberOfTeachers, studentsPopulation, courses } = req.body;
+    const { schoolOwnerEmail, name, numberOfTeachers, studentsPopulation, courses } = req.body
 
-    const userId = req.user.id;
+    const reply = await authService.createSchoolProfile({ schoolOwnerEmail, name, numberOfTeachers, studentsPopulation, courses });
 
-    const school = await School.create({
-      name,
-      numberOfTeachers,
-      studentsPopulation,
-      courses,
-      createdBy: userId,
-    });
-
-    res.status(200).json({ status: "success", result: { school } });
-  } catch (error) {
-    console.error("Error creating school profile:", error);
+    if (reply.code == 200) {
+      res.status(200).json({
+        status: "success",
+        result: {
+          school: {
+            name: reply.data.name,
+            numberOfTeachers: reply.data.numberOfTeachers,
+            studentsPopulation: reply.data.studentsPopulation,
+            courses: reply.data.courses,
+            createdBy: reply.data.createdBy,
+          },
+        },
+      });
+    }
+    else if (reply.code == 403) {
+      res.status(403).json({
+        status: "error",
+        message: "School already in use, please try another"
+      });
+    }
+    else if (reply.code == 404) {
+      res.status(404).json({
+        status: "error",
+        message: "Invalid email"
+      });
+    }
+    else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
+  }
+  catch (error) {
     res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
 
 const sendInviteToTeacher = async (req, res) => {
   try {
-    const { invites } = req.body;
+    const { schoolOwnerEmail, invites } = req.body;
 
-    invites.map(async (invite) => {
-      const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-        <h2>Welcome to ${req.school.name}</h2>
-        <p>Dear ${invite.name},</p>
-        <p>You have received an invitation to join ${req.school.name} as a teacher.</p>
-        <p>We are excited to welcome you to our educational platform!</p>
-        <p>Please follow the instructions below to complete your registration:</p>
-        
-        <ol>
-            <li>Click on the following link to set up your account: [Registration Link]</li>
-            <li>Create the password and use those credentials to login to your account.</li>
-            <li>Explore the features and resources available on ${req.school.name}.</li>
-        </ol>
+    const reply = await authService.sendInviteToTeacher({ schoolOwnerEmail, invites });
 
-        <p>If you have any questions or need assistance, feel free to contact us.</p>
-
-        <p>Best regards,<br>${req.school.name} Team</p>
-    </div>`;
-      await sendEmail({
-        from: req.school.name,
-        email: invite.email,
-        subject: "Invitation from School",
-        message: "",
-        html,
+    if (reply.code == 200) {
+      res.status(200).json({
+        status: "success",
+        result: {
+          invites: reply.data
+        },
       });
-    });
-
-    const createdInvites = await Invite.bulkCreate(
-      invites.map((invite) => ({ name: invite.name, email: invite.email, createdBy: req.user.id }))
-    );
-
-    res
-      .status(201)
-      .json({ status: "success", result: { invites: createdInvites } });
+    }
+    else if (reply.code == 403) {
+      res.status(403).json({
+        status: "error",
+        message: "Invalid School"
+      });
+    }
+    else if (reply.code == 404) {
+      res.status(404).json({
+        status: "error",
+        message: "Invalid email"
+      });
+    }
+    else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   } catch (error) {
-    console.error("Error sending invites:", error);
     res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
 
 const sendOTP = async (req, res) => {
   try {
-    let OTP;
-    let isOTPUsed;
+    const { email } = req.body;
 
-    const existingRequest = await ForgotPasswordRequest.findOne({
-      where: { userId: req.user.id },
-    });
+    const reply = await authService.sendOTP({ email });
 
-    if (existingRequest) {
-      await existingRequest.destroy();
-    }
-
-    do {
-      OTP = otpGenerator.generate(4, {
-        digits: true,
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false,
-      });
-
-      isOTPUsed = await ForgotPasswordRequest.findOne({
-        where: { otp: OTP },
-      });
-
-      if (isOTPUsed) {
-        console.log("OTP already registered, generating a new one.");
-      }
-    } while (isOTPUsed);
-
-    const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-      <h2>Reset Password Request</h2>
-      <p>Dear ${req.user.name},</p>
-      <p>We received a request to reset your password for your account at CRS.</p>
-      <p>Your One-Time Password (OTP) for password reset is: <b>${OTP}</b></p>
-      <p>Please use this OTP to verify your identity and reset your password.</p>
-
-      <p>If you didn't request a password reset, please ignore this email.</p>
-
-      <p>Best regards,<br>CRS</p>
-    </div>`;
-
-    await sendEmail({
-      from: `${req.user.name}>`,
-      email: req.user.email,
-      subject: "Reset Password Request",
-      message: "",
-      html,
-    });
-
-    await ForgotPasswordRequest.create({
-      userId: req.user.id,
-      otp: OTP,
-    });
-
-    res
-      .status(200)
-      .json({
+    if (reply.code == 200) {
+      res.status(200).json({
         status: "success",
         result: {
           message: "OTP sent successfully to your email",
           user: {
-            id: req.user.id,
-            email: req.user.email,
+            id: reply.data.id,
+            email: reply.data.email,
           },
         },
       });
+    }
+    else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   } catch (error) {
-    console.error("Error while fulfilling request:", error);
     res.status(500).json({
       status: "error",
       message: "Error while making request. Please try again.",
@@ -216,65 +205,66 @@ const sendOTP = async (req, res) => {
 
 const verifyOTP = async (req, res) => {
   try {
-    const OTP = req.params.OTP;
-    const userId = req.params.userId
+    const { userId, OTP } = req.body;
 
-    const forgotRequest = await ForgotPasswordRequest.findOne({
-      where: { 
-        userId: userId,
-        otp: OTP.toString()
-      },
-    });
+    const reply = await authService.verifyOTP({ userId, OTP });
 
-    if (!forgotRequest) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "The OTP you entered is incorrect" });
-    }
-
-    // Remove record, after successful verification
-    if (forgotRequest) {
-      await forgotRequest.destroy();
-    }
-
-    res.status(200).json({
-      status: "success",
-      result: {
-        message: "OTP Verified Successfully",
-        user: {
-          id: forgotRequest.userId,
+    if (reply.code == 200) {
+      res.status(200).json({
+        status: "success",
+        result: {
+          message: "OTP Verified Successfully",
+          user: {
+            id: reply.data.userId,
+          },
         },
-      },
-    });
+      });
+    }
+    else if (reply.code == 400) {
+      res.status(400).json({
+        status: "error",
+        message: "Incorrect User or OTP you entered is incorrect",
+      });
+    }
+    else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   } catch (error) {
-    console.error("Error creating user:", error);
-    res.status(500).json({ status: "error", message: "Internal Server Error" });
+    res.status(500).json({
+      status: "error",
+      message: "Error while making request. Please try again.",
+    });
   }
 };
 
 const resetPassword = async (req, res) => {
-  try {  
-    const { userId } = req.body
+  try {
+    const { userId, newPassword } = req.body;
 
-    const { newPassword } = req.body;
+    const reply = await authService.resetPassword({ userId, newPassword });
 
-    const user = await User.findByPk(userId);
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "User doesn't exists." });
+    if (reply.code == 200) {
+      res.status(200).json({
+        status: "success",
+        result: { message: "Password reset successfully" },
+      });
     }
-
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
-
-    res.status(200).json({
-      status: "success",
-      result: { message: "Password reset successfully" },
-    });
+    else if (reply.code == 404) {
+      return res.status(404).json({ 
+        status: "error", 
+        message: "User doesn't exists." 
+      });
+    }
+    else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   } catch (error) {
-    console.error("Error resetting password:", error);
     res.status(500).json({
       status: "error",
       message: "Error resetting password. Please try again.",
@@ -286,13 +276,13 @@ const logout = async (req, res) => {
   try {
     if (req.cookies.authcookie) {
       return res
-      .clearCookie("authcookie")
-      .status(200)
-      .json({ message: "Successfully logged out" }); 
+        .clearCookie("authcookie")
+        .status(200)
+        .json({ message: "Successfully logged out" });
     }
     return res.status(200).json({
-      status: 'success',
-      message: 'User is already logged out',
+      status: "success",
+      message: "User is already logged out",
     });
   } catch (error) {
     res.status(500).json({
@@ -300,7 +290,7 @@ const logout = async (req, res) => {
       message: "Error logging out, please try again later.",
     });
   }
-}
+};
 
 module.exports = {
   signup,
@@ -310,5 +300,5 @@ module.exports = {
   sendOTP,
   verifyOTP,
   resetPassword,
-  logout
+  logout,
 };
