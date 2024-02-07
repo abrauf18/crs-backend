@@ -5,8 +5,44 @@ const { generateAccessToken } = require("../utils/jwt");
 const handleInternalServerError = (res) => {
   res.status(500).json({
     status: "error",
-    message: "Internal Server Error: sorry for the inconvenience, please try again later.",
+    message: "Internal Server Error: Unable to complete the request, please try again later.",
   });
+}
+
+const handleSuccessResponse = (res, code = 200, data, cookieDetails = {}) => {
+  try {
+    if (cookieDetails) {
+      res
+        .status(code)
+        .cookie(cookieDetails.name, cookieDetails.accessToken, cookieDetails.options)
+        .json({
+          status: "success",
+          data: data 
+        });
+    }
+    else {
+      res.status(code).json({
+        status: "success",
+        data: data 
+      });
+    }
+
+  } catch (error) {
+    console.log(error);
+    handleInternalServerError(res);
+  }
+}
+
+const handleErrorResponse = (res, code = 400, message) => {
+  try {
+    res.status(code).json({
+      status: "error",
+      message: message
+    });
+  } catch (error) {
+    console.log(error);
+    handleInternalServerError(res);
+  }
 }
 
 const signup = async (req, res) => {
@@ -16,23 +52,17 @@ const signup = async (req, res) => {
     const reply = await authService.createUser({ name, password, email, role });
 
     if (reply.code == 200) {
-      res.status(200).json({
-        status: "success",
-        result: {
-          user: {
-            id: reply.data.id,
-            name: reply.data.name,
-            email: reply.data.email,
-            role: reply.data.role,
-          },
-        },
-      });
+      const user = {
+        id: reply.data.id,
+        name: reply.data.name,
+        email: reply.data.email,
+        role: reply.data.role,
+      };
+
+      handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 403) {
-      res.status(403).json({
-        status: "error",
-        message: "Email already in use, please try another"
-      });
+      handleErrorResponse(res, 403, "Email already in use, please try another");
     }
     else {
       handleInternalServerError(res);
@@ -55,31 +85,26 @@ const login = async (req, res) => {
         userId: reply.data.id,
       });
 
-      res
-        .status(200)
-        .cookie("authcookie", accessToken, { maxAge: 900000, httpOnly: true })
-        .json({
-          status: "success",
-          result: {
-            accessToken,
-            user: {
-              id: reply.data.id,
-              name: reply.data.name,
-              email: reply.data.email,
-              role: reply.data.role,
-            },
-          },
-        });
+      const user = {
+        id: reply.data.id,
+        name: reply.data.name,
+        email: reply.data.email,
+        role: reply.data.role,
+      };
+      
+      const cookieDetails = {
+        name: "authcookie",
+        accessToken: accessToken,
+        options: { maxAge: 900000, httpOnly: true }
+      };
+
+      handleSuccessResponse(res, 200, user, cookieDetails)
     }
     else if (reply.code == 404) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Invalid email" });
+      handleErrorResponse(res, 404, "Invalid email");
     }
     else if (reply.code == 409) {
-      return res
-        .status(409)
-        .json({ status: "error", message: "Incorrect password" });
+      handleErrorResponse(res, 409, "Incorrect password");
     }
     else {
       handleInternalServerError(res);
@@ -97,40 +122,28 @@ const createSchoolProfile = async (req, res) => {
     const reply = await authService.createSchoolProfile({ schoolOwnerEmail, name, numberOfTeachers, studentsPopulation, courses });
 
     if (reply.code == 200) {
-      res.status(200).json({
-        status: "success",
-        result: {
-          school: {
-            name: reply.data.name,
-            numberOfTeachers: reply.data.numberOfTeachers,
-            studentsPopulation: reply.data.studentsPopulation,
-            courses: reply.data.courses,
-            createdBy: reply.data.createdBy,
-          },
-        },
-      });
+      const school = {
+        name: reply.data.name,
+        numberOfTeachers: reply.data.numberOfTeachers,
+        studentsPopulation: reply.data.studentsPopulation,
+        courses: reply.data.courses,
+        createdBy: reply.data.createdBy,
+      };
+
+      handleSuccessResponse(res, 200, school);
     }
     else if (reply.code == 403) {
-      res.status(403).json({
-        status: "error",
-        message: "School already in use, please try another"
-      });
+      handleErrorResponse(res, 403, "School name already in use, please try another");
     }
     else if (reply.code == 404) {
-      res.status(404).json({
-        status: "error",
-        message: "Invalid email"
-      });
+      handleErrorResponse(res, 404, "Invalid email");
     }
     else {
-      res.status(500).json({
-        status: "error",
-        message: "Internal Server Error",
-      });
+      handleInternalServerError(res);
     }
   }
   catch (error) {
-    res.status(500).json({ status: "error", message: "Internal Server Error" });
+    handleInternalServerError(res);
   }
 };
 
@@ -141,33 +154,21 @@ const sendInviteToTeacher = async (req, res) => {
     const reply = await authService.sendInviteToTeacher({ schoolOwnerEmail, invites });
 
     if (reply.code == 200) {
-      res.status(200).json({
-        status: "success",
-        result: {
-          invites: reply.data
-        },
-      });
+      const invites = reply.data;
+
+      handleSuccessResponse(res, 200, invites);
     }
     else if (reply.code == 403) {
-      res.status(403).json({
-        status: "error",
-        message: "Invalid School"
-      });
+      handleErrorResponse(res, 403, "Invalid School");
     }
     else if (reply.code == 404) {
-      res.status(404).json({
-        status: "error",
-        message: "Invalid email"
-      });
+      handleErrorResponse(res, 404, "Invalid email");
     }
     else {
-      res.status(500).json({
-        status: "error",
-        message: "Internal Server Error",
-      });
+      handleInternalServerError(res);
     }
   } catch (error) {
-    res.status(500).json({ status: "error", message: "Internal Server Error" });
+    handleInternalServerError(res);
   }
 };
 
@@ -178,28 +179,21 @@ const sendOTP = async (req, res) => {
     const reply = await authService.sendOTP({ email });
 
     if (reply.code == 200) {
-      res.status(200).json({
-        status: "success",
-        result: {
-          message: "OTP sent successfully to your email",
-          user: {
-            id: reply.data.id,
-            email: reply.data.email,
-          },
-        },
-      });
+      const user = {
+        id: reply.data.id,
+        email: reply.data.email,
+      };
+      
+      handleSuccessResponse(res, 200, user);
+    }
+    else if (reply.code == 404) {
+      handleErrorResponse(res, 404, "Invalid email");
     }
     else {
-      res.status(500).json({
-        status: "error",
-        message: "Internal Server Error",
-      });
+      handleInternalServerError(res);
     }
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Error while making request. Please try again.",
-    });
+    handleInternalServerError(res);
   }
 };
 
@@ -210,33 +204,20 @@ const verifyOTP = async (req, res) => {
     const reply = await authService.verifyOTP({ userId, OTP });
 
     if (reply.code == 200) {
-      res.status(200).json({
-        status: "success",
-        result: {
-          message: "OTP Verified Successfully",
-          user: {
-            id: reply.data.userId,
-          },
-        },
-      });
+      const user = {
+        id: reply.data.userId,
+      };
+      
+      handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 400) {
-      res.status(400).json({
-        status: "error",
-        message: "Incorrect User or OTP you entered is incorrect",
-      });
+      handleErrorResponse(res, 400, "Incorrect User or OTP you entered is incorrect");
     }
     else {
-      res.status(500).json({
-        status: "error",
-        message: "Internal Server Error",
-      });
+      handleInternalServerError(res);
     }
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Error while making request. Please try again.",
-    });
+    handleInternalServerError(res);
   }
 };
 
@@ -247,28 +228,17 @@ const resetPassword = async (req, res) => {
     const reply = await authService.resetPassword({ userId, newPassword });
 
     if (reply.code == 200) {
-      res.status(200).json({
-        status: "success",
-        result: { message: "Password reset successfully" },
-      });
+      const result = { message: "Password reset successfully" }
+      handleSuccessResponse(res, 200, result);
     }
     else if (reply.code == 404) {
-      return res.status(404).json({ 
-        status: "error", 
-        message: "User doesn't exists." 
-      });
+      handleErrorResponse(res, 404, "User does not exists." );
     }
     else {
-      res.status(500).json({
-        status: "error",
-        message: "Internal Server Error",
-      });
+      handleInternalServerError(res);
     }
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Error resetting password. Please try again.",
-    });
+    handleInternalServerError(res);
   }
 };
 
@@ -285,10 +255,7 @@ const logout = async (req, res) => {
       message: "User is already logged out",
     });
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Error logging out, please try again later.",
-    });
+    handleInternalServerError(res);
   }
 };
 
