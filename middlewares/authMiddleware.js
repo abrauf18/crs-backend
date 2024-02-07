@@ -1,10 +1,136 @@
+const Joi = require('joi');
 const bcrypt = require("bcrypt");
 const jwt = require("../utils/jwt");
 const { User, School } = require("../models");
 
+const signupSchema = async (req, res, next) => {
+    try {
+        const schema = Joi.object({
+            name: Joi.string().required(),
+            password: Joi.string().required(),
+            email: Joi.string().email().required(),
+            role: Joi.string().valid("student", "teacher", "school", "admin").required(),
+        });
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: "error",
+                message: error.details[0].message  
+            });
+        } 
+        next();
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: "Error, please try again later.",
+          });
+    }
+}
+const loginSchema = async (req, res, next) => {
+    try {
+        const schema = Joi.object({
+            email: Joi.string().email().required(),
+            password: Joi.string().required(),
+        });
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: "error",
+                message: error.details[0].message  
+            });
+        } 
+        next();
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: "Error, please try again later.",
+        });
+    }
+}
+const registerSchoolSchema = async (req, res, next) => {
+    try {
+        const schema = Joi.object({
+            name: Joi.string().required(),
+            numberOfTeachers: Joi.number().integer().min(0).required(),
+            studentsPopulation: Joi.number().integer().min(0).required(),
+            courses: Joi.array().items(Joi.string()).required(),
+        });
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: "error",
+                message: error.details[0].message  
+            });
+        } 
+        next();
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: "Error, please try again later.",
+        });
+    }
+}
+const inviteTeacherSchema = async (req, res, next) => {
+    try {
+        const schema = Joi.object({
+            name: Joi.string().required(),
+            email: Joi.string().email().required(),
+        });
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: "error",
+                message: error.details[0].message  
+            });
+        } 
+        next();
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: "Error, please try again later.",
+        });
+    }
+}
+const forgotPasswordSchema = async (req, res, next) => {
+    try {
+        const schema = Joi.object({
+            email: Joi.string().email().required(),
+        });
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: "error",
+                message: error.details[0].message  
+            });
+        } 
+        next();
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: "Error, please try again later.",
+        });
+    }
+}
+const resetPasswordSchema = async (req, res, next) => {
+    try {
+        const schema = Joi.object({
+            userId: Joi.number().integer().required(),
+            newPassword: Joi.string().required(),
+        });
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: "error",
+                message: error.details[0].message  
+            });
+        } 
+        next();
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: "Error, please try again later.",
+        });
+    }
+}
+
 const UserShouldNotPreExist = async (req, res, next) => {
     try {
         const { email } = req.body;
+
         const isEmailRegisterd = await User.findOne({ where: { email } });
 
         if (isEmailRegisterd) {
@@ -64,14 +190,14 @@ const VerifyPassword = async (req, res, next) => {
     }
 };
 
-const decodeLoginSignupCookie = async (req, res, next) => {
+const decodeAuthCookie = async (req, res, next) => {
     try {
         authcookie = req.cookies.authcookie;
 
-        const { email, userID } = jwt.verifyAccessToken(authcookie);
+        const { email, userId } = jwt.verifyAccessToken(authcookie);
 
         req.email = email;
-        req.userID = userID;
+        req.userId = userId;
 
         next();
     } catch (error) {
@@ -81,25 +207,7 @@ const decodeLoginSignupCookie = async (req, res, next) => {
     }
 };
 
-const decodeForgotPasswordCookie = async (req, res, next) => {
-    try {
-        validationCookie = req.cookies.validationCookie;
-
-        const { email, userID } = jwt.verifyForgotPasswordToken(validationCookie);
-
-        req.email = email;
-        req.userID = userID;
-
-        next();
-    } catch (error) {
-        return res
-            .status(401)
-            .json({ status: "error", message: "Invalid credentials" });
-    }
-};
-
-
-const destructureBody = async (req, res, next) => {
+const getEmailFromBody = async (req, res, next) => {
     try {
         const { email } = req.body;
 
@@ -152,12 +260,17 @@ const setSchoolUsingUserID = async (req, res, next) => {
 };
 
 module.exports = {
+    signupSchema,
+    loginSchema,
+    registerSchoolSchema,
+    inviteTeacherSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
     UserShouldNotPreExist,
     UserShouldPreExist,
     VerifyPassword,
-    decodeLoginSignupCookie,
-    decodeForgotPasswordCookie,
-    destructureBody,
+    decodeAuthCookie,
+    getEmailFromBody,
     setUserUsingEmail,
     setSchoolUsingUserID
 };
