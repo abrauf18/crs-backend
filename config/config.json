@@ -1,22 +1,41 @@
 {
   "development": {
+    "username": "crsci",
+    "password": "kgv6HVGbQvyboEo",
     "database": "crs",
-    "username": "postgres",
-    "password": "password",
-    "dialect": "postgres"
+    "host": "crs-database-1.cb2eaqmmkb2y.us-east-2.rds.amazonaws.com",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
   },
   "test": {
-    "username": "root",
-    "password": null,
-    "database": "database_test",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "username": "crsci",
+    "password": "kgv6HVGbQvyboEo",
+    "database": "crs",
+    "host": "crs-database-1.cb2eaqmmkb2y.us-east-2.rds.amazonaws.com",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
   },
   "production": {
-    "username": "root",
-    "password": null,
-    "database": "database_production",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "username": "crsci",
+    "password": "kgv6HVGbQvyboEo",
+    "database": "crs",
+    "host": "crs-database-1.cb2eaqmmkb2y.us-east-2.rds.amazonaws.com",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
   }
 }
