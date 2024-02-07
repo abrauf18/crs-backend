@@ -64,7 +64,7 @@ const VerifyPassword = async (req, res, next) => {
     }
 };
 
-const decodeAuthAndSetUser = async (req, res, next) => {
+const decodeLoginSignupCookie = async (req, res, next) => {
     try {
         authcookie = req.cookies.authcookie;
 
@@ -73,9 +73,6 @@ const decodeAuthAndSetUser = async (req, res, next) => {
         req.email = email;
         req.userID = userID;
 
-        const user = await User.findOne({ where: { email } });
-        req.user = user;
-
         next();
     } catch (error) {
         return res
@@ -84,7 +81,7 @@ const decodeAuthAndSetUser = async (req, res, next) => {
     }
 };
 
-const decodeForgotPasswordAuth = async (req, res, next) => {
+const decodeForgotPasswordCookie = async (req, res, next) => {
     try {
         validationCookie = req.cookies.validationCookie;
 
@@ -93,8 +90,20 @@ const decodeForgotPasswordAuth = async (req, res, next) => {
         req.email = email;
         req.userID = userID;
 
-        const user = await User.findOne({ where: { email } });
-        req.user = user;
+        next();
+    } catch (error) {
+        return res
+            .status(401)
+            .json({ status: "error", message: "Invalid credentials" });
+    }
+};
+
+
+const destructureBody = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        req.email = email;
 
         next();
     } catch (error) {
@@ -104,18 +113,16 @@ const decodeForgotPasswordAuth = async (req, res, next) => {
     }
 };
 
-const deStructureBodyAndSetUser = async (req, res, next) => {
+const setUserUsingEmail = async (req, res, next) => {
     try {
-        const { email } = req.body;
+        const user = await User.findOne({ where: { email: req.email } });
 
-        const user = await User.findOne({ where: { email } });
-        
         if (!user) {
             return res
             .status(401)
             .json({ status: "error", message: "Email not registered" });
         }
-        
+
         req.user = user;
 
         next();
@@ -126,7 +133,7 @@ const deStructureBodyAndSetUser = async (req, res, next) => {
     }
 };
 
-const setSchoolWithDecodedUser = async (req, res, next) => {
+const setSchoolUsingUserID = async (req, res, next) => {
     try {
         const school = await School.findOne({ where: { createdBy: req.user.id } });
 
@@ -148,8 +155,9 @@ module.exports = {
     UserShouldNotPreExist,
     UserShouldPreExist,
     VerifyPassword,
-    decodeAuthAndSetUser,
-    deStructureBodyAndSetUser,
-    setSchoolWithDecodedUser,
-    decodeForgotPasswordAuth
+    decodeLoginSignupCookie,
+    decodeForgotPasswordCookie,
+    destructureBody,
+    setUserUsingEmail,
+    setSchoolUsingUserID
 };
