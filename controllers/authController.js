@@ -164,6 +164,9 @@ const sendInviteToTeacher = async (req, res) => {
     else if (reply.code == 404) {
       handleErrorResponse(res, 404, "Invalid email");
     }
+    else if (reply.code == 409) {
+      handleErrorResponse(res, 409, "Invites exceed the number of teachers");
+    }
     else {
       handleInternalServerError(res);
     }
