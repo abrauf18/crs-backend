@@ -9,7 +9,7 @@ const handleInternalServerError = (res) => {
   });
 }
 
-const handleSuccessResponse = (res, code = 200, data, cookieDetails = {}) => {
+const handleSuccessResponse = (res, code = 200, data, cookieDetails) => {
   try {
     if (cookieDetails) {
       res
