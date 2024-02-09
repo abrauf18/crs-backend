@@ -120,6 +120,10 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
             return { code: 403 };
         }
 
+        if (invites.length > school.numberOfTeachers) {
+            return { code: 409 };
+        }
+
         invites.map(async (invite) => {
             const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
@@ -181,25 +185,6 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
 
             invitesSent.push(createdInvite);
         }
-
-        // for (const invite of invitesList) {
-        //     const [instance, created] = await Invite.upsert({
-        //         name: invite.name,
-        //         email: invite.email,
-        //         createdBy: user.id,
-        //     });
-
-        //     console.log(instance)
-
-        //     if (!created) {
-        //         console.log(
-        //             `Invite with email ${invite.email} already exists. Ignoring.`
-        //         );
-        //         continue;
-        //     }
-
-        //     createdInvites.push(instance);
-        // }
 
         return { code: 200, data: invitesSent };
     } catch (error) {
