@@ -148,31 +148,60 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
             });
         });
 
+        const invitesSent = [];
+
         const invitesList = invites.map((invite) => ({
             name: invite.name,
             email: invite.email,
             createdBy: user.id,
         }));
 
-        const createdInvites = [];
-
         for (const invite of invitesList) {
             const [createdInvite, created] = await Invite.findOrCreate({
-                where: { email: invite.email },
+                where: { email: invite.email, createdBy: user.id },
                 defaults: invite,
             });
 
             if (!created) {
-                console.log(
-                    `Invite with email ${invite.email} already exists. Ignoring.`
-                );
+                const updatedInvite = await Invite.update({
+                        name: invite.name,
+                        email: invite.email,
+                        createdBy: user.id,
+                    }, {
+                    where: {
+                        email: invite.email,
+                        createdBy: user.id,
+                    },
+                    returning: true,
+                });
+                console.log("updated invite: ", updatedInvite[1]);
+                invitesSent.push(updatedInvite);
                 continue;
             }
 
-            createdInvites.push(createdInvite);
+            invitesSent.push(createdInvite);
         }
 
-        return { code: 200, data: createdInvites };
+        // for (const invite of invitesList) {
+        //     const [instance, created] = await Invite.upsert({
+        //         name: invite.name,
+        //         email: invite.email,
+        //         createdBy: user.id,
+        //     });
+
+        //     console.log(instance)
+
+        //     if (!created) {
+        //         console.log(
+        //             `Invite with email ${invite.email} already exists. Ignoring.`
+        //         );
+        //         continue;
+        //     }
+
+        //     createdInvites.push(instance);
+        // }
+
+        return { code: 200, data: invitesSent };
     } catch (error) {
         console.log("error: ", error);
         return { code: 500 };
@@ -271,12 +300,12 @@ const verifyOTP = async ({ userId, OTP }) => {
     }
 };
 
-const resetPassword = async ({userId, newPassword }) => {
+const resetPassword = async ({ userId, newPassword }) => {
     try {
         const user = await User.findByPk(userId);
 
         if (!user) {
-            return { code: 404}
+            return { code: 404 }
         }
 
         user.password = await bcrypt.hash(newPassword, 10);
