@@ -1,7 +1,6 @@
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
-  console.log("pass is", process.env.GMAIL_PASS);
 
   const transporter = nodemailer.createTransport({
     service: "gmail",
