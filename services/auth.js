@@ -144,8 +144,7 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
                     },
                     returning: true,
                 });
-                console.log("updated invite: ", updatedInvite[1]);
-                invitesSent.push(updatedInvite);
+                invitesSent.push(updatedInvite[1]);
                 continue;
             }
 
