@@ -1,4 +1,4 @@
-const ROLES = require("../config/roles");
+const ROLES = require("./Roles/index");
 
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define("User", {
