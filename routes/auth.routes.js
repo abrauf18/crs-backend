@@ -1,6 +1,8 @@
 const express = require("express");
-const authValidation = require("../middlewares/auth");
+const authValidation = require("../middlewares/bodyValidators/auth");
 const authController = require("../controllers/authController");
+const roleBasedAccess = require("../middlewares/roleBasedAccessControllers/index")
+const ROLES = require("../middlewares/roleBasedAccessControllers/roles")
 
 const router = express.Router();
 
@@ -17,11 +19,15 @@ router.post(
 router.post(
     "/register-school",
     authValidation.registerSchoolSchema,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     authController.createSchoolProfile
 );
 router.post(
     "/invite-teachers",
     authValidation.inviteTeacherSchema,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     authController.sendInviteToTeacher
 );
 router.post(
