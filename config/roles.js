@@ -5,4 +5,4 @@ const ROLES = Object.freeze ({
     STUDENT: "student"
 });
 
-modules.export = ROLES;
+module.exports = ROLES;
