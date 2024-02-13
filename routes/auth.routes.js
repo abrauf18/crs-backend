@@ -2,7 +2,7 @@ const express = require("express");
 const authValidation = require("../middlewares/bodyValidators/auth");
 const authController = require("../controllers/authController");
 const roleBasedAccess = require("../middlewares/roleBasedAccessControllers/index")
-const ROLES = require("../middlewares/roleBasedAccessControllers/roles")
+const ROLES = require("../config/roles")
 
 const router = express.Router();
 

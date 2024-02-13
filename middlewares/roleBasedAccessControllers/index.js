@@ -35,7 +35,7 @@ const VerifyAllowedRole = (allowedRoles) => async (req, res, next) => {
     if (allowedRoles.includes(userRole)) {
         next();
     } else {
-        handleErrorResponse(res, 403, "Unauthorized access");
+        handleErrorResponse(res, 403, "You are NOT authorized to access");
     }
 };
 

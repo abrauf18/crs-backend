@@ -1,3 +1,5 @@
+const ROLES = require("../config/roles");
+
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define("User", {
     name: {
@@ -14,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM("student", "teacher", "school", "admin"),
+      type: DataTypes.ENUM(ROLES.STUDENT, ROLES.TEACHER, ROLES.SCHOOL, ROLES.ADMIN),
       allowNull: false,
     },
   });
