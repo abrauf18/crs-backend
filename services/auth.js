@@ -46,26 +46,7 @@ const authenticateUser = async ({ email, password }) => {
 
         return { code: 200, data: user };
     } catch (error) {
-        return res
-            .status(500)
-            .json({ status: "error", message: "Internal Server Error" });
-    }
-};
-
-const decodeAuthCookie = async (req, res, next) => {
-    try {
-        authcookie = req.cookies.authcookie;
-
-        const { email, userId } = jwt.verifyAccessToken(authcookie);
-
-        req.email = email;
-        req.userId = userId;
-
-        next();
-    } catch (error) {
-        return res
-            .status(401)
-            .json({ status: "error", message: "Invalid credentials" });
+        return { code: 500 };
     }
 };
 
@@ -279,7 +260,6 @@ const resetPassword = async ({ userId, newPassword }) => {
 module.exports = {
     createUser,
     authenticateUser,
-    decodeAuthCookie,
     createSchoolProfile,
     sendInviteToTeacher,
     sendOTP,
