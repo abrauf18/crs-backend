@@ -1,0 +1,41 @@
+{
+  "development": {
+    "username": "crsci",
+    "password": "kgv6HVGbQvyboEo",
+    "database": "crs",
+    "host": "crs-database-1.cb2eaqmmkb2y.us-east-2.rds.amazonaws.com",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  },
+  "test": {
+    "username": "crsci",
+    "password": "kgv6HVGbQvyboEo",
+    "database": "crs",
+    "host": "crs-database-1.cb2eaqmmkb2y.us-east-2.rds.amazonaws.com",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  },
+  "production": {
+    "username": "crsci",
+    "password": "kgv6HVGbQvyboEo",
+    "database": "crs",
+    "host": "crs-database-1.cb2eaqmmkb2y.us-east-2.rds.amazonaws.com",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  }
+}
