@@ -2,20 +2,19 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('otp_codes', {
+    await queryInterface.createTable('OTP_codes', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
-      },
-      id: {
-        type: Sequelize.UUID
+        defaultValue: Sequelize.UUIDV4,
+        type: Sequelize.UUID,
       },
       userId: {
+        allowNull: false,
         type: Sequelize.UUID
       },
       otp: {
+        allowNull: false,
         type: Sequelize.STRING
       },
       createdAt: {
@@ -29,6 +28,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('otp_codes');
+    await queryInterface.dropTable('OTP_codes');
   }
 };

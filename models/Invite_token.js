@@ -3,40 +3,35 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class School extends Model {
+  class InviteToken extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      School.belongsTo(models.User, {
-        foreignKey: "createdBy",
-        onDelete: "CASCADE",
+      InviteToken.belongsTo(models.User, {
+        foreignKey: 'createdBy',
+        onDelete: 'CASCADE',
       });
+      
+      // define association here
     }
   }
-  School.init({
+  InviteToken.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
       allowNull: false,
     },
-    name: {
+    token: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
-    numberOfTeachers: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    studentsPopulation: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    courses: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+    email: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
     createdBy: {
@@ -45,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'School',
+    modelName: 'Invite_token',
   });
-  return School;
+  return InviteToken;
 };

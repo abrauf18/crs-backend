@@ -1,41 +1,37 @@
-"use strict";
+'use strict';
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Users", {
+    await queryInterface.createTable('Invite_tokens', {
       id: {
         allowNull: false,
         primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
         type: Sequelize.UUID,
       },
-      name: {
+      Token: {
         allowNull: false,
-        type: Sequelize.STRING,
+        type: Sequelize.STRING
       },
-      email: {
+      Email: {
         allowNull: false,
-        type: Sequelize.STRING,
+        type: Sequelize.STRING
       },
-      password: {
+      createdBy: {
         allowNull: false,
-        type: Sequelize.STRING,
-      },
-      role: {
-        allowNull: false,
-        type: Sequelize.ENUM("admin", "teacher", "student", "school"),
+        type: Sequelize.UUID
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE,
+        type: Sequelize.DATE
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-      },
+        type: Sequelize.DATE
+      }
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Users");
-  },
+    await queryInterface.dropTable('Invite_tokens');
+  }
 };
