@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("../utils/jwt");
 const otpGenerator = require("otp-generator");
 const sendEmail = require("../utils/email.js");
-const { User, School, Invite, ForgotPasswordRequest } = require("../models");
+const { User, School, Invite, OTP_code } = require("../models");
 const { teacherInvitation, verficationOTP } = require("./helper/emailTemplates/index.js");
 
 const createUser = async ({ name, password, email, role }) => {
@@ -22,12 +22,11 @@ const createUser = async ({ name, password, email, role }) => {
             password: hashedPassword,
         });
 
-        console.log("user:", user.dataValues);
-
         if (user) {
             return { code: 200, data: user };
         }
     } catch (error) {
+        console.log(error)
         return { code: 500 };
     }
 };
@@ -169,7 +168,7 @@ const sendOTP = async ({ email }) => {
         let OTP;
         let isOTPUsed;
 
-        const existingRequest = await ForgotPasswordRequest.findOne({
+        const existingRequest = await OTP_code.findOne({
             where: { userId: user.id },
         });
 
@@ -185,7 +184,7 @@ const sendOTP = async ({ email }) => {
                 specialChars: false,
             });
 
-            isOTPUsed = await ForgotPasswordRequest.findOne({
+            isOTPUsed = await OTP_code.findOne({
                 where: { otp: OTP },
             });
 
@@ -204,7 +203,7 @@ const sendOTP = async ({ email }) => {
             html,
         });
 
-        await ForgotPasswordRequest.create({
+        await OTP_code.create({
             userId: user.id,
             otp: OTP,
         });
@@ -218,7 +217,7 @@ const sendOTP = async ({ email }) => {
 
 const verifyOTP = async ({ userId, OTP }) => {
     try {
-        const forgotRequest = await ForgotPasswordRequest.findOne({
+        const forgotRequest = await OTP_code.findOne({
             where: {
                 userId: userId,
                 otp: OTP.toString(),
