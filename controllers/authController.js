@@ -16,17 +16,17 @@ const signup = async (req, res) => {
         role: reply.data.role,
       };
 
-      handleSuccessResponse(res, 200, user);
+      return handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 403) {
-      handleErrorResponse(res, 403, "Email already in use, please try another");
+      return handleErrorResponse(res, 403, "Email already in use, please try another");
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   }
   catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -55,20 +55,20 @@ const login = async (req, res) => {
         options: { maxAge: (1000 * 60 * 60), httpOnly: true }
       };
 
-      handleSuccessResponse(res, 200, user, cookieDetails)
+      return handleSuccessResponse(res, 200, user, cookieDetails)
     }
     else if (reply.code == 404) {
-      handleErrorResponse(res, 404, "Invalid email");
+      return handleErrorResponse(res, 404, "Invalid email");
     }
     else if (reply.code == 409) {
-      handleErrorResponse(res, 409, "Incorrect password");
+      return handleErrorResponse(res, 409, "Incorrect password");
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   }
   catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -87,20 +87,20 @@ const createSchoolProfile = async (req, res) => {
         createdBy: reply.data.createdBy,
       };
 
-      handleSuccessResponse(res, 200, school);
+      return handleSuccessResponse(res, 200, school);
     }
     else if (reply.code == 403) {
-      handleErrorResponse(res, 403, "School name already in use, please try another");
+      return handleErrorResponse(res, 403, "School name already in use, please try another");
     }
     else if (reply.code == 404) {
-      handleErrorResponse(res, 404, "Invalid email");
+      return handleErrorResponse(res, 404, "Invalid email");
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   }
   catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -113,22 +113,22 @@ const sendInviteToTeacher = async (req, res) => {
     if (reply.code == 200) {
       const invites = reply.data;
 
-      handleSuccessResponse(res, 200, invites);
+      return handleSuccessResponse(res, 200, invites);
     }
     else if (reply.code == 403) {
-      handleErrorResponse(res, 403, "Invalid School");
+      return handleErrorResponse(res, 403, "Invalid School");
     }
     else if (reply.code == 404) {
-      handleErrorResponse(res, 404, "Invalid email");
+      return handleErrorResponse(res, 404, "Invalid email");
     }
     else if (reply.code == 409) {
-      handleErrorResponse(res, 409, "Invites exceed the number of teachers");
+      return handleErrorResponse(res, 409, "Invites exceed the number of teachers");
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   } catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -144,16 +144,16 @@ const sendOTP = async (req, res) => {
         email: reply.data.email,
       };
       
-      handleSuccessResponse(res, 200, user);
+      return handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 404) {
-      handleErrorResponse(res, 404, "Invalid email");
+      return handleErrorResponse(res, 404, "Invalid email");
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   } catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -168,16 +168,16 @@ const verifyOTP = async (req, res) => {
         id: reply.data.userId,
       };
       
-      handleSuccessResponse(res, 200, user);
+      return handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 400) {
-      handleErrorResponse(res, 400, "Incorrect User or OTP you entered is incorrect");
+      return handleErrorResponse(res, 400, "Incorrect User or OTP you entered is incorrect");
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   } catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -189,16 +189,16 @@ const resetPassword = async (req, res) => {
 
     if (reply.code == 200) {
       const result = { message: "Password reset successfully" }
-      handleSuccessResponse(res, 200, result);
+      return handleSuccessResponse(res, 200, result);
     }
     else if (reply.code == 404) {
-      handleErrorResponse(res, 404, "User does not exists." );
+      return handleErrorResponse(res, 404, "User does not exists." );
     }
     else {
-      handleInternalServerError(res);
+      return handleInternalServerError(res);
     }
   } catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
@@ -215,11 +215,13 @@ const logout = async (req, res) => {
       message: "User is already logged out",
     });
   } catch (error) {
-    handleInternalServerError(res);
+    return handleInternalServerError(res);
   }
 };
 
 module.exports = {
+  emailBasedInvite,
+  emailBasedSignup,
   signup,
   login,
   createSchoolProfile,
