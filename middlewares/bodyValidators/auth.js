@@ -2,28 +2,28 @@ const Joi = require('joi');
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {
-      const { error } = schema.validate(req.body);
-      if (error) {
-        return res.status(400).json({
-          status: 'error',
-          message: error.details[0].message,
-        });
-      }
-      next();
+        const { error } = schema.validate(req.body);
+        if (error) {
+            return res.status(400).json({
+                status: 'error',
+                message: error.details[0].message,
+            });
+        }
+        next();
     } catch (error) {
-      res.status(500).json({
-        status: 'error',
-        message: 'Internal Server Error: sorry for the inconvenience, please try again later.',
-      });
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error: sorry for the inconvenience, please try again later.',
+        });
     }
 };
 
 const signupSchema = createSchemaMiddleware(
     Joi.object({
-      name: Joi.string().required(),
-      password: Joi.string().required(),
-      email: Joi.string().email().required(),
-      role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
+        name: Joi.string().min(3).max(30).required(),
+        password: Joi.string().required(),
+        email: Joi.string().email().required(),
+        role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
     })
 );
 const loginSchema = createSchemaMiddleware(
@@ -35,7 +35,7 @@ const loginSchema = createSchemaMiddleware(
 const registerSchoolSchema = createSchemaMiddleware(
     Joi.object({
         schoolOwnerEmail: Joi.string().email().required(),
-        name: Joi.string().required(),
+        name: Joi.string().min(3).max(30).required(),
         numberOfTeachers: Joi.number().integer().min(0).required(),
         studentsPopulation: Joi.number().integer().min(0).required(),
         courses: Joi.array().items(Joi.string()).required(),
@@ -46,7 +46,7 @@ const inviteTeacherSchema = createSchemaMiddleware(
         schoolOwnerEmail: Joi.string().email().required(),
         invites: Joi.array().items(
             Joi.object({
-                name: Joi.string().required(),
+                name: Joi.string().min(3).max(30).required(),
                 email: Joi.string().email().required(),
             })
         ).required(),
