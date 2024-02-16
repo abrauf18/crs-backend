@@ -19,7 +19,7 @@ const setUser = async (req, res, next) => {
                 const user = await User.findOne({ where: { email } });
 
                 if (!user) {
-                    handleErrorResponse(res, 404, "User Not Found, Please signup first");
+                    return handleErrorResponse(res, 404, "User Not Found, Please signup first");
                 }
                 else {
                     req.user = user;
@@ -28,11 +28,11 @@ const setUser = async (req, res, next) => {
                 }
             } 
             else {
-                handleInternalServerError(res);
+                return handleInternalServerError(res);
             }
         }
     } catch (error) {
-        handleInternalServerError(res);
+        return handleInternalServerError(res);
     }
 }
 
@@ -43,10 +43,10 @@ const VerifyAllowedRole = (allowedRoles) => async (req, res, next) => {
         if (allowedRoles.includes(userRole)) {
             next();
         } else {
-            handleErrorResponse(res, 403, "You are NOT authorized to access");
+            return handleErrorResponse(res, 403, "You are NOT authorized to access");
         }   
     } catch (error) {
-        handleInternalServerError(res);
+        return handleInternalServerError(res);
     }
 };
 
