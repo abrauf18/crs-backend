@@ -9,9 +9,13 @@ function generateAccessToken(payload) {
 function verifyAccessToken(token) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded;
-  } catch (error) {
-    return null; // Token verification failed
+    return { success: true, decoded };
+  } 
+  catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return { success: false, error: "Token expired" };
+    }
+    return { success: false, error: "Token verification failed" };
   }
 }
 
