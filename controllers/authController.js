@@ -52,7 +52,7 @@ const login = async (req, res) => {
       const cookieDetails = {
         name: "authcookie",
         accessToken: accessToken,
-        options: { maxAge: 900000, httpOnly: true }
+        options: { maxAge: (1000 * 60 * 60), httpOnly: true }
       };
 
       handleSuccessResponse(res, 200, user, cookieDetails)
