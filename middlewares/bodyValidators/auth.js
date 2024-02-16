@@ -1,20 +1,15 @@
 const Joi = require('joi');
+const {handleInternalServerError, handleErrorResponse} = require('../../utils/responseHandlers')
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {
         const { error } = schema.validate(req.body);
         if (error) {
-            return res.status(400).json({
-                status: 'error',
-                message: error.details[0].message,
-            });
+            return handleErrorResponse(res, 400, error.details[0].message)
         }
         next();
     } catch (error) {
-        res.status(500).json({
-            status: 'error',
-            message: 'Internal Server Error: sorry for the inconvenience, please try again later.',
-        });
+        return handleInternalServerError();
     }
 };
 
