@@ -12,8 +12,8 @@ function verifyAccessToken(token) {
     return { success: true, decoded };
   } 
   catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return { success: false, error: "Token expired" };
+    if (error instanceof jwt.TokenExpiredError) {
+      return { success: false, error: "Token expired" }
     }
     return { success: false, error: "Token verification failed" };
   }

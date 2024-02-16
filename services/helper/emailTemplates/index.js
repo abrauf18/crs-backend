@@ -1,3 +1,28 @@
+const ROLES = require("../../../models/Roles");
+
+const genericSignupInvitation = ( name, role, token ) => {
+    const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                <h2>Welcome to CRS</h2>
+                <p>Dear ${name},</p>
+                <p>You have received an invitation to join CRS as ${role == ROLES.ADMIN ? "an": "a"} ${role}.</p>
+                <p>We are excited to welcome you to our educational platform!</p>
+                <p>Please follow the instructions below to complete your registration:</p>
+                
+                <ol>
+                    <li>Click on the following link to set up your account: crs.signup/${token}</li>
+                    <li>Create the password and use those credentials to login to your account.</li>
+                    <li>Explore the features and resources available on CRS.</li>
+                </ol>
+        
+                <p>If you have any questions or need assistance, feel free to contact us.</p>
+        
+                <p>Best regards,<br>CRS Team</p>
+            </div>`;
+    
+    return html;
+}
+
 const teacherInvitation = ( schoolName, inviteName ) => {
     const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
@@ -38,4 +63,4 @@ const verficationOTP = ( userName, OTP ) => {
     return html;
 }
 
-module.exports = { teacherInvitation, verficationOTP }
+module.exports = { teacherInvitation, verficationOTP, genericSignupInvitation }

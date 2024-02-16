@@ -2,6 +2,62 @@ const authService = require("../services/auth.js");
 const { generateAccessToken } = require("../utils/jwt");
 const {handleInternalServerError, handleSuccessResponse, handleErrorResponse} = require("../utils/responseHandlers.js")
 
+
+const emailBasedInvite = async (req, res) => {
+  try {
+    const { name, email, role } = req.body
+
+    const reply = await authService.inviteUser({ name, email, role, user: req.user });
+
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    else if (reply.code == 403) {
+      return handleErrorResponse(res, 403, "You are unauthorized to invite this entity");
+    }
+    else if (reply.code == 409) {
+      return handleErrorResponse(res, 403, "This user currently has a valid invitation, try again later");
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    return handleInternalServerError(res);
+  }
+};
+
+const emailBasedSignup = async (req, res) => {
+  try {
+    const token = req.params.token;
+
+    console.log("token: ", token);
+
+    const { name, email, password } = req.body
+
+    const reply = await authService.createInvitedUser({ name, email, password, token });
+
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }   
+    else if (reply.code == 400) {
+      return handleErrorResponse(res, 400, "Access denied, your token is invalid");
+    }    
+    else if (reply.code == 403) {
+      return handleErrorResponse(res, 403, "Token expired, please request another invite");
+    }
+    else if (reply.code == 409) {
+      return handleErrorResponse(res, 409, "Email already in use, please try another");
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    return handleInternalServerError(res);
+  }
+};
+
 const signup = async (req, res) => {
   try {
     const { name, password, email, role } = req.body

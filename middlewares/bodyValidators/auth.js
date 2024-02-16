@@ -13,6 +13,20 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
     }
 };
 
+const emailBasedInvite = createSchemaMiddleware(
+    Joi.object({
+        email: Joi.string().email().required(),
+        role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
+        name: Joi.string().required()
+    })
+);
+const emailBasedSignup = createSchemaMiddleware(
+    Joi.object({
+        email: Joi.string().email().required(),
+        name: Joi.string().min(3).max(30).required(),
+        password: Joi.string().required(),
+    })
+);
 const signupSchema = createSchemaMiddleware(
     Joi.object({
         name: Joi.string().min(3).max(30).required(),
@@ -54,18 +68,20 @@ const forgotPasswordSchema = createSchemaMiddleware(
 );
 const verifyOTPSchema = createSchemaMiddleware(
     Joi.object({
-        userId: Joi.number().integer().positive().required(),
+        userId: Joi.string().guid().required(),
         OTP: Joi.string().length(4).pattern(/^\d+$/).required(),
     })
 );
 const resetPasswordSchema = createSchemaMiddleware(
     Joi.object({
-        userId: Joi.number().integer().required(),
+        userId: Joi.string().guid().required(),
         newPassword: Joi.string().required(),
     })
 );
 
 module.exports = {
+    emailBasedInvite,
+    emailBasedSignup,
     signupSchema,
     loginSchema,
     registerSchoolSchema,
