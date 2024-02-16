@@ -1,9 +1,122 @@
 const bcrypt = require("bcrypt");
-const jwt = require("../utils/jwt");
 const otpGenerator = require("otp-generator");
+
+const jwt = require("../utils/jwt");
+const ROLES = require("../models/Roles");
 const sendEmail = require("../utils/email.js");
-const { User, School, Invite, OTP_code } = require("../models");
-const { teacherInvitation, verficationOTP } = require("./helper/emailTemplates/index.js");
+const { User, School, Invite, OTP_code, Invite_token } = require("../models");
+const { genericSignupInvitation, teacherInvitation, verficationOTP } = require("./helper/emailTemplates/index.js");
+
+
+const inviteUser = async ({ name, email, role, user }) => {
+    try {
+
+        if ((user.role == ROLES.SCHOOL && (role == ROLES.ADMIN || role == ROLES.SCHOOL))
+            || (user.role == ROLES.TEACHER && (role == ROLES.ADMIN || role == ROLES.SCHOOL || role == ROLES.TEACHER))) {
+            return { code: 403 };
+        }
+
+        const token = jwt.generateAccessToken({ name, email, role });
+
+        if (!token) {
+            return { code: 500 };
+        }
+
+        const [InviteToken, created] = await Invite_token.findOrCreate({
+            where: { email: email },
+            defaults: { token: token, email: email, createdBy: user.id }
+        });
+
+        let invitation = InviteToken;
+
+        if (!created) {
+            const result = jwt.verifyAccessToken(InviteToken.token);
+            if (result.success) {
+                return { code: 409 };
+            }
+
+            const updatedInvite = await Invite_token.update({
+                token: token,
+                email: email,
+                createdBy: user.id,
+            }, {
+                where: {
+                    email: email
+                },
+                returning: true,
+            });
+            invitation = updatedInvite;
+        }
+
+        const html = genericSignupInvitation(name, role, token);
+
+        const invite = await sendEmail({
+            from: "CRS",
+            email: email,
+            subject: "Invitation from CRS",
+            message: "",
+            html,
+        });
+
+        return { code: 200, data: created? invitation : invitation[1] };
+
+    } catch (error) {
+        console.log("error: ", error);
+        return { code: 500 };
+    }
+};
+
+const createInvitedUser = async ({ name, email, password, token }) => {
+    try {
+        
+        const existingToken = await Invite_token.findOne({
+            where: {
+                token: token,
+            },
+        });
+
+        if (!existingToken) {
+            return { code: 400 };
+        }
+
+        const isEmailRegisterd = await User.findOne({ where: { email } });
+
+        if (isEmailRegisterd) {
+            return { code: 409 };
+        }
+
+        const result = jwt.verifyAccessToken(token);
+
+        if (result.success) {
+            const hashedPassword = bcrypt.hashSync(password, 10);
+
+            const user = await User.create({
+                name,
+                email,
+                role: result.decoded.role,
+                password: hashedPassword,
+            });
+
+            if (user) {
+                await existingToken.destroy();
+                return { code: 200, data: user };
+            }
+        } 
+        else {
+            if (result.error == "Token expired") {
+                await existingToken.destroy();
+                return { code: 403 };
+            } 
+            else {
+                return { code: 500 };
+            }
+        }
+    } 
+    catch (error) {
+        console.log(error);
+        return { code: 500 };
+    }
+};
 
 const createUser = async ({ name, password, email, role }) => {
     try {
@@ -256,6 +369,8 @@ const resetPassword = async ({ userId, newPassword }) => {
 };
 
 module.exports = {
+    inviteUser,
+    createInvitedUser,
     createUser,
     authenticateUser,
     createSchoolProfile,

@@ -7,6 +7,18 @@ const ROLES = require("../models/Roles/index")
 const router = express.Router();
 
 router.post(
+    "/emailBasedInvite",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER]),
+    authValidation.emailBasedInvite,
+    authController.emailBasedInvite
+);
+router.post(
+    "/emailBasedSignup/token/:token",
+    authValidation.emailBasedSignup,
+    authController.emailBasedSignup
+);
+router.post(
     "/signup",
     authValidation.signupSchema,
     authController.signup
