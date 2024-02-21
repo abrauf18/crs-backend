@@ -1,6 +1,6 @@
 const authService = require("../services/auth.js");
 const { generateAccessToken } = require("../utils/jwt");
-const {handleInternalServerError, handleSuccessResponse, handleErrorResponse} = require("../utils/responseHandlers.js")
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
 
 
 const emailBasedInvite = async (req, res) => {
@@ -39,10 +39,10 @@ const emailBasedSignup = async (req, res) => {
 
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
-    }   
+    }
     else if (reply.code == 400) {
       return handleErrorResponse(res, 400, "Access denied, your token is invalid");
-    }    
+    }
     else if (reply.code == 403) {
       return handleErrorResponse(res, 403, "Token expired, please request another invite");
     }
@@ -103,8 +103,9 @@ const login = async (req, res) => {
         name: reply.data.name,
         email: reply.data.email,
         role: reply.data.role,
+        accessToken: accessToken,
       };
-      
+
       const cookieDetails = {
         name: "authcookie",
         accessToken: accessToken,
@@ -199,7 +200,7 @@ const sendOTP = async (req, res) => {
         id: reply.data.id,
         email: reply.data.email,
       };
-      
+
       return handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 404) {
@@ -223,7 +224,7 @@ const verifyOTP = async (req, res) => {
       const user = {
         id: reply.data.userId,
       };
-      
+
       return handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 400) {
@@ -248,7 +249,7 @@ const resetPassword = async (req, res) => {
       return handleSuccessResponse(res, 200, result);
     }
     else if (reply.code == 404) {
-      return handleErrorResponse(res, 404, "User does not exists." );
+      return handleErrorResponse(res, 404, "User does not exists.");
     }
     else {
       return handleInternalServerError(res);
