@@ -343,16 +343,38 @@ const verifyOTP = async ({ userId, OTP }) => {
 
         // Remove record, after successful verification
         if (forgotRequest) {
-            await forgotRequest.destroy();
+            const currentDate = new Date();
+            const createdAt = forgotRequest.createdAt;
+            const timeDifference = currentDate - createdAt;
+            const minutesDifference = timeDifference / (1000 * 60);
+            const isWithinLast5Minutes = minutesDifference <= 5;
+
+            if (isWithinLast5Minutes) {
+                await forgotRequest.destroy();
+            }
+            
+            return { code: 403 };
         }
         return { code: 200, data: { userId: userId } };
     } catch (error) {
+        console.log(error);
         return { code: 500 };
     }
 };
 
 const resetPassword = async ({ userId, newPassword }) => {
     try {
+        const forgotRequest = await OTP_code.findOne({
+            where: {
+                userId: userId,
+                otp: OTP.toString(),
+            },
+        });
+
+        if (forgotRequest) {
+            return { code: 403 };
+        }
+
         const user = await User.findByPk(userId);
 
         if (!user) {
