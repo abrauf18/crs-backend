@@ -228,7 +228,10 @@ const verifyOTP = async (req, res) => {
       return handleSuccessResponse(res, 200, user);
     }
     else if (reply.code == 400) {
-      return handleErrorResponse(res, 400, "Incorrect User or OTP you entered is incorrect");
+      return handleErrorResponse(res, 400, "OTP You Entered Is Incorrect");
+    }
+    else if (reply.code == 403) {
+      return handleErrorResponse(res, 400, "OTP You Entered Is Expired");
     }
     else {
       return handleInternalServerError(res);
@@ -247,6 +250,9 @@ const resetPassword = async (req, res) => {
     if (reply.code == 200) {
       const result = { message: "Password reset successfully" }
       return handleSuccessResponse(res, 200, result);
+    }
+    else if (reply.code == 403) {
+      return handleErrorResponse(res, 403, "User needs Verification.");
     }
     else if (reply.code == 404) {
       return handleErrorResponse(res, 404, "User does not exists.");
