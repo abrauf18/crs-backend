@@ -48,7 +48,7 @@ router.post(
     authController.sendOTP
 );
 router.post(
-    "/verify-otp/",
+    "/verify-otp",
     authValidation.verifyOTPSchema,
     authController.verifyOTP
 );
