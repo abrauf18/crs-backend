@@ -231,7 +231,7 @@ const verifyOTP = async (req, res) => {
       return handleErrorResponse(res, 400, "OTP You Entered Is Incorrect");
     }
     else if (reply.code == 403) {
-      return handleErrorResponse(res, 400, "OTP You Entered Is Expired");
+      return handleErrorResponse(res, 403, "OTP You Entered Is Expired");
     }
     else {
       return handleInternalServerError(res);
