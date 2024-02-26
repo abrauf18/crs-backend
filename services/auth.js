@@ -352,8 +352,9 @@ const verifyOTP = async ({ userId, OTP }) => {
             if (isWithinLast5Minutes) {
                 await forgotRequest.destroy();
             }
-            
-            return { code: 403 };
+            else{
+                return { code: 403 };
+            }
         }
         return { code: 200, data: { userId: userId } };
     } catch (error) {
