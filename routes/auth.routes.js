@@ -8,9 +8,9 @@ const router = express.Router();
 
 router.post(
     "/emailBasedInvite",
+    authValidation.emailBasedInvite,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER]),
-    authValidation.emailBasedInvite,
     authController.emailBasedInvite
 );
 router.post(
@@ -31,14 +31,14 @@ router.post(
 router.post(
     "/register-school",
     authValidation.registerSchoolSchema,
-    roleBasedAccess.setUser,
+    roleBasedAccess.oldSetUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     authController.createSchoolProfile
 );
 router.post(
     "/invite-teachers",
     authValidation.inviteTeacherSchema,
-    roleBasedAccess.setUser,
+    roleBasedAccess.oldSetUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     authController.sendInviteToTeacher
 );
