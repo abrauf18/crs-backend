@@ -246,7 +246,6 @@ const resetPassword = async (req, res) => {
     const { userId, newPassword } = req.body;
 
     const reply = await authService.resetPassword({ userId, newPassword });
-
     if (reply.code == 200) {
       const result = { message: "Password reset successfully" }
       return handleSuccessResponse(res, 200, result);
