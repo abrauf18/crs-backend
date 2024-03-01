@@ -58,7 +58,7 @@ const inviteUser = async ({ name, email, role, user }) => {
             html,
         });
 
-        return { code: 200, data: created? invitation : invitation[1] };
+        return { code: 200, data: created ? invitation : invitation[1] };
 
     } catch (error) {
         console.log("error: ", error);
@@ -68,7 +68,7 @@ const inviteUser = async ({ name, email, role, user }) => {
 
 const createInvitedUser = async ({ name, email, password, token }) => {
     try {
-        
+
         const existingToken = await Invite_token.findOne({
             where: {
                 token: token,
@@ -101,17 +101,17 @@ const createInvitedUser = async ({ name, email, password, token }) => {
                 await existingToken.destroy();
                 return { code: 200, data: user };
             }
-        } 
+        }
         else {
             if (result.error == "Token expired") {
                 await existingToken.destroy();
                 return { code: 403 };
-            } 
+            }
             else {
                 return { code: 500 };
             }
         }
-    } 
+    }
     catch (error) {
         console.log(error);
         return { code: 500 };
@@ -246,10 +246,10 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
 
             if (!created) {
                 const updatedInvite = await Invite.update({
-                        name: invite.name,
-                        email: invite.email,
-                        createdBy: user.id,
-                    }, {
+                    name: invite.name,
+                    email: invite.email,
+                    createdBy: user.id,
+                }, {
                     where: {
                         email: invite.email,
                         createdBy: user.id,
@@ -352,7 +352,7 @@ const verifyOTP = async ({ userId, OTP }) => {
             if (isWithinLast5Minutes) {
                 await forgotRequest.destroy();
             }
-            else{
+            else {
                 return { code: 403 };
             }
         }
@@ -365,17 +365,6 @@ const verifyOTP = async ({ userId, OTP }) => {
 
 const resetPassword = async ({ userId, newPassword }) => {
     try {
-        const forgotRequest = await OTP_code.findOne({
-            where: {
-                userId: userId,
-                otp: OTP.toString(),
-            },
-        });
-
-        if (forgotRequest) {
-            return { code: 403 };
-        }
-
         const user = await User.findByPk(userId);
 
         if (!user) {
