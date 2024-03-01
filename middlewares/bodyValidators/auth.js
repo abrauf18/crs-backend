@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const {handleInternalServerError, handleErrorResponse} = require('../../utils/responseHandlers')
+const { handleInternalServerError, handleErrorResponse } = require('../../utils/responseHandlers')
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {
@@ -9,7 +9,7 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
         }
         next();
     } catch (error) {
-        return handleInternalServerError();
+        handleInternalServerError(res)
     }
 };
 
@@ -17,7 +17,8 @@ const emailBasedInvite = createSchemaMiddleware(
     Joi.object({
         email: Joi.string().email().required(),
         role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
-        name: Joi.string().required()
+        name: Joi.string().required(),
+        accessToken: Joi.string().required()
     })
 );
 const emailBasedSignup = createSchemaMiddleware(
