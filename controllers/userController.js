@@ -1,29 +1,48 @@
-const { User } = require("../models");
+const userService = require("../services/user.js");
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
 
-const getAllUsers = async (req, res) => {
+
+const getUserProfile = async (req, res) => {
   try {
-    const users = await User.findAll();
+    const reply = await userService.getUserProfile({ user: req.user });
 
-    res.json({ users });
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return handleInternalServerError(res);
   }
 };
 
-const getUserById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const users = await User.findByPk(id);
 
-    res.json({ users });
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+const updateUserProfile = async (req, res) => {
+  try {
+    const { image, name, email, password } = req.body
+
+    const reply = await userService.updateUserProfile({ user: req.user, image, name, email, password });
+
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    if (reply.code == 409) {
+      return handleErrorResponse(res, 409, "User with this email already exists, pleasy try another one");
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return handleInternalServerError(res);
   }
 };
 
 module.exports = {
-  getAllUsers,
-  getUserById,
+  getUserProfile,
+  updateUserProfile,
 };
