@@ -1,18 +1,48 @@
-const { School } = require("../models");
+const schoolService = require("../services/school.js");
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
 
-const findSchoolById = async (schoolId) => {
+
+const getSchoolProfile = async (req, res) => {
   try {
-    const school = await School.findByPk(schoolId);
+    const reply = await schoolService.getSchoolProfile({ user: req.user });
 
-    if (!school) {
-      return null;
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
     }
-
-    return school;
-  } catch (error) {
-    console.error("Error finding school by ID:", error);
-    throw error;
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return handleInternalServerError(res);
   }
 };
 
-module.exports = { findSchoolById };
+
+const updateSchoolProfile = async (req, res) => {
+  try {
+    const { name, numOfClasses, classesStart, classesEnd } = req.body
+
+    const reply = await schoolService.updateSchoolProfile({ user: req.user, name, numOfClasses, classesStart, classesEnd });
+
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    if (reply.code == 409) {
+      return handleErrorResponse(res, 409, "User with this email already exists, pleasy try another one");
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    console.log(error);
+    return handleInternalServerError(res);
+  }
+};
+
+module.exports = {
+  getSchoolProfile,
+  updateSchoolProfile,
+};
