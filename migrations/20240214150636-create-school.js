@@ -13,16 +13,19 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING
       },
-      teacherCount: {
+      numOfTeachers: {
         allowNull: false,
+        defaultValue: 0,
         type: Sequelize.INTEGER
       },
-      studentCount: {
+      numOfStudents: {
         allowNull: false,
+        defaultValue: 0,
         type: Sequelize.INTEGER
       },
       courses: {
         allowNull: false,
+        defaultValue: [],
         type: Sequelize.ARRAY((Sequelize.STRING))
       },
       createdBy: {
