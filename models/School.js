@@ -27,20 +27,38 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    numberOfTeachers: {
+    numOfTeachers: {
       type: DataTypes.INTEGER,
+      defaultValue: 0,
       allowNull: false,
     },
-    studentsPopulation: {
+    numOfStudents: {
       type: DataTypes.INTEGER,
+      defaultValue: 0,
       allowNull: false,
     },
     courses: {
       type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue: [],
       allowNull: false,
     },
     createdBy: {
       type: DataTypes.UUID,
+      allowNull: false,
+    },
+    numOfClasses: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    },
+    classesStart: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    },
+    classesEnd: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
       allowNull: false,
     },
   }, {
