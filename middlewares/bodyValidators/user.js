@@ -14,24 +14,6 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
     }
 };
 
-const getUserProfile = async (req, res, next) => {
-    try {
-        const data = {accessToken: req.headers['accesstoken']}
-
-        const schema = Joi.object({
-            accessToken: Joi.string().required(),
-        });
-    
-        const { error } = schema.validate(data);
-        if (error) {
-            return handleErrorResponse(res, 400, error.details[0].message);
-        }
-        next();
-    } catch (error) {
-        handleInternalServerError(res);
-    }
-};
-
 const updateUserProfile = createSchemaMiddleware(
     Joi.object({
         email: Joi.string().email().required(),
@@ -43,6 +25,5 @@ const updateUserProfile = createSchemaMiddleware(
 );
 
 module.exports = {
-    getUserProfile,
     updateUserProfile,
 };
