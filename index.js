@@ -3,6 +3,7 @@ const express = require("express");
 const cookieParser = require("cookie-parser")
 const authRouter = require("./routes/auth.routes");
 const userRouter = require("./routes/user.routes");
+const schoolRouter = require("./routes/school.routes");
 const cors = require('cors');
 const db = require("./models");
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(cookieParser());
 
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
+app.use("/school", schoolRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
