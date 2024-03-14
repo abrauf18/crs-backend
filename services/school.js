@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("../utils/jwt");
 const { School } = require("../models");
+const { updateUserProfile } = require("./user");
 
 
 const getSchoolProfile = async ({ user }) => {
@@ -21,23 +22,30 @@ const getSchoolProfile = async ({ user }) => {
     }
 };
 
-const updateSchoolProfile = async ({ user, name, numOfClasses, classesStart, classesEnd }) => {
+const updateSchoolAndUserProfile = async ({ user, image, username, email, password, schoolName, numOfClasses, classesStart, classesEnd }) => {
     try {
+
+        const updateUser = await updateUserProfile({user, image, name: username, email, password});
+
+        if (updateUser.code != 200) {
+            return updateUser;
+        }
+
         const school = await School.findOne({
             where: {
                 createdBy: user.id
             }
         });
         
-        const isNameRegisterd = school?.name != name ? await School.findOne({ where: { name } }) : null;
+        const isNameRegisterd = school?.name != schoolName ? await School.findOne({ where: { name: schoolName } }) : null;
 
         if (isNameRegisterd) {
-            return { code: 409 };
+            return { code: 403 };
         }
 
         if (school) {
             await school.update({
-                name,
+                name: schoolName,
                 numOfClasses,
                 classesStart,
                 classesEnd,
@@ -51,7 +59,7 @@ const updateSchoolProfile = async ({ user, name, numOfClasses, classesStart, cla
             };
         } else {
             const newSchool = await School.create({
-                name,
+                name: schoolName,
                 numOfClasses,
                 classesStart,
                 classesEnd,
@@ -75,5 +83,5 @@ const updateSchoolProfile = async ({ user, name, numOfClasses, classesStart, cla
 
 module.exports = {
     getSchoolProfile,
-    updateSchoolProfile
+    updateSchoolAndUserProfile,
 };
