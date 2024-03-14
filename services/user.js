@@ -9,8 +9,7 @@ const getUserProfile = async ({ user }) => {
         
         const userData = {
             name: user.name,
-            email:user.email,
-            password: user.password,
+            email: user.email,
             image: user.image
         };
 
