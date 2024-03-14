@@ -14,16 +14,20 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
     }
 };
 
-const updateSchoolProfile = createSchemaMiddleware(
+const updateSchoolAndUserProfile = createSchemaMiddleware(
     Joi.object({
-        name: Joi.string().required(),
+        email: Joi.string().email().required(),
+        username: Joi.string().required(),
+        image: Joi.string().required(),
+        password: Joi.string().allow('', "").required(),
+        schoolName: Joi.string().required(),
         numOfClasses: Joi.number().positive().required(),
         classesStart: Joi.number().positive().allow(0).max(Joi.ref('classesEnd')).message('value of Classes Start should be greater than Classes End').required(),
-        classesEnd: Joi.number().positive().required(),
+        classesEnd: Joi.number().positive().allow(0).required(),
         accessToken: Joi.string().required()
     })
 );
 
 module.exports = {
-    updateSchoolProfile,
+    updateSchoolAndUserProfile,
 };
