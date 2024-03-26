@@ -29,7 +29,7 @@ const updateUserProfile = async ({ user, image, name, email, password }) => {
             return { code: 409 };
         }
 
-        if (password != "" || password != '') {
+        if (password != "") {
             const hashedPassword = bcrypt.hashSync(password, 10);
             await user.update({
                 name, 
