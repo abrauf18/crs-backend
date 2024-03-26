@@ -30,7 +30,7 @@ const updateSchoolAndUserProfile = async (req, res) => {
       return handleSuccessResponse(res, 200, reply.data);
     }
     else if (reply.code == 403) {
-      return handleErrorResponse(res, 409, "School with this email already exists, pleasy try another one");
+      return handleErrorResponse(res, 403, "School with this email already exists, pleasy try another one");
     }
     else if (reply.code == 409) {
       return handleErrorResponse(res, 409, "User with this email already exists, pleasy try another one");
