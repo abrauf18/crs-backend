@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { handleInternalServerError, handleErrorResponse } = require('../../../utils/responseHandlers');
+const { handleInternalServerError, handleErrorResponse } = require('../../../utils/response-handlers');
 
 const verifyHeaderAccessToken = async (req, res, next) => {
     try {

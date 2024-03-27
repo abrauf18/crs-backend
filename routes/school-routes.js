@@ -1,10 +1,10 @@
 // auth.js
 const express = require("express");
-const ROLES = require("../models/Roles");
-const schoolController = require("../controllers/schoolController");
-const schoolValidation = require("../middlewares/bodyValidators/school");
-const sharedValidator = require("../middlewares/bodyValidators/shared/index");
-const roleBasedAccess = require("../middlewares/roleBasedAccessControllers/index");
+const ROLES = require("../models/roles");
+const schoolController = require("../controllers/school-controller");
+const schoolValidation = require("../middlewares/validators/school-validator");
+const sharedValidator = require("../middlewares/validators/shared/index");
+const roleBasedAccess = require("../middlewares/rbac/index");
 
 const router = express.Router();
 router.get(
