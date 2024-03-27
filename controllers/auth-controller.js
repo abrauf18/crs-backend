@@ -1,6 +1,6 @@
-const authService = require("../services/auth.js");
-const { generateAccessToken } = require("../utils/jwt");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
+const authService = require("../services/auth-service.js");
+const { generateAccessToken } = require("../utils/jwt.js");
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
 
 
 const emailBasedInvite = async (req, res) => {

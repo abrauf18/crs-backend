@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { handleInternalServerError, handleErrorResponse } = require('../../utils/responseHandlers');
+const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {

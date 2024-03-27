@@ -1,5 +1,5 @@
-const userService = require("../services/user.js");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
+const userService = require("../services/user-service.js");
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
 
 
 const getUserProfile = async (req, res) => {

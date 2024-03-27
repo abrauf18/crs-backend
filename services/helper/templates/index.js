@@ -1,4 +1,4 @@
-const ROLES = require("../../../models/Roles");
+const ROLES = require("../../../models/roles");
 
 const genericSignupInvitation = ( name, role, token ) => {
     const html = `

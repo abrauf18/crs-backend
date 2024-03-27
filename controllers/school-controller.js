@@ -1,5 +1,5 @@
-const schoolService = require("../services/school.js");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
+const schoolService = require("../services/school-service.js");
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
 
 
 const getSchoolProfile = async (req, res) => {

@@ -1,11 +1,11 @@
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 
-const jwt = require("../utils/jwt");
-const ROLES = require("../models/Roles");
+const jwt = require("../utils/jwt.js");
+const ROLES = require("../models/roles/index.js");
 const sendEmail = require("../utils/email.js");
-const { User, School, Invite, OTP_code, Invite_token } = require("../models");
-const { genericSignupInvitation, teacherInvitation, verficationOTP } = require("./helper/emailTemplates/index.js");
+const { User, School, Invite, OTP_code, Invite_token } = require("../models/index.js");
+const { genericSignupInvitation, teacherInvitation, verficationOTP } = require("./helper/templates/index.js");
 
 
 const inviteUser = async ({ name, email, role, user }) => {

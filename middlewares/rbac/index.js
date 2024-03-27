@@ -1,6 +1,6 @@
 const { User } = require("../../models/index.js");
 const jwt = require("../../utils/jwt.js");
-const { errorHandlingWrapper, handleInternalServerError, handleErrorResponse } = require("../../utils/responseHandlers.js")
+const { errorHandlingWrapper, handleInternalServerError, handleErrorResponse } = require("../../utils/response-handlers.js")
 
 const setUser = async (req, res, next) => {
     try {

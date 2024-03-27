@@ -1,9 +1,9 @@
 // auth.js
 const express = require("express");
-const userController = require("../controllers/userController");
-const userValidation = require("../middlewares/bodyValidators/user");
-const sharedValidator = require("../middlewares/bodyValidators/shared/index");
-const roleBasedAccess = require("../middlewares/roleBasedAccessControllers/index");
+const userController = require("../controllers/user-controller");
+const userValidation = require("../middlewares/validators/user-validator");
+const sharedValidator = require("../middlewares/validators/shared/index");
+const roleBasedAccess = require("../middlewares/rbac/index");
 
 const router = express.Router();
 router.get("/getUserProfile", sharedValidator.verifyHeaderAccessToken, roleBasedAccess.setUser, userController.getUserProfile)

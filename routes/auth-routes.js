@@ -1,8 +1,8 @@
 const express = require("express");
-const authValidation = require("../middlewares/bodyValidators/auth");
-const authController = require("../controllers/authController");
-const roleBasedAccess = require("../middlewares/roleBasedAccessControllers/index")
-const ROLES = require("../models/Roles/index")
+const authValidation = require("../middlewares/validators/auth-validator");
+const authController = require("../controllers/auth-controller");
+const roleBasedAccess = require("../middlewares/rbac/index")
+const ROLES = require("../models/roles/index")
 
 const router = express.Router();
 

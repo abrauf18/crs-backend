@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("../utils/jwt");
 const { School } = require("../models");
-const { updateUserProfile } = require("./user");
+const { updateUserProfile } = require("./user-service.js");
 
 
 const getSchoolProfile = async ({ user }) => {
