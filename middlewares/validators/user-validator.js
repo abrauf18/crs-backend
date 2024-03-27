@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
+const logger = require("../../Logs/logger");
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {
@@ -9,7 +10,7 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.log(error);
+        logger.error(error);
         handleInternalServerError(res);
     }
 };

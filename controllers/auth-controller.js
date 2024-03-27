@@ -31,8 +31,6 @@ const emailBasedSignup = async (req, res) => {
   try {
     const token = req.params.token;
 
-    console.log("token: ", token);
-
     const { name, email, password } = req.body
 
     const reply = await authService.createInvitedUser({ name, email, password, token });

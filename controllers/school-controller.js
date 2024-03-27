@@ -1,6 +1,6 @@
 const schoolService = require("../services/school-service.js");
 const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
-
+const logger = require("../Logs/logger.js");
 
 const getSchoolProfile = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ const getSchoolProfile = async (req, res) => {
     }
   }
   catch (error) {
-    console.log(error);
+    logger.error(error);
     return handleInternalServerError(res);
   }
 };
@@ -22,7 +22,6 @@ const getSchoolProfile = async (req, res) => {
 const updateSchoolAndUserProfile = async (req, res) => {
   try {
     const { image, username, email, password, schoolName, numOfClasses, classesStart, classesEnd } = req.body
-    console.log(image, username, email, password, schoolName, numOfClasses, classesStart, classesEnd)
 
     const reply = await schoolService.updateSchoolAndUserProfile({ user: req.user, image, username, email, password, schoolName, numOfClasses, classesStart, classesEnd });
 
@@ -40,7 +39,7 @@ const updateSchoolAndUserProfile = async (req, res) => {
     }
   }
   catch (error) {
-    console.log(error);
+    logger.error(error);
     return handleInternalServerError(res);
   }
 };

@@ -1,6 +1,6 @@
 const userService = require("../services/user-service.js");
 const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
-
+const logger = require("../Logs/logger.js");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ const getUserProfile = async (req, res) => {
     }
   }
   catch (error) {
-    console.log(error);
+    logger.error(error);
     return handleInternalServerError(res);
   }
 };
@@ -37,7 +37,7 @@ const updateUserProfile = async (req, res) => {
     }
   }
   catch (error) {
-    console.log(error);
+    logger.error(error);
     return handleInternalServerError(res);
   }
 };

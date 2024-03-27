@@ -1,4 +1,5 @@
 'use strict';
+const logger = require("../Logs/logger.js");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -39,7 +40,7 @@ module.exports = {
       await transaction.commit();
 
     } catch (err) {
-      console.log("err: ", err);
+      logger.error("err: ", err);
       await transaction.rollback();
       throw err;
     }
