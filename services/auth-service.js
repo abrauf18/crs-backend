@@ -2,11 +2,11 @@ const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 
 const jwt = require("../utils/jwt.js");
-const ROLES = require("../models/roles/index.js");
+const logger = require("../Logs/logger.js");
 const sendEmail = require("../utils/email.js");
+const ROLES = require("../models/roles/index.js");
 const { User, School, Invite, OTP_code, Invite_token } = require("../models/index.js");
 const { genericSignupInvitation, teacherInvitation, verficationOTP } = require("./helper/templates/index.js");
-
 
 const inviteUser = async ({ name, email, role, user }) => {
     try {
@@ -61,7 +61,7 @@ const inviteUser = async ({ name, email, role, user }) => {
         return { code: 200, data: created ? invitation : invitation[1] };
 
     } catch (error) {
-        console.log("error: ", error);
+        logger.error("error: ", error);
         return { code: 500 };
     }
 };
@@ -113,7 +113,7 @@ const createInvitedUser = async ({ name, email, password, token }) => {
         }
     }
     catch (error) {
-        console.log(error);
+        logger.error(error);
         return { code: 500 };
     }
 };
@@ -139,7 +139,7 @@ const createUser = async ({ name, password, email, role }) => {
             return { code: 200, data: user };
         }
     } catch (error) {
-        console.log(error)
+        logger.error(error)
         return { code: 500 };
     }
 };
@@ -265,7 +265,7 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
 
         return { code: 200, data: invitesSent };
     } catch (error) {
-        console.log("error: ", error);
+        logger.error("error: ", error);
         return { code: 500 };
     }
 };
@@ -302,7 +302,7 @@ const sendOTP = async ({ email }) => {
             });
 
             if (isOTPUsed) {
-                console.log("OTP already registered, generating a new one.");
+                logger.info("OTP already registered, generating a new one.");
             }
         } while (isOTPUsed);
 
@@ -358,7 +358,7 @@ const verifyOTP = async ({ userId, OTP }) => {
         }
         return { code: 200, data: { userId: userId } };
     } catch (error) {
-        console.log(error);
+        logger.error(error);
         return { code: 500 };
     }
 };

@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("../utils/jwt");
 const { User } = require("../models");
+const logger = require("../Logs/logger.js");
 
 
 const getUserProfile = async ({ user }) => {
@@ -16,7 +17,7 @@ const getUserProfile = async ({ user }) => {
         return { code: 200, data: userData };
 
     } catch (error) {
-        console.log("error: ", error);
+        logger.error("error: ", error);
         return { code: 500 };
     }
 };
@@ -64,7 +65,7 @@ const updateUserProfile = async ({ user, image, name, email, password }) => {
         };
 
     } catch (error) {
-        console.log("error: ", error);
+        logger.error("error: ", error);
         return { code: 500 };
     }
 };

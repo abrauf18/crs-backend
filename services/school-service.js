@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("../utils/jwt");
 const { School } = require("../models");
+const logger = require("../Logs/logger.js");
 const { updateUserProfile } = require("./user-service.js");
 
 
@@ -17,7 +18,7 @@ const getSchoolProfile = async ({ user }) => {
         return { code: 200, data: schoolData };
 
     } catch (error) {
-        console.log("error: ", error);
+        logger.error("error: ", error);
         return { code: 500 };
     }
 };
@@ -75,7 +76,7 @@ const updateSchoolAndUserProfile = async ({ user, image, username, email, passwo
         }
 
     } catch (error) {
-        console.log("error: ", error);
+        logger.error("error: ", error);
         return { code: 500 };
     }
 };
