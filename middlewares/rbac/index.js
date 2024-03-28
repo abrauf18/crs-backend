@@ -1,10 +1,10 @@
 const { User } = require("../../models/index.js");
 const jwt = require("../../utils/jwt.js");
-const { errorHandlingWrapper, handleInternalServerError, handleErrorResponse } = require("../../utils/responseHandlers.js")
+const { errorHandlingWrapper, handleInternalServerError, handleErrorResponse } = require("../../utils/response-handlers.js")
 
 const setUser = async (req, res, next) => {
     try {
-        const { accessToken } = req.body;
+        const accessToken = req.body.accessToken? req.body.accessToken: req.headers['accesstoken'];
 
         const result = jwt.verifyAccessToken(accessToken);
     
@@ -22,11 +22,11 @@ const setUser = async (req, res, next) => {
                 next();
             }
         }
-        else if(!result.success && error == "Token expired") {
+        else if(!result.success && result.error == "Token expired") {
             handleErrorResponse(res, 403, "Token expired, please signin");
         } 
         else {
-            return handleInternalServerError(res);
+            return handleErrorResponse(res, 400, "Token invalid, please signin");
         }
     } catch (error) {
         return handleInternalServerError(res);

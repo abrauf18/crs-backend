@@ -1,6 +1,6 @@
-const authService = require("../services/auth.js");
-const { generateAccessToken } = require("../utils/jwt");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/responseHandlers.js")
+const authService = require("../services/auth-service.js");
+const { generateAccessToken } = require("../utils/jwt.js");
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
 
 
 const emailBasedInvite = async (req, res) => {
@@ -30,8 +30,6 @@ const emailBasedInvite = async (req, res) => {
 const emailBasedSignup = async (req, res) => {
   try {
     const token = req.params.token;
-
-    console.log("token: ", token);
 
     const { name, email, password } = req.body
 
