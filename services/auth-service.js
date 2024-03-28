@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 
 const jwt = require("../utils/jwt.js");
-const logger = require("../Logs/logger.js");
+const {logger} = require("../Logs/logger.js");
 const sendEmail = require("../utils/email.js");
 const ROLES = require("../models/roles/index.js");
 const { User, School, Invite, OTP_code, Invite_token } = require("../models/index.js");
@@ -61,7 +61,7 @@ const inviteUser = async ({ name, email, role, user }) => {
         return { code: 200, data: created ? invitation : invitation[1] };
 
     } catch (error) {
-        logger.error("error: ", error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -113,7 +113,7 @@ const createInvitedUser = async ({ name, email, password, token }) => {
         }
     }
     catch (error) {
-        logger.error(error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -139,7 +139,7 @@ const createUser = async ({ name, password, email, role }) => {
             return { code: 200, data: user };
         }
     } catch (error) {
-        logger.error(error)
+        logger.error(error?.message || 'An error occurred, but no error message was provided')
         return { code: 500 };
     }
 };
@@ -265,7 +265,7 @@ const sendInviteToTeacher = async ({ schoolOwnerEmail, invites }) => {
 
         return { code: 200, data: invitesSent };
     } catch (error) {
-        logger.error("error: ", error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -358,7 +358,7 @@ const verifyOTP = async ({ userId, OTP }) => {
         }
         return { code: 200, data: { userId: userId } };
     } catch (error) {
-        logger.error(error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
