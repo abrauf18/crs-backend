@@ -1,6 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
-const ROLES = require("./Roles")
+const ROLES = require("./roles")
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     /**
@@ -37,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM(ROLES.STUDENT, ROLES.TEACHER, ROLES.SCHOOL, ROLES.ADMIN),
         allowNull: false,
       },
+      image: {
+        type: DataTypes.STRING,
+        defaultValue:'https://crs-data-storage-bucket.s3.ap-southeast-2.amazonaws.com/ProfilePictures/defaultImage.JPG',
+        allowNull: false,
+      }
     },
     {
       sequelize,

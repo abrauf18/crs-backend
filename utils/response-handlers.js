@@ -1,3 +1,5 @@
+const logger = require("../Logs/logger.js");
+
 const handleInternalServerError = (res) => {
     res.status(500).json({
         status: "error",
@@ -24,7 +26,7 @@ const handleSuccessResponse = (res, code = 200, data, cookieDetails) => {
         }
 
     } catch (error) {
-        console.log(error);
+        logger.error(error);
         handleInternalServerError(res);
     }
 }
@@ -36,7 +38,7 @@ const handleErrorResponse = (res, code = 400, message) => {
             message: message
         });
     } catch (error) {
-        console.log(error);
+        logger.error(error);
         handleInternalServerError(res);
     }
 }
