@@ -1,6 +1,6 @@
 const schoolService = require("../services/school-service.js");
 const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
-const logger = require("../Logs/logger.js");
+const {logger} = require("../Logs/logger.js");
 
 const getSchoolProfile = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ const getSchoolProfile = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error(error);
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     return handleInternalServerError(res);
   }
 };
@@ -39,7 +39,7 @@ const updateSchoolAndUserProfile = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error(error);
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     return handleInternalServerError(res);
   }
 };

@@ -14,7 +14,7 @@ const getUserProfile = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error(error.message);
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     return handleInternalServerError(res);
   }
 };
@@ -37,7 +37,7 @@ const updateUserProfile = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error(error.message);
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     return handleInternalServerError(res);
   }
 };
@@ -55,7 +55,7 @@ const getAllUsersProfile = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error(error.message);
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     return handleInternalServerError(res);
   }
 };
@@ -77,7 +77,7 @@ const updateAnotherUsersProfile = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error(error.message);
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     return handleInternalServerError(res);
   }
 };

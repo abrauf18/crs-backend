@@ -10,7 +10,7 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
         }
         next();
     } catch (error) {
-        logger.error(error.message);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         handleInternalServerError(res);
     }
 };

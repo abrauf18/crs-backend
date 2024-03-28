@@ -18,7 +18,7 @@ const getUserProfile = async ({ user }) => {
         return { code: 200, data: userData };
 
     } catch (error) {
-        logger.error(error.message);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -66,7 +66,7 @@ const updateUserProfile = async ({ user, image, name, email, password }) => {
         };
 
     } catch (error) {
-        logger.error(error.message);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -84,7 +84,7 @@ const getAllUsersProfile = async ({user}) => {
         return { code: 200, data: usersData };
 
     } catch (error) {
-        logger.error(error.message);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -120,7 +120,7 @@ const updateAnotherUsersProfile = async ({ userId, image, name, email, role }) =
         };
 
     } catch (error) {
-        logger.error(error.message);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
