@@ -1,6 +1,6 @@
 const Joi = require('joi');
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
-const logger = require("../../Logs/logger");
+const {logger} = require("../../Logs/logger");
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {
@@ -10,7 +10,7 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
         }
         next();
     } catch (error) {
-        logger.error(error);
+        logger.error(error.message);
         handleInternalServerError(res);
     }
 };
@@ -25,6 +25,18 @@ const updateUserProfile = createSchemaMiddleware(
     })
 );
 
+const updateAnotherUsersProfile = createSchemaMiddleware(
+    Joi.object({
+        userId: Joi.string().guid().required(),
+        email: Joi.string().email().required(),
+        name: Joi.string().required(),
+        image: Joi.string().required(),
+        role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
+        accessToken: Joi.string().required()
+    })
+);
+
 module.exports = {
     updateUserProfile,
+    updateAnotherUsersProfile
 };
