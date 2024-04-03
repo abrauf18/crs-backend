@@ -1,16 +1,17 @@
 const Joi = require('joi');
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
-const logger = require("../../Logs/logger");
+const {logger} = require("../../Logs/logger");
 
 const createSchemaMiddleware = (schema) => async (req, res, next) => {
     try {
         const { error } = schema.validate(req.body);
         if (error) {
+            logger.error(error.details[0].message);
             return handleErrorResponse(res, 400, error.details[0].message);
         }
         next();
     } catch (error) {
-        logger.error(error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         handleInternalServerError(res);
     }
 };

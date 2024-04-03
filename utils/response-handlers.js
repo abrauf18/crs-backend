@@ -1,4 +1,4 @@
-const logger = require("../Logs/logger.js");
+const {logger} = require("../Logs/logger.js");
 
 const handleInternalServerError = (res) => {
     res.status(500).json({
@@ -26,7 +26,7 @@ const handleSuccessResponse = (res, code = 200, data, cookieDetails) => {
         }
 
     } catch (error) {
-        logger.error(error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         handleInternalServerError(res);
     }
 }
@@ -38,7 +38,7 @@ const handleErrorResponse = (res, code = 400, message) => {
             message: message
         });
     } catch (error) {
-        logger.error(error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         handleInternalServerError(res);
     }
 }
