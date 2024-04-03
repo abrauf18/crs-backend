@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("../utils/jwt");
 const { School } = require("../models");
-const logger = require("../Logs/logger.js");
+const {logger} = require("../Logs/logger.js");
 const { updateUserProfile } = require("./user-service.js");
 
 
@@ -18,7 +18,7 @@ const getSchoolProfile = async ({ user }) => {
         return { code: 200, data: schoolData };
 
     } catch (error) {
-        logger.error("error: ", error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };
@@ -76,7 +76,7 @@ const updateSchoolAndUserProfile = async ({ user, image, username, email, passwo
         }
 
     } catch (error) {
-        logger.error("error: ", error);
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
 };

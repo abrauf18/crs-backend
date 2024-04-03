@@ -43,8 +43,8 @@ db.sequelize
   .then(() => {
     logger.info("Succesfully initialized DB");
   })
-  .catch((err) => {
-    logger.error(err);
+  .catch((error) => {
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
     logger.error("Error while connecting to the database from DB.sequelize");
   });
 
