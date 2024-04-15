@@ -3,7 +3,7 @@ const { handleInternalServerError, handleErrorResponse } = require('../../../uti
 
 const verifyHeaderAccessToken = async (req, res, next) => {
     try {
-        const data = {accessToken: req.headers['accesstoken']}
+        const data = {accessToken: req.headers['accesstoken']} // in headers casing is ignored
 
         const schema = Joi.object({
             accessToken: Joi.string().required(),
