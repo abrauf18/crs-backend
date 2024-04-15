@@ -26,6 +26,7 @@ router.get(
     sharedValidator.verifyHeaderAccessToken,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    userValidation.getAllUsersProfile,
     userController.getAllUsersProfile
 );
 
@@ -35,6 +36,14 @@ router.post(
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
     userController.updateAnotherUsersProfile
+);
+
+router.delete(
+    "/deleteAnotherUsersProfile",
+    userValidation.deleteAnotherUsersProfile,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    userController.deleteAnotherUsersProfile
 );
 
 module.exports = router;
