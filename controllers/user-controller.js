@@ -44,8 +44,9 @@ const updateUserProfile = async (req, res) => {
 
 const getAllUsersProfile = async (req, res) => {
   try {
+    const {page, limit, orderBy, sortBy, keyword, role} = req.query;
 
-    const reply = await userService.getAllUsersProfile({user: req.user});
+    const reply = await userService.getAllUsersProfile({user: req.user, page, limit, orderBy, sortBy, keyword, role});
 
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
@@ -82,9 +83,32 @@ const updateAnotherUsersProfile = async (req, res) => {
   }
 };
 
+const deleteAnotherUsersProfile = async (req, res) => {
+  try {
+    const { userid } = req.headers;
+
+    const reply = await userService.deleteAnotherUsersProfile({ userId: userid });
+    
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    else if (reply.code == 404) {
+      return handleErrorResponse(res, 404, "User not found");
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
+    return handleInternalServerError(res);
+  }
+};
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
   getAllUsersProfile,
   updateAnotherUsersProfile,
+  deleteAnotherUsersProfile,
 };

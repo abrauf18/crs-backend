@@ -1,3 +1,4 @@
+const { logger } = require("../Logs/logger.js");
 const authService = require("../services/auth-service.js");
 const { generateAccessToken } = require("../utils/jwt.js");
 const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
@@ -116,6 +117,7 @@ const login = async (req, res) => {
       return handleErrorResponse(res, 404, "Invalid email");
     }
     else if (reply.code == 409) {
+      logger.error("Incorrect password");
       return handleErrorResponse(res, 409, "Incorrect password");
     }
     else {
@@ -123,6 +125,7 @@ const login = async (req, res) => {
     }
   }
   catch (error) {
+    logger.error(error.message);
     return handleInternalServerError(res);
   }
 };
