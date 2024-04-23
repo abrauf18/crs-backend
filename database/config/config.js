@@ -2,23 +2,42 @@ require('dotenv').config();
 
 module.exports = {
   "development": {
-    "database": "crs",
-    "username": "postgres",
-    "password": "password",
-    "dialect": "postgres"
+    "username": process.env.AWS_USERNAME,
+    "password": process.env.AWS_PASSWORD,
+    "database": process.env.AWS_DATABASE,
+    "host": process.env.AWS_HOST,
+    "dialect": process.env.AWS_DIALECT,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
   },
   "test": {
-    "username": "root",
-    "password": null,
-    "database": "database_test",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "username": process.env.AWS_USERNAME,
+    "password": process.env.AWS_PASSWORD,
+    "database": process.env.AWS_DATABASE,
+    "host": process.env.AWS_HOST,
+    "dialect": process.env.AWS_DIALECT,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
   },
   "production": {
-    "username": "root",
-    "password": null,
-    "database": "database_production",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
-  }
+    "username": process.env.AWS_USERNAME,
+    "password": process.env.AWS_PASSWORD,
+    "database": process.env.AWS_DATABASE,
+    "host": process.env.AWS_HOST,
+    "dialect": process.env.AWS_DIALECT,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  },
 }

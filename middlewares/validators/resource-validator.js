@@ -1,0 +1,99 @@
+const Joi = require('joi');
+const {logger} = require("../../Logs/logger");
+const { RESOURCE_TYPES, RESOURCE_STATUS } = require('../../utils/enumTypes');
+const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
+
+const createSchemaMiddleware = (schema, target = 'body') => async (req, res, next) => {
+    try {
+        const { error } = schema.validate(req[target]);
+        if (error) {
+            return handleErrorResponse(res, 400, error.details[0].message);
+        }
+        next();
+    } catch (error) {
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
+        handleInternalServerError(res);
+    }
+};
+
+const createResource = createSchemaMiddleware(
+    Joi.object({
+        name: Joi.string().required(),
+        url: Joi.string().required(),
+        type: Joi.string().valid(
+            RESOURCE_TYPES.SLIDESHOW, 
+            RESOURCE_TYPES.VIDEO, 
+            RESOURCE_TYPES.EXIT_TICKET_TEST, 
+            RESOURCE_TYPES.WORKSHEET, 
+            RESOURCE_TYPES.QUIZ,
+            RESOURCE_TYPES.ASSIGNMENT,
+          ).required(),
+        topic: Joi.string().required(),
+        accessToken: Joi.string().required()
+    })
+);
+
+const deleteResource = createSchemaMiddleware(
+    Joi.object({
+        resourceid: Joi.string().guid().required(), // in headers casing is ignored
+        accesstoken: Joi.string().required() // in headers casing is ignored
+    }).unknown(), 'headers'
+);
+
+const getResources = createSchemaMiddleware(
+    Joi.object({
+        type: Joi.string().valid(
+            RESOURCE_TYPES.SLIDESHOW, 
+            RESOURCE_TYPES.VIDEO, 
+            RESOURCE_TYPES.EXIT_TICKET_TEST, 
+            RESOURCE_TYPES.WORKSHEET, 
+            RESOURCE_TYPES.QUIZ,
+            RESOURCE_TYPES.ASSIGNMENT,
+          ).allow('').optional(),
+        topic: Joi.string().allow('').optional(),
+        page: Joi.number().integer().min(1).optional(),
+        limit: Joi.number().integer().min(1).optional(),
+        orderBy: Joi.string().valid('createdAt', 'name', '').optional(),
+        sortBy: Joi.string().valid('asc', 'desc', '').optional(),
+      }).unknown(), 'query'
+);
+
+const getResource = createSchemaMiddleware(
+    Joi.object({
+        resourceid: Joi.string().guid().required(), // in headers casing is ignored
+        accesstoken: Joi.string().required() // in headers casing is ignored
+    }).unknown(), 'headers'
+);
+
+const getResourceCount = createSchemaMiddleware(
+    Joi.object({
+        topic: Joi.string().required(), // in headers casing is ignored
+        accesstoken: Joi.string().required() // in headers casing is ignored
+    }).unknown(), 'headers'
+);
+
+const updateResource = createSchemaMiddleware(
+    Joi.object({
+        resourceId: Joi.string().guid().required(),
+        name: Joi.string().required(),
+        type: Joi.string().valid(
+            RESOURCE_TYPES.SLIDESHOW, 
+            RESOURCE_TYPES.VIDEO, 
+            RESOURCE_TYPES.EXIT_TICKET_TEST, 
+            RESOURCE_TYPES.WORKSHEET, 
+            RESOURCE_TYPES.QUIZ,
+            RESOURCE_TYPES.ASSIGNMENT,
+          ).required(),
+        topic: Joi.string().required(),
+        accessToken: Joi.string().required()
+    })
+);
+
+module.exports = {
+    createResource,
+    deleteResource,
+    getResourceCount,
+    getResources,
+    getResource,
+    updateResource,
+};
