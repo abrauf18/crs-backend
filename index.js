@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser")
 const authRouter = require("./routes/auth-routes");
 const userRouter = require("./routes/user-routes");
 const schoolRouter = require("./routes/school-routes");
+const resourceRouter = require("./routes/resource-routes");
 const { logger, morganMiddleware } = require('./Logs/logger');
 const cors = require('cors');
 const db = require("./models");
@@ -31,6 +32,7 @@ app.use(cookieParser());
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
 app.use("/school", schoolRouter);
+app.use("/resource", resourceRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
