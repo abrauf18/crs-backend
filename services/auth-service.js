@@ -50,7 +50,7 @@ const inviteUser = async ({ name, email, role, user }) => {
 
         const html = genericSignupInvitation(name, role, token);
 
-        const invite = await sendEmail({
+        await sendEmail({
             from: "CRS",
             email: email,
             subject: "Invitation from CRS",
