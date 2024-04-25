@@ -1,9 +1,9 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Resource } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js")
+const { Resource, Video } = require("../models/index.js");
+const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const createResource = async ({ name, url, type, topic }) => {
+const createResource = async ({ name, url, type, topic, thumbnailURL }) => {
     try {
 
         const resource = await Resource.create({
@@ -12,6 +12,16 @@ const createResource = async ({ name, url, type, topic }) => {
             type,
             topic,
         });
+
+        if (type === RESOURCE_TYPES.VIDEO) {
+            
+            const videoAttributes = await Video.create({
+                resourceId: resource.id,
+                thumbnailURL,
+            })
+    
+            return { code: 200, data: {resource, videoAttributes: {...videoAttributes.dataValues}} };
+        }
 
         return { code: 200, data: resource };
 
