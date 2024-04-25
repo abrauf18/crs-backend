@@ -29,7 +29,12 @@ const createResource = createSchemaMiddleware(
             RESOURCE_TYPES.ASSIGNMENT,
           ).required(),
         topic: Joi.string().required(),
-        accessToken: Joi.string().required()
+        accessToken: Joi.string().required(),
+        thumbnailURL: Joi.string().when('type', {
+            is: RESOURCE_TYPES.VIDEO,
+            then: Joi.required(),
+            otherwise: Joi.optional()
+        })
     })
 );
 
