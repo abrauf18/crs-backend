@@ -107,7 +107,7 @@ const getVideo = async ({ videoId }) => {
             include: [{
                 model: Resource,
                 as: 'resource',
-                attributes: ['name'],
+                attributes: ['name', 'url'],
             }, {
                 model: Question,
                 as: 'questions',
@@ -125,7 +125,7 @@ const getVideo = async ({ videoId }) => {
         return {
             code: 200,
             data: {
-                video: { ...videoData, name: resource.name, questions, topics }
+                video: { ...videoData, name: resource.name, videoUrl: resource.url, questions, topics }
             }
         };
     } catch (error) {
