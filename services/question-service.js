@@ -7,8 +7,8 @@ const question = require("../models/question.js");
 const createVideoQuestions = async ({ videoId, questions }) => {
     try {
         const createdQuestions = await Promise.all(questions.map(question => {
-            const { statement, options, totalMarks, popupTime } = question;
-            return Question.create({ videoId, statement, options, totalMarks, popupTime });
+            const { statement, options, totalMarks, popUpTime } = question;
+            return Question.create({ videoId, statement, options, totalMarks, popUpTime });
         }));
 
         return { code: 200, data: createdQuestions };

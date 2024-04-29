@@ -47,7 +47,7 @@ const createVideoQuestions = async (req, res, next) => {
                         otherwise: Joi.optional().allow("")
                     }),
                     totalMarks: Joi.number().integer().min(0).required(),
-                    popupTime: Joi.string().pattern(/^(?:[01]\d|2[0-3]):(?:[0-5]\d):(?:[0-5]\d)$/).message("Popup Time: pattern 00:00:00 not followed").required(),
+                    popUpTime: Joi.string().pattern(/^(?:[01]\d|2[0-3]):(?:[0-5]\d):(?:[0-5]\d)$/).message("Popup Time: pattern 00:00:00 not followed").required(),
                 })
             ),
             accessToken: Joi.string().required()
