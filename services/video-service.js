@@ -134,6 +134,42 @@ const getVideo = async ({ videoId }) => {
     }
 };
 
+const updateVideo = async ({ videoId, name, thumbnailURL, questions, topics }) => {
+    try {
+        const video = await Video.findByPk(videoId);
+        if (!video) {
+            return { code: 404 };
+        }
+
+        if (thumbnailURL) {
+            await video.update( {thumbnailURL} );
+        }
+
+        const resource = await video.getResource();
+        await resource.update({ name });
+
+        if (questions) {
+            const oldQuestions = await video.getQuestions();
+
+            for (let question of oldQuestions) {
+                await question.destroy();
+            }
+
+            const newQuestions = await Question.bulkCreate(questions.map(question => ({ ...question, videoId })));
+            await video.setQuestions(newQuestions);
+        }
+
+        if (topics) {
+            await video.update( {topics} );
+        }
+
+        return { code: 200, data: video };
+    } catch (error) {
+        logger.error(error?.message || 'An error occurred while updating the video');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
     getAllVideos,
     createVideo,
@@ -141,4 +177,5 @@ module.exports = {
     deleteVideo,
     getVideo,
     createMinimalVideo,
+    updateVideo,
 };
