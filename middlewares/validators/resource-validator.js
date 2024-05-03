@@ -34,7 +34,8 @@ const createResource = createSchemaMiddleware(
             is: RESOURCE_TYPES.VIDEO,
             then: Joi.required(),
             otherwise: Joi.optional()
-        })
+        }),
+        duration: Joi.string().optional()
     })
 );
 

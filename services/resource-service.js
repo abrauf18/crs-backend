@@ -3,7 +3,7 @@ const { logger } = require("../Logs/logger.js");
 const { Resource, Video } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const createResource = async ({ name, url, type, topic, thumbnailURL }) => {
+const createResource = async ({ name, url, type, topic, thumbnailURL, duration }) => {
     try {
 
         const resource = await Resource.create({
@@ -18,6 +18,7 @@ const createResource = async ({ name, url, type, topic, thumbnailURL }) => {
             const videoAttributes = await Video.create({
                 resourceId: resource.id,
                 thumbnailURL,
+                duration
             })
     
             return { code: 200, data: {resource, videoAttributes: {...videoAttributes.dataValues}} };
@@ -26,6 +27,7 @@ const createResource = async ({ name, url, type, topic, thumbnailURL }) => {
         return { code: 200, data: resource };
 
     } catch (error) {
+        console.log('\n\n\n', error)
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }

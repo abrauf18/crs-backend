@@ -3,9 +3,9 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createResource = async (req, res) => {
     try {
-        const { name, url, type, topic, thumbnailURL = '' } = req.body;
+        const { name, url, type, topic, thumbnailURL = '', duration = '00:00:00' } = req.body;
 
-        const reply = await resourceService.createResource({ name, url, type, topic, thumbnailURL });
+        const reply = await resourceService.createResource({ name, url, type, topic, thumbnailURL, duration });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
