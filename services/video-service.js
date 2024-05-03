@@ -155,7 +155,7 @@ const updateVideo = async ({ videoId, name, thumbnailURL, questions, topics }) =
                 await question.destroy();
             }
 
-            const newQuestions = await Question.bulkCreate(questions.map(question => ({ ...question, videoId })));
+            const newQuestions = await Question.bulkCreate(questions.map(({ id, ...question }) => ({ ...question, videoId })));
             await video.setQuestions(newQuestions);
         }
 
@@ -165,6 +165,7 @@ const updateVideo = async ({ videoId, name, thumbnailURL, questions, topics }) =
 
         return { code: 200, data: video };
     } catch (error) {
+        console.log(error)
         logger.error(error?.message || 'An error occurred while updating the video');
         return { code: 500 };
     }
