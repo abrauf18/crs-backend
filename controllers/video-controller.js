@@ -123,11 +123,27 @@ const getVideo = async (req, res) => {
     }
 };
 
+const updateVideo = async (req, res) => {
+    const { videoId, name, thumbnailURL, questions, topics } = req.body;
+    const reply = await videoService.updateVideo({ videoId, name, thumbnailURL, questions, topics });
+
+    if (reply.code == 200) {
+        return handleSuccessResponse(res, 200, reply.data);
+    }
+    else if (reply.code == 404) {
+        return handleErrorResponse(res, 404, "Video not found");
+    }
+    else {
+        return handleInternalServerError(res);
+    }
+};
+
 module.exports = {
     getAllVideos,
     createVideo,
     addTopicsInVideo,
     deleteVideo,
     getVideo,
-    createMinimalVideo
+    createMinimalVideo,
+    updateVideo
 };

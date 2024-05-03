@@ -55,4 +55,9 @@ router.get(
     videoController.getVideo
 );
 
+router.put(
+    "/updateVideo", 
+    videoController.updateVideo
+);
+
 module.exports = router;
