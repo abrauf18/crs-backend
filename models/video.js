@@ -36,6 +36,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.JSON,
       defaultValue:{},
       allowNull: false,
+    },
+    duration: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: '00:00:00',
     }
   }, {
     sequelize,
