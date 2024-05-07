@@ -95,6 +95,27 @@ const updateResource = createSchemaMiddleware(
     })
 );
 
+const getResourcesByType = createSchemaMiddleware(
+    Joi.object({
+        resourcetype: Joi.string().valid(
+            RESOURCE_TYPES.SLIDESHOW, 
+            RESOURCE_TYPES.VIDEO, 
+            RESOURCE_TYPES.EXIT_TICKET_TEST, 
+            RESOURCE_TYPES.WORKSHEET, 
+            RESOURCE_TYPES.QUIZ,
+            RESOURCE_TYPES.ASSIGNMENT,
+          ).required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const getResourcesByName = createSchemaMiddleware(
+    Joi.object({
+        resourcename: Joi.string().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createResource,
     deleteResource,
@@ -102,4 +123,6 @@ module.exports = {
     getResources,
     getResource,
     updateResource,
+    getResourcesByType,
+    getResourcesByName
 };
