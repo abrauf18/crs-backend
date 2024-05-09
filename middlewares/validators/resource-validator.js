@@ -112,6 +112,14 @@ const getResourcesByType = createSchemaMiddleware(
 const getResourcesByName = createSchemaMiddleware(
     Joi.object({
         resourcename: Joi.string().required(),
+        resourcetype: Joi.string().valid(
+            RESOURCE_TYPES.SLIDESHOW, 
+            RESOURCE_TYPES.VIDEO, 
+            RESOURCE_TYPES.EXIT_TICKET_TEST, 
+            RESOURCE_TYPES.WORKSHEET, 
+            RESOURCE_TYPES.QUIZ,
+            RESOURCE_TYPES.ASSIGNMENT,
+          ).required(),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
 );
