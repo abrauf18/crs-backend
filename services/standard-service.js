@@ -1,6 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Standard, DailyUpload, Resource } = require("../models/index.js");
+const { Standard, DailyUpload, Resource, Video } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createStandard = async ({ name, description, courseLength, dailyUploads }) => {
@@ -83,7 +83,12 @@ const getStandard = async ({ standardId }) => {
                 include: [{
                     model: Resource,
                     as: 'resource',
-                    attributes: ['id', 'name', 'type']
+                    attributes: ['id', 'name', 'type', 'topic'],
+                    include: [{
+                        model: Video,
+                        as: 'video',
+                        attributes: ['id']
+                    }]
                 }]
             }]
         });
@@ -115,7 +120,9 @@ const getStandard = async ({ standardId }) => {
             topics: uploadsByDate[date].map(resource => ({
                 resourceId: resource.id,
                 name: resource.name,
-                type: resource.type
+                type: resource.type,
+                topic: resource.topic,
+                videoId: resource.video ? resource.video.id : null
             }))
         }));
 

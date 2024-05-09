@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      Resource.hasOne(models.Video, {foreignKey: 'resourceId', as: 'video'});
       // define association here
     }
   }
