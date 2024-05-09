@@ -3,8 +3,15 @@ const { logger } = require("../Logs/logger.js");
 const { Standard, DailyUpload, Resource, Video } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const createStandard = async ({ name, description, courseLength, dailyUploads }) => {
+const createStandard = async ({ name, description, dailyUploads }) => {
     try {
+        const dates = dailyUploads.map(upload => new Date(upload.accessDate));
+        const minDate = new Date(Math.min.apply(null, dates));
+        const maxDate = new Date(Math.max.apply(null, dates));
+
+        const diffTime = Math.abs(maxDate - minDate);
+        const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
+
         const createdStandard = await Standard.create({name, description, courseLength});
         
         const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
@@ -23,7 +30,7 @@ const createStandard = async ({ name, description, courseLength, dailyUploads })
     }
 };
 
-const updateStandard = async ({ standardId, name, description, courseLength, dailyUploads }) => {
+const updateStandard = async ({ standardId, name, description, dailyUploads }) => {
     try {
         const standard = await Standard.findByPk(standardId);
         if (!standard) {
@@ -36,10 +43,6 @@ const updateStandard = async ({ standardId, name, description, courseLength, dai
 
         if (description) {
             await standard.update( {description} );
-        }
-
-        if (courseLength) {
-            await standard.update( {courseLength} );
         }
 
         let newDailyUploads = [];
@@ -56,6 +59,14 @@ const updateStandard = async ({ standardId, name, description, courseLength, dai
             newDailyUploads = await DailyUpload.bulkCreate(
                 dailyUploads.map((upload) => ({ ...upload, standardId: standard.id }))
             );
+
+            const dates = dailyUploads.map(upload => new Date(upload.accessDate));
+            const minDate = new Date(Math.min.apply(null, dates));
+            const maxDate = new Date(Math.max.apply(null, dates));
+
+            const diffTime = Math.abs(maxDate - minDate);
+            const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
+            await standard.update( {courseLength} );
 
             // await standard.setDailyUploads(newDailyUploads);
         }
