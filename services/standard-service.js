@@ -216,7 +216,7 @@ const getAllSummarizedStandards = async () => {
             ]
         });
 
-        return { code: 200, data: standards };
+        return { code: 200, data: {standardsCount: totalStandards, allStandards: standards} };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
