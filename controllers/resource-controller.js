@@ -152,9 +152,9 @@ const getResourcesByType = async (req, res) => {
 
 const getResourcesByName = async (req, res) => {
     try {
-        const { resourcename } = req.headers;
+        const { resourcename, resourcetype } = req.headers;
 
-        const reply = await resourceService.getResourcesByName({ resourceName: resourcename });
+        const reply = await resourceService.getResourcesByName({ resourceName: resourcename, resourceType: resourcetype});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);

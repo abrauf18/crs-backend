@@ -180,13 +180,14 @@ const getResourcesByType = async ({ resourceType }) => {
     }
 };
 
-const getResourcesByName = async ({ resourceName }) => {
+const getResourcesByName = async ({ resourceName, resourceType }) => {
     try {
         const resources = await Resource.findAll({
             where: {
-              name: {
-                [Sequelize.Op.like]: '%' + resourceName + '%'
-              }
+                name: {
+                    [Sequelize.Op.like]: '%' + resourceName + '%'
+                },
+                type: resourceType
             }
         });
 
