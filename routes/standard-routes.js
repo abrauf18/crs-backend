@@ -30,4 +30,12 @@ router.get(
     standardController.getStandard
 );
 
+router.get(
+    "/getAllSummarizedStandards",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    standardController.getAllSummarizedStandards
+);
+
+
 module.exports = router;
