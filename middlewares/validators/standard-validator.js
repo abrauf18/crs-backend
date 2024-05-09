@@ -22,13 +22,36 @@ const createStandard = createSchemaMiddleware(
         description: Joi.string().required(),
         courseLength: Joi.string().required(),
         dailyUploads: Joi.array().items(Joi.object({
-            resourceId: Joi.string().guid({ version: 'uuidv4' }).required(),
-            accessDate: Joi.date().required(),
+            resourceId: Joi.string().guid().required(),
+            accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
         })).required(),
         accessToken: Joi.string().required()
     })
 );
 
+const updateStandard = createSchemaMiddleware(
+    Joi.object({
+        standardId: Joi.string().guid().required(),
+        name: Joi.string().required(),
+        description: Joi.string().required(),
+        courseLength: Joi.string().required(),
+        dailyUploads: Joi.array().items(Joi.object({
+            resourceId: Joi.string().guid().required(),
+            accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+        })).required(),
+        accessToken: Joi.string().required()
+    })
+);
+
+const getStandard = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
-    createStandard
+    createStandard,
+    updateStandard,
+    getStandard
 };

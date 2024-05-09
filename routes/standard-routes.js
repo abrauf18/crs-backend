@@ -14,4 +14,20 @@ router.post(
     standardController.createStandard
 );
 
+router.put(
+    "/updateStandard",
+    standardValidation.updateStandard,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    standardController.updateStandard
+);
+
+router.get(
+    "/getStandard",
+    standardValidation.getStandard,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    standardController.getStandard
+);
+
 module.exports = router;

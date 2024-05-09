@@ -1,6 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Standard, DailyUpload } = require("../models/index.js");
+const { Standard, DailyUpload, Resource } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createStandard = async ({ name, description, courseLength, dailyUploads }) => {
@@ -18,11 +18,123 @@ const createStandard = async ({ name, description, courseLength, dailyUploads })
 
         return { code: 200, data: standard };
     } catch (error) {
-        logger.error(error?.message || 'An error occurred while updating the video');
+        logger.error(error?.message || 'An error occurred while updating the standard');
+        return { code: 500 };
+    }
+};
+
+const updateStandard = async ({ standardId, name, description, courseLength, dailyUploads }) => {
+    try {
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404 };
+        }
+
+        if (name) {
+            await standard.update( {name} );
+        }
+
+        if (description) {
+            await standard.update( {description} );
+        }
+
+        if (courseLength) {
+            await standard.update( {courseLength} );
+        }
+
+        let newDailyUploads = [];
+        if (dailyUploads) {
+            const oldDailyUploads = await standard.getDailyUploads();
+
+            for (let dailyUpload of oldDailyUploads) {
+                await dailyUpload.destroy();
+            }
+
+            // newDailyUploads = await Promise.all(dailyUploads.map(upload => {
+            //     return DailyUpload.create({ ...upload, standardId: standard.id });
+            // }));
+            newDailyUploads = await DailyUpload.bulkCreate(
+                dailyUploads.map((upload) => ({ ...upload, standardId: standard.id }))
+            );
+
+            // await standard.setDailyUploads(newDailyUploads);
+        }
+
+        const updatedStandard = {
+            ...standard.toJSON(),
+            dailyUploads: newDailyUploads.map(upload => upload.toJSON())
+        };
+
+        return { code: 200, data: updatedStandard };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while updating the standard');
+        return { code: 500 };
+    }
+};
+
+const getStandard = async ({ standardId }) => {
+    try {
+        const standard = await Standard.findByPk(standardId, {
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['accessDate'],
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id', 'name', 'type']
+                }]
+            }]
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        // Transform the data
+        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
+            const date = upload.accessDate;
+            if (!result[date]) {
+                result[date] = [];
+            }
+            if (upload.resource) {
+                result[date].push(upload.resource);
+            }
+            return result;
+        }, {});
+
+        // const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
+        //     accessDate: date,
+        //     resources: uploadsByDate[date]
+        // }));
+
+        // as required on frontend
+        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
+            date: date,
+            topics: uploadsByDate[date].map(resource => ({
+                resourceId: resource.id,
+                name: resource.name,
+                type: resource.type
+            }))
+        }));
+
+        const result = {
+            name: standard.name,
+            description: standard.description,
+            dailyUploads: transformedDailyUploads
+        };
+
+        return { code: 200, data: result };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard');
         return { code: 500 };
     }
 };
 
 module.exports = {
-  createStandard
+  createStandard,
+  updateStandard,
+  getStandard,
 };
