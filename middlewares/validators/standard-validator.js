@@ -20,7 +20,6 @@ const createStandard = createSchemaMiddleware(
     Joi.object({
         name: Joi.string().required(),
         description: Joi.string().required(),
-        courseLength: Joi.string().required(),
         dailyUploads: Joi.array().items(Joi.object({
             resourceId: Joi.string().guid().required(),
             accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
@@ -34,7 +33,6 @@ const updateStandard = createSchemaMiddleware(
         standardId: Joi.string().guid().required(),
         name: Joi.string().required(),
         description: Joi.string().required(),
-        courseLength: Joi.string().required(),
         dailyUploads: Joi.array().items(Joi.object({
             resourceId: Joi.string().guid().required(),
             accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
