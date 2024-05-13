@@ -154,41 +154,6 @@ const getStandard = async ({ standardId }) => {
 const getAllSummarizedStandards = async () => {
     try {
         const totalStandards = await Standard.count();
-        // const standards = await Standard.findAll({
-        //     include: [
-        //         {
-        //             model: DailyUpload,
-        //             as: 'dailyUploads',
-        //             include: [
-        //                 {
-        //                     model: Resource,
-        //                     as: 'resource'
-        //                 }
-        //             ]
-        //         }
-        //     ]
-        // });
-
-        // const standards = await Standard.findAll({
-        //     attributes: ['id', 'name', 'courseLength',
-        //         [Sequelize.fn('COUNT', Sequelize.literal('CASE WHEN "dailyUploads->resource"."type" = \'video\' THEN 1 ELSE 0 END')), 'totalVideos'],
-        //         [Sequelize.fn('COUNT', Sequelize.literal('CASE WHEN "dailyUploads->resource"."type" != \'video\' THEN 1 ELSE 0 END')), 'totalNonVideoResources']
-        //     ],
-        //     include: [
-        //         {
-        //             model: DailyUpload,
-        //             as: 'dailyUploads',
-        //             include: [
-        //                 {
-        //                     model: Resource,
-        //                     as: 'resource',
-        //                     attributes: []
-        //                 }
-        //             ]
-        //         }
-        //     ],
-        //     group: ['Standard.id', 'dailyUploads.id', 'dailyUploads->resource.id']
-        // });
 
         const standards = await Standard.findAll({
             attributes: [
@@ -227,29 +192,39 @@ const getAllSummarizedStandards = async () => {
 
 // const getAllSummarizedStandards = async () => {
 //     try {
-//         const standards = await Standard.findAll(); // Fetch all standards
-//         const standardSummaries = [];
-        
-//         for (const standard of standards) {
-//             const dailyUploads = await standard.getDailyUploads(); // Fetch associated daily uploads
-//             const resourceIds = dailyUploads.map(upload => upload.resourceId);
-//             const resources = await Resource.findAll({ where: { id: resourceIds } }); // Fetch associated resources
-//             // console.log('\n\n\n\nfirst')
-//             const numVideos = resources.filter(resource => resource.type === RESOURCE_TYPES.VIDEO).length;
-//             const numNonVideoResources = resources.filter(resource => resource.type !== RESOURCE_TYPES.VIDEO).length;
-//             // console.log('\n\n\n\second')
-            
-//             const summary = {
+//         const totalStandards = await Standard.count();
+
+//         const standards = await Standard.findAll({
+//             include: [
+//                 {
+//                     model: DailyUpload,
+//                     as: 'dailyUploads',
+//                     include: [
+//                         {
+//                             model: Resource,
+//                             as: 'resource'
+//                         }
+//                     ]
+//                 }
+//             ]
+//         });
+
+//         const standardSummaries = standards.map(standard => {
+//             const dailyUploads = standard.dailyUploads;
+//             const resources = dailyUploads.map(upload => upload.resource);
+//             const totalVideoUploads = resources.filter(resource => resource.type === RESOURCE_TYPES.VIDEO).length;
+//             const totalNonVideoUploads = resources.filter(resource => resource.type !== RESOURCE_TYPES.VIDEO).length;
+
+//             return {
 //                 id: standard.id,
+//                 name: standard.name,
 //                 courseLength: standard.courseLength,
-//                 numVideos,
-//                 numNonVideoResources
+//                 totalVideoUploads,
+//                 totalNonVideoUploads
 //             };
-            
-//             standardSummaries.push(summary);
-//         }
-        
-//         return standardSummaries;
+//         });
+
+//         return { code: 200, data: {standardsCount: totalStandards, allStandards: standardSummaries} };
 //     } catch (error) {
 //         console.log('\n\n\n\n', error);
 //         logger.error(error?.message || 'An error occurred while fetching the summarized standards');
