@@ -26,14 +26,14 @@ router.get(
     "/getStandard",
     standardValidation.getStandard,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     standardController.getStandard
 );
 
 router.get(
     "/getAllSummarizedStandards",
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     standardController.getAllSummarizedStandards
 );
 
