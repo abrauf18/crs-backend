@@ -7,14 +7,13 @@ const createClassroom = async ({name, teacherId}) => {
     try {
         const classroom = await Classroom.create({name, teacherId});
         if (!classroom) {
-            console.log('\n\n\n\n', 'no classroom');
             return { code: 500 };
         }
         return { code: 200, data: classroom };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
-        logger.error(error?.message || 'An error occurred while getting the videos');
+        logger.error(error?.message || 'An error occurred while creating classroom');
         return { code: 500 };
     }
 };
@@ -22,20 +21,32 @@ const createClassroom = async ({name, teacherId}) => {
 const getClassroom = async ({classroomId}) => {
     try {
         const classroom = await Classroom.findOne({where: {id: classroomId}});
-        if (!classroom) {
-            console.log('\n\n\n\n', 'no classroom');
-            return { code: 404 };
-        }
         return { code: 200, data: classroom };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
-        logger.error(error?.message || 'An error occurred while getting the videos');
+        logger.error(error?.message || 'An error occurred while getting the classroom');
         return { code: 500 };
     }
 };
 
+const getAllClassroomsOfTeacher = async ({teacherId}) => {
+    try {
+        const classrooms = await Classroom.findAll({where: { teacherId }});
+        const options = classrooms.map(classroom => {
+            return { label: classroom.id, value: classroom.name };
+        });
+        return { code: 200, data: options };
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting all classroom of teacher');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
-    getClassroom
+    getClassroom,
+    getAllClassroomsOfTeacher
 };
