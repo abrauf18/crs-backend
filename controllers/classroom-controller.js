@@ -52,8 +52,32 @@ const getAllClassroomsOfTeacher = async (req, res) => {
     }
 };
 
+const assignStandardToClassrooms = async (req, res) => {
+    try {
+        const { classroomIds, standardId } = req.body;
+        const reply = await classroomService.assignStandardToClassrooms({classroomIds, standardId});
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
 module.exports = {
     createClassroom,
     getClassroom,
-    getAllClassroomsOfTeacher
+    getAllClassroomsOfTeacher,
+    assignStandardToClassrooms
 };
