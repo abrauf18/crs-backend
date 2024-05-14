@@ -35,7 +35,25 @@ const getClassroom = async (req, res) => {
     }
 };
 
+const getAllClassroomsOfTeacher = async (req, res) => {
+    try {
+        const { id } = req.user;
+        const reply = await classroomService.getAllClassroomsOfTeacher({ teacherId: id });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
 module.exports = {
     createClassroom,
     getClassroom,
+    getAllClassroomsOfTeacher
 };

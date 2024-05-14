@@ -22,4 +22,12 @@ router.get(
     classroomController.getClassroom
 );
 
+router.get(
+    "/getAllClassroomsOfTeacher",
+    // classroomValidation.getAllClassroomsOfTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.getAllClassroomsOfTeacher
+)
+
 module.exports = router;
