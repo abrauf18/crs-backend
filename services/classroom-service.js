@@ -1,6 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Classroom } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createClassroom = async ({name, teacherId}) => {
@@ -45,8 +45,38 @@ const getAllClassroomsOfTeacher = async ({teacherId}) => {
     }
 }
 
+const assignStandardToClassrooms = async ({classroomIds, standardId}) => {
+    try {
+        const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({where: {id}})));
+        const notFoundIds = classroomIds.filter((id, index) => !classrooms[index]);
+        if (notFoundIds.length > 0) {
+            return { code: 404, message: `Classrooms not found: ${notFoundIds.join(', ')}` };
+        }
+        const standard = await Standard.findOne({where: {id: standardId}});
+        if (!standard) {
+            return { code: 409 };
+        }
+
+        
+        const classroomStandards = await Promise.all(classroomIds.map(async id => {
+            const existingEntry = await ClassroomCourses.findOne({where: {classroomId: id, standardId}});
+            if (!existingEntry) {
+                return ClassroomCourses.create({classroomId: id, standardId});
+            }
+        }));
+
+        return { code: 200, data: classroomStandards};
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while assigning standard to classroom');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
-    getAllClassroomsOfTeacher
+    getAllClassroomsOfTeacher,
+    assignStandardToClassrooms
 };

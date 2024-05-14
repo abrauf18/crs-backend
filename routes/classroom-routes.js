@@ -30,4 +30,12 @@ router.get(
     classroomController.getAllClassroomsOfTeacher
 )
 
+router.post(
+    "/assignStandardToClassrooms",
+    // classroomValidation.assignStandardToClassroom,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.assignStandardToClassrooms
+)
+
 module.exports = router;
