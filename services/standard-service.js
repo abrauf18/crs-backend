@@ -232,9 +232,20 @@ const getAllSummarizedStandards = async () => {
 //     }
 // };
 
+const deleteStandards = async () => {
+    try {
+        await Standard.destroy({ where: {} });
+        return { code: 200 };
+    } catch (error) {
+        logger.error(error?.message || 'An error occurred while deleting the standards');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
   createStandard,
   updateStandard,
   getStandard,
-  getAllSummarizedStandards
+  getAllSummarizedStandards,
+  deleteStandards
 };

@@ -37,5 +37,11 @@ router.get(
     standardController.getAllSummarizedStandards
 );
 
+router.delete(
+    "/deleteStandards",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    standardController.deleteStandards
+);
 
 module.exports = router;
