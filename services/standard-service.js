@@ -242,10 +242,48 @@ const deleteStandards = async () => {
     }
 };
 
+const getSummarizedStandard = async ({ standardId }) => {
+    try {
+        const standard = await Standard.findByPk(standardId, {
+            attributes: [
+                'id',
+                'name',
+                'courseLength',
+                [
+                    Sequelize.literal(`(
+                        SELECT COUNT(*)
+                        FROM "DailyUploads" AS "du"
+                        INNER JOIN "Resources" AS "r" ON "du"."resourceId" = "r"."id"
+                        WHERE "du"."standardId" = "Standard"."id" AND "r"."type" = 'video'
+                    )`),
+                    'totalVideoUploads'
+                ],
+                [
+                    Sequelize.literal(`(
+                        SELECT COUNT(*)
+                        FROM "DailyUploads" AS "du"
+                        INNER JOIN "Resources" AS "r" ON "du"."resourceId" = "r"."id"
+                        WHERE "du"."standardId" = "Standard"."id" AND "r"."type" != 'video'
+                    )`),
+                    'totalNonVideoUploads'
+                ]
+            ]
+        });
+
+        return { code: 200, data: standard };
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting the summarized standard');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
   createStandard,
   updateStandard,
   getStandard,
   getAllSummarizedStandards,
-  deleteStandards
+  deleteStandards,
+  getSummarizedStandard
 };

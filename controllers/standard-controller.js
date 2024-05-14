@@ -92,10 +92,33 @@ const deleteStandards = async (req, res) => {
         return handleInternalServerError(res);
     }
 }
+
+const getSummarizedStandard = async (req, res) => {
+    try {
+        const { standardid } = req.headers;
+
+        const reply = await standardService.getSummarizedStandard({ standardId: standardid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
 module.exports = {
     createStandard,
     updateStandard,
     getStandard,
     getAllSummarizedStandards,
-    deleteStandards
+    deleteStandards,
+    getSummarizedStandard
 };

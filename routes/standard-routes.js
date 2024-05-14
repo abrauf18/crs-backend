@@ -44,4 +44,12 @@ router.delete(
     standardController.deleteStandards
 );
 
+router.get(
+    "/getSummarizedStandard",
+    // standardValidation.getSummarizedStandard,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getSummarizedStandard
+);
+
 module.exports = router;
