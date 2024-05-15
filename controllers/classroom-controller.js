@@ -37,8 +37,8 @@ const getClassroom = async (req, res) => {
 
 const getAllClassroomsOfTeacher = async (req, res) => {
     try {
-        const { id } = req.user;
-        const reply = await classroomService.getAllClassroomsOfTeacher({ teacherId: id });
+        const { teacherid } = req.headers;
+        const reply = await classroomService.getAllClassroomsOfTeacher({ teacherId: teacherid });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
