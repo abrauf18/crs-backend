@@ -47,6 +47,9 @@ const getAllClassroomsOfTeacher = async ({teacherId}) => {
 
 const assignStandardToClassrooms = async ({classroomIds, standardId}) => {
     try {
+        if (new Set(classroomIds).size !== classroomIds.length) {
+            return { code: 400 };
+        }
         const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({where: {id}})));
         const notFoundIds = classroomIds.filter((id, index) => !classrooms[index]);
         if (notFoundIds.length > 0) {
@@ -54,10 +57,24 @@ const assignStandardToClassrooms = async ({classroomIds, standardId}) => {
         }
         const standard = await Standard.findOne({where: {id: standardId}});
         if (!standard) {
-            return { code: 409 };
+            return { code: 405 };
         }
 
-        
+        const classroomsWithStandard = await Classroom.findAll({
+            where: {id: classroomIds},
+            attributes: ['name'],
+            include: [{
+                model: ClassroomCourses,
+                as: 'classroomCourses',
+                where: {standardId},
+                required: true
+            }]
+        });
+        if (classroomsWithStandard.length > 0) {
+            const classroomNames = classroomsWithStandard.map(classroom => classroom.name);
+            return { code: 409, message: `This standard is already assigned to the following classrooms: ${classroomNames.join(', ')}` };
+        }
+
         const classroomStandards = await Promise.all(classroomIds.map(async id => {
             const existingEntry = await ClassroomCourses.findOne({where: {classroomId: id, standardId}});
             if (!existingEntry) {

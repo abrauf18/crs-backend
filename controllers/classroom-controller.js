@@ -60,11 +60,17 @@ const assignStandardToClassrooms = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, "Duplicate classroom are not allowed.");
+        }
         else if (reply.code == 404) {
-            return handleErrorResponse(res, 404, reply.message);
+            return handleErrorResponse(res, 400, reply.message);
+        }
+        else if (reply.code == 405) {
+            return handleErrorResponse(res, 404, "Standard not found");
         }
         else if (reply.code == 409) {
-            return handleErrorResponse(res, 404, "Standard not found");
+            return handleErrorResponse(res, 409, reply.message);
         }
         else {
             return handleInternalServerError(res);
