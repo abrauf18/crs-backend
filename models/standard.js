@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Standard.hasMany(models.DailyUpload, { foreignKey: 'standardId', as: 'dailyUploads' });
+      Standard.hasMany(models.ClassroomCourses, {
+        foreignKey: 'standardId',
+        as: 'classroomCourses',
+      });
     }
   }
   Standard.init({
