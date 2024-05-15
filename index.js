@@ -8,6 +8,7 @@ const resourceRouter = require("./routes/resource-routes");
 const videoRouter = require("./routes/video-routes");
 const questionRouter = require("./routes/question-routes");
 const standardRouter = require("./routes/standard-routes");
+const classroomRouter = require("./routes/classroom-routes");
 const { logger, morganMiddleware } = require('./Logs/logger');
 const cors = require('cors');
 const db = require("./models");
@@ -39,6 +40,7 @@ app.use("/resource", resourceRouter);
 app.use("/video", videoRouter);
 app.use("/question", questionRouter);
 app.use("/standard", standardRouter);
+app.use("/classroom", classroomRouter);
 
 
 app.get("/", (req, res) => {
