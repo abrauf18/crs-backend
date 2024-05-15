@@ -3,48 +3,40 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Classroom extends Model {
+  class ClassroomStudent extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      models.Classroom.hasMany(models.ClassroomStudent, {
+      models.ClassroomStudent.belongsTo(models.Classroom, {
         foreignKey: 'classroomId',
-        as: 'classroomStudents',
-      });
-      models.Classroom.hasMany(models.ClassroomCourses, {
-        foreignKey: 'classroomId',
-        as: 'classroomCourses',
-      });
-      models.Classroom.belongsTo(models.User, {
-        foreignKey: 'teacherId',
-        as: 'teacher',
+        as: 'classroom',
       });
       // define association here
     }
   }
-  Classroom.init({
+  ClassroomStudent.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
       allowNull: false,
     },
-    name:{
-      type: DataTypes.STRING,
+    classroomId: {
+      type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
-    teacherId: {
+    studentId: {
       type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
   }, {
     sequelize,
-    modelName: 'Classroom',
+    modelName: 'ClassroomStudent',
   });
-  return Classroom;
+  return ClassroomStudent;
 };
