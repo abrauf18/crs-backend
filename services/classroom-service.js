@@ -1,6 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Classroom, Standard, ClassroomCourses } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createClassroom = async ({name, teacherId}) => {
@@ -74,9 +74,92 @@ const assignStandardToClassrooms = async ({classroomIds, standardId}) => {
     }
 }
 
+const getSummarizedClassroomsOfTeacher = async ({teacherId}) => {
+    try {
+        const classrooms = await Classroom.findAll({
+            where: {teacherId},
+            include: [{
+                model: ClassroomStudent,
+                as: 'classroomStudents'
+            }]
+        });
+
+        const classroomsWithStudents = classrooms.map(classroom => {
+            const { id, name, classroomStudents } = classroom.toJSON();
+            return {
+                id,
+                name,
+                studentCount: classroomStudents.length
+            };
+        });
+
+        return { code: 200, data: classroomsWithStudents };
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting summarized classrooms of teacher');
+        return { code: 500 };
+    }
+}
+
+const getTeacherDashboardClassroomsOverview = async ({teacherId}) => {
+    try {
+        const classrooms = await Classroom.findAll({
+            where: {teacherId},
+            include: [{
+                model: ClassroomStudent,
+                as: 'classroomStudents'
+            }]
+        });
+
+        const totalClassrooms = classrooms.length;
+        const totalStudents = classrooms.reduce((total, classroom) => total + classroom.classroomStudents.length, 0);
+
+        return { code: 200, data: { totalClassrooms, totalStudents } };
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting total classrooms and students of teacher for teacher dahsboard');
+        return { code: 500 };
+    }
+}
+
+const getTeacherDashboardStandardsOverview = async ({teacherId}) => {
+    try {
+        const summarizedStandards = await ClassroomCourses.findAll({
+            attributes: ['id'],
+            include: [{ 
+                model: Classroom, 
+                as: 'classroom', 
+                where: {teacherId}, 
+                attributes: ['name']
+            },
+            { 
+                model: Standard, 
+                as: 'standard', 
+                attributes: ['name']
+            }],
+        })
+
+        const transformedSummarizedStandards = summarizedStandards.map(traversingStandard => {
+            const {classroom, standard, id} = traversingStandard.toJSON();
+            return {className: classroom.name, standardName: standard.name, id}
+        });
+
+        return { code: 200, data: transformedSummarizedStandards };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting overview of standards for teacher dahsboard');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
     getAllClassroomsOfTeacher,
-    assignStandardToClassrooms
+    assignStandardToClassrooms,
+    getSummarizedClassroomsOfTeacher,
+    getTeacherDashboardClassroomsOverview,
+    getTeacherDashboardStandardsOverview
 };

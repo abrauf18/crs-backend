@@ -62,9 +62,34 @@ const assignStandardToClassroom = createSchemaMiddleware(
     })
 );
 
+const getSummarizedClassroomsOfTeacher = createSchemaMiddleware(
+    Joi.object({
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+
+const getTeacherDashboardClassroomsOverview = createSchemaMiddleware(
+    Joi.object({
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const getTeacherDashboardStandardsOverview = createSchemaMiddleware(
+    Joi.object({
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createClassroom,
     getClassroom,
     getAllClassroomsOfTeacher,
     assignStandardToClassroom,
+    getSummarizedClassroomsOfTeacher,
+    getTeacherDashboardClassroomsOverview,
+    getTeacherDashboardStandardsOverview
 };
