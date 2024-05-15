@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.post(
     "/createClassroom",
-    // classroomValidation.createClassroom,
+    classroomValidation.createClassroom,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
     classroomController.createClassroom
@@ -16,7 +16,7 @@ router.post(
 
 router.get(
     "/getClassroom",
-    // classroomValidation.getClassroom,
+    classroomValidation.getClassroom,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
     classroomController.getClassroom
@@ -24,7 +24,7 @@ router.get(
 
 router.get(
     "/getAllClassroomsOfTeacher",
-    // classroomValidation.getAllClassroomsOfTeacher,
+    classroomValidation.getAllClassroomsOfTeacher,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     classroomController.getAllClassroomsOfTeacher
@@ -32,7 +32,7 @@ router.get(
 
 router.post(
     "/assignStandardToClassrooms",
-    // classroomValidation.assignStandardToClassroom,
+    classroomValidation.assignStandardToClassroom,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     classroomController.assignStandardToClassrooms
