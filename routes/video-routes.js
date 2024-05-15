@@ -51,7 +51,7 @@ router.get(
     "/getVideo", 
     videoValidation.getVideo,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     videoController.getVideo
 );
 
