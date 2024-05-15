@@ -75,9 +75,63 @@ const assignStandardToClassrooms = async (req, res) => {
     }
 };
 
+const getSummarizedClassroomsOfTeacher = async (req, res) => {
+    try {
+        const { teacherid } = req.headers;
+        const reply = await classroomService.getSummarizedClassroomsOfTeacher({ teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
+const getTeacherDashboardClassroomsOverview = async (req, res) => {
+    try {
+        const { teacherid } = req.headers;
+        const reply = await classroomService.getTeacherDashboardClassroomsOverview({ teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
+const getTeacherDashboardStandardsOverview = async (req, res) => {
+    try {
+        const { teacherid } = req.headers;
+        const reply = await classroomService.getTeacherDashboardStandardsOverview({ teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
     getAllClassroomsOfTeacher,
-    assignStandardToClassrooms
+    assignStandardToClassrooms,
+    getSummarizedClassroomsOfTeacher,
+    getTeacherDashboardClassroomsOverview,
+    getTeacherDashboardStandardsOverview
 };

@@ -38,4 +38,28 @@ router.post(
     classroomController.assignStandardToClassrooms
 )
 
+router.get(
+    "/getSummarizedClassroomsOfTeacher",
+    classroomValidation.getSummarizedClassroomsOfTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.getSummarizedClassroomsOfTeacher
+)
+
+router.get(
+    "/getTeacherDashboardClassroomsOverview",
+    classroomValidation.getTeacherDashboardClassroomsOverview,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.getTeacherDashboardClassroomsOverview
+)
+
+router.get(
+    "/getTeacherDashboardStandardsOverview",
+    classroomValidation.getTeacherDashboardStandardsOverview,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.getTeacherDashboardStandardsOverview
+)
+
 module.exports = router;
