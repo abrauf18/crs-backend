@@ -35,7 +35,7 @@ app.use("/school", schoolRouter);
 app.use("/resource", resourceRouter);
 
 app.get("/", (req, res) => {
-  res.send("Hello, World!");
+  res.send("Hello, World! Waahaab");
 });
 
 const port = process.env.PORT || 3000;
