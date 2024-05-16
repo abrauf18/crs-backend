@@ -3,9 +3,17 @@ module.exports = {
     {
       name: "crs-backend",
       script: "./index.js",
-      instances: 1,
-      autorestart: true,
       watch: true,
+      ignore_watch: "node_modules",
+      time: true,
+      out_file: "./scripts.txt",
+      error_file: "./error.txt",
+      env: {
+        NODE_ENV: "development",
+      },
+      env_production: {
+        NODE_ENV: "production",
+      },
     },
   ],
 };
