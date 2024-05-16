@@ -1,3 +1,3 @@
 # crs-backend
 
-pipeline cc
+pipeline
