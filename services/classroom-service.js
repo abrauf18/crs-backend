@@ -47,6 +47,10 @@ const getAllClassroomsOfTeacher = async ({teacherId}) => {
 
 const assignStandardToClassrooms = async ({classroomIds, standardId}) => {
     try {
+        if (new Set(classroomIds).size !== classroomIds.length) {
+            return { code: 400 };
+        }
+
         const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({where: {id}})));
         const notFoundIds = classroomIds.filter((id, index) => !classrooms[index]);
         if (notFoundIds.length > 0) {
@@ -54,9 +58,22 @@ const assignStandardToClassrooms = async ({classroomIds, standardId}) => {
         }
         const standard = await Standard.findOne({where: {id: standardId}});
         if (!standard) {
-            return { code: 409 };
+            return { code: 405 };
         }
 
+        const classroomsWithStandard = await Classroom.findAll({
+            where: { id: classroomIds },
+            include: [{
+                model: ClassroomCourses,
+                as: 'classroomCourses',
+                where: {standardId},
+                required: true
+            }]
+        });
+        if (classroomsWithStandard.length > 0) {
+            const classroomNames = classroomsWithStandard.map(classroom => classroom.name);
+            return { code: 409, message: `Classrooms with this course already assigned are: ${classroomNames.join(', ')}` };
+        }
         
         const classroomStandards = await Promise.all(classroomIds.map(async id => {
             const existingEntry = await ClassroomCourses.findOne({where: {classroomId: id, standardId}});
@@ -154,6 +171,22 @@ const getTeacherDashboardStandardsOverview = async ({teacherId}) => {
     }
 }
 
+const deleteClassCourse = async ({ classroomCourseId }) => {
+    try {
+        const classroomCourse = await ClassroomCourses.findByPk(classroomCourseId);
+        if (!classroomCourse) {
+            return { code: 404 };
+        }
+        const deleted = await classroomCourse.destroy();
+
+        return { code: 200, data: deleted };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while deleting class course');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -161,5 +194,6 @@ module.exports = {
     assignStandardToClassrooms,
     getSummarizedClassroomsOfTeacher,
     getTeacherDashboardClassroomsOverview,
-    getTeacherDashboardStandardsOverview
+    getTeacherDashboardStandardsOverview,
+    deleteClassCourse
 };

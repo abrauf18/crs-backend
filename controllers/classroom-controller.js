@@ -60,11 +60,17 @@ const assignStandardToClassrooms = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, "Duplicate classrooms are not allowed.");
+        }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, reply.message);
         }
-        else if (reply.code == 409) {
+        else if (reply.code == 405) {
             return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, reply.message);
         }
         else {
             return handleInternalServerError(res);
@@ -126,6 +132,26 @@ const getTeacherDashboardStandardsOverview = async (req, res) => {
     }
 }
 
+const deleteClassCourse = async (req, res) => {
+    try {
+        const { classroomcourseid } = req.headers;
+        const reply = await classroomService.deleteClassCourse({ classroomCourseId: classroomcourseid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        if (reply.code == 404) {
+            return handleErrorResponse(res, 404, 'Relation between standard and class Not found');
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -133,5 +159,6 @@ module.exports = {
     assignStandardToClassrooms,
     getSummarizedClassroomsOfTeacher,
     getTeacherDashboardClassroomsOverview,
-    getTeacherDashboardStandardsOverview
+    getTeacherDashboardStandardsOverview,
+    deleteClassCourse
 };

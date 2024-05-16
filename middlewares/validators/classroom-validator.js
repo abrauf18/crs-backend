@@ -84,6 +84,13 @@ const getTeacherDashboardStandardsOverview = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const deleteClassroom = createSchemaMiddleware(
+    Joi.object({
+        classroomcourseid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -91,5 +98,6 @@ module.exports = {
     assignStandardToClassroom,
     getSummarizedClassroomsOfTeacher,
     getTeacherDashboardClassroomsOverview,
-    getTeacherDashboardStandardsOverview
+    getTeacherDashboardStandardsOverview,
+    deleteClassroom
 };
