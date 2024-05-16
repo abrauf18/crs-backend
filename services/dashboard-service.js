@@ -3,10 +3,10 @@ const { logger } = require("../Logs/logger.js");
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, Resource } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const getTeacherDashboardSummaries = async ({teacherId}) => {
+const getTeacherDashboardSummaries = async ({ teacherId }) => {
     try {
         const classrooms = await Classroom.findAll({
-            where: {teacherId},
+            where: { teacherId },
             include: [{
                 model: ClassroomStudent,
                 as: 'classroomStudents'
@@ -30,11 +30,11 @@ const getAdminDashboardSummaries = async () => {
         const users = await User.findAll({});
 
         const videos = await Resource.findAll({
-            where: {type: RESOURCE_TYPES.VIDEO},
+            where: { type: RESOURCE_TYPES.VIDEO },
         });
 
         const resources = await Resource.findAll({
-            where: {type: {[Op.not]: RESOURCE_TYPES.VIDEO}},
+            where: { type: { [Op.not]: RESOURCE_TYPES.VIDEO } },
         });
 
         result = {
