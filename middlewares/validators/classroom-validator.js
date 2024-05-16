@@ -15,13 +15,6 @@ const createSchemaMiddleware = (schema, target = 'body') => async (req, res, nex
     }
 };
 
-const getVideoQuestions = createSchemaMiddleware(
-    Joi.object({
-        videoid: Joi.string().guid().required(),
-        accesstoken: Joi.string().required(),
-    }).unknown(), 'headers'
-);
-
 const createClassroom = async (req, res, next) => {
     try {
         const schema = Joi.object({
@@ -69,6 +62,20 @@ const getSummarizedClassroomsOfTeacher = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const getClassesAndCourses = createSchemaMiddleware(
+    Joi.object({
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const deleteClassroom = createSchemaMiddleware(
+    Joi.object({
+        classroomcourseid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 
 module.exports = {
     createClassroom,
@@ -76,4 +83,6 @@ module.exports = {
     getAllClassroomsOfTeacher,
     assignStandardToClassroom,
     getSummarizedClassroomsOfTeacher,
+    getClassesAndCourses,
+    deleteClassroom
 };
