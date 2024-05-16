@@ -33,7 +33,7 @@ jobs:
           remote_user: ubuntu
           remote_key: "${{ secrets.EC2_PRIVATE_KEY }}"
       - name: Install dependencies on remote server
-        run: ssh -i "${{ secrets.SSH_PRIVATE_KEY }}" -o StrictHostKeyChecking=no ec2-3-133-98-205.us-east-2.compute.amazonaws.com "cd /var/www/crs-backend && yarn install"
+        run: ssh -i "${{ secrets.SSH_PRIVATE_KEY }}" -o StrictHostKeyChecking=no ec2-3-133-98-205.us-east-2.compute.amazonaws.com "cd /var/www/crs-backend/ && yarn install"
 
       - name: Install PM2 on remote server
         run: ssh -i "${{ secrets.SSH_PRIVATE_KEY }}" -o StrictHostKeyChecking=no ec2-3-133-98-205.us-east-2.compute.amazonaws.com "sudo npm install -g pm2"
