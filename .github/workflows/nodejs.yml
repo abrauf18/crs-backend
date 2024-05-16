@@ -5,7 +5,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-
   workflow_dispatch:
 
 jobs:
@@ -31,4 +30,11 @@ jobs:
           remote_path: /var/www/crs-backend/
           remote_host: ${{ secrets.EC2_HOST }}
           remote_user: ubuntu
-          remote_key: "${{ secrets.EC2_PRIVATE_KEY }}"
+          remote_key: "${{ secrets.EC2_PRIVATE_KEY }}"
+
+      - name: Restart application with PM2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} -i ${{ secrets.EC2_PRIVATE_KEY }} << 'EOF'
+            cd /var/www/crs-backend/
+            pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+          EOF
