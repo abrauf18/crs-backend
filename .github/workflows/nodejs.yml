@@ -1,31 +1,42 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: Deploy to EC2
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
-  build:
-    runs-on: self-hosted
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: chmod u+x y.sh
-      #if u have new enviroment where u deploy this project then use this command (use only first time) before following command  (  - run: ./y.sh )
-      - run: yarn install
-      - run: yarn cache clean
-      - run: pm2 stop ecosystem.config.js || true # this command terminate already running process
-      - run: pm2 start ecosystem.config.js
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to EC2
+        env:
+          EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          echo "$EC2_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          scp -i private_key.pem -r ./* $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/app
+          ssh -i private_key.pem $EC2_USERNAME@$EC2_HOST << 'EOF'
+            cd /home/$EC2_USERNAME/app
+            npm install
+            pm2 restart all || pm2 start index.js --name "crs-backend"
+          EOF
+          rm private_key.pem
