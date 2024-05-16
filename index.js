@@ -29,7 +29,7 @@ const app = express();
 // Use morgan middleware for logging
 app.use(morganMiddleware);
 
-app.use(cors({origin: 'http://localhost:3000', credentials: true}));
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
 app.use(express.json());
 app.use(cookieParser());
