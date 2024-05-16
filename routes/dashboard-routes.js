@@ -7,27 +7,17 @@ const ROLES = require("../models/roles/index")
 const router = express.Router();
 
 router.get(
-    "/getTeacherDashboardClassroomsOverview",
-    dashboardValidation.getTeacherDashboardClassroomsOverview,
+    "/getTeacherDashboardSummaries",
+    dashboardValidation.getTeacherDashboardSummaries,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
-    dashboardController.getTeacherDashboardClassroomsOverview
+    dashboardController.getTeacherDashboardSummaries
 )
 
 router.get(
-    "/getTeacherDashboardStandardsOverview",
-    dashboardValidation.getTeacherDashboardStandardsOverview,
+    "/getAdminDashboardSummaries",
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
-    dashboardController.getTeacherDashboardStandardsOverview
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    dashboardController.getAdminDashboardSummaries
 )
-
-router.delete(
-    "/deleteClassCourse",
-    dashboardValidation.deleteClassroom,
-    roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
-    dashboardController.deleteClassCourse
-)
-
 module.exports = router;

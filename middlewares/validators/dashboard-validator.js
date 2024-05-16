@@ -15,29 +15,15 @@ const createSchemaMiddleware = (schema, target = 'body') => async (req, res, nex
     }
 };
 
-const getTeacherDashboardClassroomsOverview = createSchemaMiddleware(
+const getTeacherDashboardSummaries = createSchemaMiddleware(
     Joi.object({
         teacherid: Joi.string().guid().required(),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
 );
 
-const getTeacherDashboardStandardsOverview = createSchemaMiddleware(
-    Joi.object({
-        teacherid: Joi.string().guid().required(),
-        accesstoken: Joi.string().required()
-    }).unknown(), 'headers'
-);
 
-const deleteClassroom = createSchemaMiddleware(
-    Joi.object({
-        classroomcourseid: Joi.string().guid().required(),
-        accesstoken: Joi.string().required()
-    }).unknown(), 'headers'
-);
 
 module.exports = {
-    getTeacherDashboardClassroomsOverview,
-    getTeacherDashboardStandardsOverview,
-    deleteClassroom
+    getTeacherDashboardSummaries,
 };

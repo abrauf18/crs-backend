@@ -1,9 +1,9 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, Resource } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const getTeacherDashboardClassroomsOverview = async ({teacherId}) => {
+const getTeacherDashboardSummaries = async ({teacherId}) => {
     try {
         const classrooms = await Classroom.findAll({
             where: {teacherId},
@@ -25,54 +25,33 @@ const getTeacherDashboardClassroomsOverview = async ({teacherId}) => {
     }
 }
 
-const getTeacherDashboardStandardsOverview = async ({teacherId}) => {
+const getAdminDashboardSummaries = async () => {
     try {
-        const summarizedStandards = await ClassroomCourses.findAll({
-            attributes: ['id'],
-            include: [{ 
-                model: Classroom, 
-                as: 'classroom', 
-                where: {teacherId}, 
-                attributes: ['name']
-            },
-            { 
-                model: Standard, 
-                as: 'standard', 
-                attributes: ['id', 'name']
-            }],
-        })
+        const users = await User.findAll({});
 
-        const transformedSummarizedStandards = summarizedStandards.map(traversingStandard => {
-            const {id, classroom, standard} = traversingStandard.toJSON();
-            return {id, className: classroom.name, standardName: standard.name, standardId: standard.id}
+        const videos = await Resource.findAll({
+            where: {type: RESOURCE_TYPES.VIDEO},
         });
 
-        return { code: 200, data: transformedSummarizedStandards };
-    } catch (error) {
-        console.log('\n\n\n\n', error);
-        logger.error(error?.message || 'An error occurred while getting overview of standards for teacher dahsboard');
-        return { code: 500 };
-    }
-}
+        const resources = await Resource.findAll({
+            where: {type: {[Op.not]: RESOURCE_TYPES.VIDEO}},
+        });
 
-const deleteClassCourse = async ({ classroomCourseId }) => {
-    try {
-        const classroomCourse = await ClassroomCourses.findByPk(classroomCourseId);
-        if (!classroomCourse) {
-            return { code: 404 };
+        result = {
+            usersCount: users.length,
+            videosCount: videos.length,
+            resourcesCount: resources.length
         }
-        const deleted = await classroomCourse.destroy();
 
-        return { code: 200, data: deleted };
+        return { code: 200, data: result };
     } catch (error) {
         console.log('\n\n\n\n', error);
-        logger.error(error?.message || 'An error occurred while deleting class course');
+        logger.error(error?.message || 'An error occurred while getting overview of users and resources for admin dahsboard');
         return { code: 500 };
     }
 }
 
 module.exports = {
-    getTeacherDashboardClassroomsOverview,
-    getTeacherDashboardStandardsOverview,
-    deleteClassCourse
+    getTeacherDashboardSummaries,
+    getAdminDashboardSummaries
 };

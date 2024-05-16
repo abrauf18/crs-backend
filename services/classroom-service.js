@@ -119,10 +119,58 @@ const getSummarizedClassroomsOfTeacher = async ({teacherId}) => {
     }
 }
 
+const getClassesAndCourses = async ({teacherId}) => {
+    try {
+        const summarizedStandards = await ClassroomCourses.findAll({
+            attributes: ['id'],
+            include: [{ 
+                model: Classroom, 
+                as: 'classroom', 
+                where: {teacherId}, 
+                attributes: ['name']
+            },
+            { 
+                model: Standard, 
+                as: 'standard', 
+                attributes: ['id', 'name']
+            }],
+        })
+
+        const transformedSummarizedStandards = summarizedStandards.map(traversingStandard => {
+            const {id, classroom, standard} = traversingStandard.toJSON();
+            return {id, className: classroom.name, standardName: standard.name, standardId: standard.id}
+        });
+
+        return { code: 200, data: transformedSummarizedStandards };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting overview of standards for teacher dahsboard');
+        return { code: 500 };
+    }
+}
+
+const deleteClassCourse = async ({ classroomCourseId }) => {
+    try {
+        const classroomCourse = await ClassroomCourses.findByPk(classroomCourseId);
+        if (!classroomCourse) {
+            return { code: 404 };
+        }
+        const deleted = await classroomCourse.destroy();
+
+        return { code: 200, data: deleted };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while deleting class course');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
     getAllClassroomsOfTeacher,
     assignStandardToClassrooms,
     getSummarizedClassroomsOfTeacher,
+    getClassesAndCourses,
+    deleteClassCourse,
 };
