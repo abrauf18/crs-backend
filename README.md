@@ -1,3 +1,3 @@
 # crs-backend
 
-pipeline test
+pipeline testing
