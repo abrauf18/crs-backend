@@ -1,4 +1,4 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, Resource } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
