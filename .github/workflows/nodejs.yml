@@ -30,10 +30,14 @@ jobs:
         run: |
           echo "$EC2_PRIVATE_KEY" > crs.pem
           chmod 600 crs.pem
-          scp -i crs.pem -r ./* $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/app
+          # Ensure the directory exists and has correct permissions
+          ssh -i crs.pem $EC2_USERNAME@$EC2_HOST "mkdir -p /var/www/crs-backend && sudo chown -R $EC2_USERNAME /var/www/"
+          # Copy files to the correct directory
+          scp -i crs.pem -r ./* $EC2_USERNAME@$EC2_HOST:/var/www/crs-backend/
+          # Execute commands on the server
           ssh -i crs.pem $EC2_USERNAME@$EC2_HOST << 'EOF'
-            cd /home/$EC2_USERNAME/app
-            npm install
+            cd /var/www/crs-backend
+            yarn install --production
             pm2 restart all || pm2 start index.js --name "crs-backend"
           EOF
           rm crs.pem
