@@ -28,12 +28,12 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
         run: |
-          echo "$EC2_PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          scp -i private_key.pem -r ./* $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/app
-          ssh -i private_key.pem $EC2_USERNAME@$EC2_HOST << 'EOF'
+          echo "$EC2_PRIVATE_KEY" > crs.pem
+          chmod 600 crs.pem
+          scp -i crs.pem -r ./* $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/app
+          ssh -i crs.pem $EC2_USERNAME@$EC2_HOST << 'EOF'
             cd /home/$EC2_USERNAME/app
             npm install
             pm2 restart all || pm2 start index.js --name "crs-backend"
           EOF
-          rm private_key.pem
+          rm crs.pem
