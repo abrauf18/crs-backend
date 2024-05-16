@@ -62,4 +62,12 @@ router.get(
     classroomController.getTeacherDashboardStandardsOverview
 )
 
+router.delete(
+    "/deleteClassCourse",
+    classroomValidation.deleteClassroom,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.deleteClassCourse
+)
+
 module.exports = router;
