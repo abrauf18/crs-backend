@@ -137,13 +137,13 @@ const getTeacherDashboardStandardsOverview = async ({teacherId}) => {
             { 
                 model: Standard, 
                 as: 'standard', 
-                attributes: ['name']
+                attributes: ['id', 'name']
             }],
         })
 
         const transformedSummarizedStandards = summarizedStandards.map(traversingStandard => {
-            const {classroom, standard, id} = traversingStandard.toJSON();
-            return {className: classroom.name, standardName: standard.name, id}
+            const {id, classroom, standard} = traversingStandard.toJSON();
+            return {id, className: classroom.name, standardName: standard.name, standardId: standard.id}
         });
 
         return { code: 200, data: transformedSummarizedStandards };
