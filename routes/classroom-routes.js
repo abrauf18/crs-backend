@@ -46,28 +46,4 @@ router.get(
     classroomController.getSummarizedClassroomsOfTeacher
 )
 
-router.get(
-    "/getTeacherDashboardClassroomsOverview",
-    classroomValidation.getTeacherDashboardClassroomsOverview,
-    roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
-    classroomController.getTeacherDashboardClassroomsOverview
-)
-
-router.get(
-    "/getTeacherDashboardStandardsOverview",
-    classroomValidation.getTeacherDashboardStandardsOverview,
-    roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
-    classroomController.getTeacherDashboardStandardsOverview
-)
-
-router.delete(
-    "/deleteClassCourse",
-    classroomValidation.deleteClassroom,
-    roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
-    classroomController.deleteClassCourse
-)
-
 module.exports = router;
