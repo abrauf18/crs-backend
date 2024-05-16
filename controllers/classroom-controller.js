@@ -4,7 +4,7 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 const createClassroom = async (req, res) => {
     try {
         const { name, teacherId } = req.body;
-        const reply = await classroomService.createClassroom({name, teacherId});
+        const reply = await classroomService.createClassroom({ name, teacherId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -21,7 +21,7 @@ const createClassroom = async (req, res) => {
 const getClassroom = async (req, res) => {
     try {
         const { classroomid } = req.headers;
-        const reply = await classroomService.getClassroom({classroomId: classroomid});
+        const reply = await classroomService.getClassroom({ classroomId: classroomid });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -55,7 +55,7 @@ const getAllClassroomsOfTeacher = async (req, res) => {
 const assignStandardToClassrooms = async (req, res) => {
     try {
         const { classroomIds, standardId } = req.body;
-        const reply = await classroomService.assignStandardToClassrooms({classroomIds, standardId});
+        const reply = await classroomService.assignStandardToClassrooms({ classroomIds, standardId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
