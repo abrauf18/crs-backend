@@ -46,4 +46,4 @@ jobs:
           script: |
             cd /var/www/crs-backend/
             npm install
-            pm2 restart node-backend || pm2 start index.js --name crs-backend
+            pm2 restart crs-backend || pm2 start index.js --name crs-backend
