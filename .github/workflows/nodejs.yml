@@ -26,7 +26,7 @@ jobs:
       - name: rsync deployments
         uses: burnett01/rsync-deployments@5.1
         with:
-          switches: -avzr --delete
+          switches: -avzr --delete --exclude 'node_modules'
           path: ./*
           remote_path: /var/www/crs-backend/
           remote_host: ec2-3-133-98-205.us-east-2.compute.amazonaws.com
