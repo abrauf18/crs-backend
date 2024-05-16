@@ -1,47 +1,34 @@
-name: CI/CD to EC2
+name: CI
 
 on:
   push:
-    branches:
-      - main # Adjust if your primary branch is different
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy to EC2
-    runs-on: ubuntu-latest # GitHub Actions runner
+  build:
+    runs-on: ubuntu-latest
+
+    if: github.ref == 'refs/heads/main'
+
+    strategy:
+      matrix:
+        node-version: [21.x]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3 # Checks out your repository under $GITHUB_WORKSPACE, so your workflow can access it
+      - uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - run: npm ci
+
+      - name: rsync deployments
+        uses: burnett01/rsync-deployments@5.1
         with:
-          node-version: "16.x" # Adjust depending on your project's Node.js version requirement
-
-      - name: Install dependencies
-        run: yarn install # Assuming you are using yarn as your package manager
-
-      - name: Transfer files to EC2
-        env:
-          EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$EC2_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa" --exclude='.git/' --exclude='node_modules/' ./ $EC2_USERNAME@$EC2_HOST:/var/www/crs-backend/
-
-      - name: Restart server
-        run: |
-          ssh -i ~/.ssh/id_rsa $EC2_USERNAME@$EC2_HOST << 'EOF'
-            cd /var/www/crs-backend
-            yarn install --production  # Install dependencies on production
-            pm2 restart all  # Or any other command you use to start your server
-          EOF
-        env:
-          EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          switches: -avzr --delete
+          path: ./*
+          remote_path: /var/www/crs-backend/
+          remote_host: ec2-3-133-98-205.us-east-2.compute.amazonaws.com
+          remote_user: ubuntu
+          remote_key: "${{ secrets.EC2_PRIVATE_KEY }}"
