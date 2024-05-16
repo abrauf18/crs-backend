@@ -1,4 +1,4 @@
-name: CI/CD to EC2
+name: CI
 
 on:
   push:
