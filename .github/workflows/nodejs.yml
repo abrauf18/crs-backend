@@ -1,43 +1,47 @@
-name: Deploy to EC2
+name: CI/CD to EC2
 
 on:
   push:
     branches:
-      - main
+      - main # Adjust if your primary branch is different
 
 jobs:
   deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
+    name: Deploy to EC2
+    runs-on: ubuntu-latest # GitHub Actions runner
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3 # Checks out your repository under $GITHUB_WORKSPACE, so your workflow can access it
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "20.x"
+          node-version: "16.x" # Adjust depending on your project's Node.js version requirement
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install # Assuming you are using yarn as your package manager
 
-      - name: Deploy to EC2
+      - name: Transfer files to EC2
         env:
           EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
         run: |
-          echo "$EC2_PRIVATE_KEY" > crs.pem
-          chmod 600 crs.pem
-          # Ensure the directory exists and has correct permissions
-          ssh -i crs.pem $EC2_USERNAME@$EC2_HOST "mkdir -p /var/www/crs-backend && sudo chown -R $EC2_USERNAME /var/www/"
-          # Copy files to the correct directory
-          scp -i crs.pem -r ./* $EC2_USERNAME@$EC2_HOST:/var/www/crs-backend/
-          # Execute commands on the server
-          ssh -i crs.pem $EC2_USERNAME@$EC2_HOST << 'EOF'
+          mkdir -p ~/.ssh
+          echo "$EC2_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa" --exclude='.git/' --exclude='node_modules/' ./ $EC2_USERNAME@$EC2_HOST:/var/www/crs-backend/
+
+      - name: Restart server
+        run: |
+          ssh -i ~/.ssh/id_rsa $EC2_USERNAME@$EC2_HOST << 'EOF'
             cd /var/www/crs-backend
-            yarn install --production
-            pm2 restart all || pm2 start index.js --name "crs-backend"
+            yarn install --production  # Install dependencies on production
+            pm2 restart all  # Or any other command you use to start your server
           EOF
-          rm crs.pem
+        env:
+          EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
