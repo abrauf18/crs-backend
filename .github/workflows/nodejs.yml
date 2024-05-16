@@ -1,6 +1,3 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
 name: Node.js CI
 
 on:
@@ -14,18 +11,36 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
+
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
-      - run: chmod u+x y.sh
-      #if u have new enviroment where u deploy this project then use this command (use only first time) before following command  (  - run: ./y.sh )
-      - run: yarn install
-      - run: yarn cache clean
-      - run: pm2 stop ecosystem.config.js || true # this command terminate already running process
-      - run: pm2 start ecosystem.config.js
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Clean Yarn cache
+        run: yarn cache clean
+
+      - name: Stop existing PM2 process
+        run: pm2 stop ecosystem.config.js || true
+
+      - name: Start PM2 process
+        run: pm2 start ecosystem.config.js
+
+      # Additional step to handle errors explicitly
+      - name: Check PM2 list
+        run: pm2 list
+
+      # Optional: Upload logs as an artifact
+      - name: Archive production logs
+        if: failure() # Only run this step if previous steps failed
+        uses: actions/upload-artifact@v2
+        with:
+          name: pm2-logs
+          path: ~/.pm2/logs/*.log
