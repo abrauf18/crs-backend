@@ -32,4 +32,3 @@ jobs:
           remote_host: ${{ secrets.EC2_HOST }}
           remote_user: ubuntu
           remote_key: "${{ secrets.EC2_PRIVATE_KEY }}"
-       
