@@ -45,7 +45,7 @@ app.use("/classroom", classroomRouter);
 app.use("/dashboard", dashboardRouter);
 
 app.get("/", (req, res) => {
-  res.send("Hello, World! PIPELINE Chal GAEEEEEeeeee");
+  res.send("Hello, World! PIPELINE Working");
 });
 
 const port = process.env.PORT || 3000;
