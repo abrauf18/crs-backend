@@ -1,4 +1,4 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 const { Resource, Video } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
@@ -64,7 +64,7 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
         }
 
         if (topic) {
-            queryOptions.where.topic = topic;
+            queryOptions.where.topic = { [Op.iLike]: topic };
         }
 
         if (orderBy && sortBy) {
@@ -101,7 +101,7 @@ const getResourcesCount = async ({ topic }) => {
         // Get the individual counts of resources by type for a specific topic
         const resourceCounts = await Resource.findAll({
             attributes: ['type', [Sequelize.fn('COUNT', 'type'), 'count']],
-            where: { topic }, // Add the where clause
+            where: { topic: { [Op.iLike]: topic } }, // Add the where clause
             group: ['type'],
             raw: true,
         });
@@ -112,7 +112,7 @@ const getResourcesCount = async ({ topic }) => {
         });
 
         // Get the total count of all resources for a specific topic
-        const totalCount = await Resource.count({ where: { topic } }); // Add the where clause
+        const totalCount = await Resource.count({ where: { topic: {[Op.iLike]: topic} } }); // Add the where clause
 
         const res = {
             slideshowCount: resourceCountsObject[RESOURCE_TYPES.SLIDESHOW],
@@ -184,9 +184,7 @@ const getResourcesByName = async ({ resourceName, resourceType }) => {
     try {
         const resources = await Resource.findAll({
             where: {
-                name: {
-                    [Sequelize.Op.like]: '%' + resourceName + '%'
-                },
+                name: { [Op.iLike]: '%' + resourceName + '%' },
                 type: resourceType
             }
         });
