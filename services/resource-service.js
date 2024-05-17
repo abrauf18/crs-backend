@@ -56,7 +56,12 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
         const queryOptions = {
             where: {},
             offset,
-            limit
+            limit,
+            include: [{
+                model: Video,
+                as: 'video',
+                attributes: ['id']
+            }]
         };
 
         if (type) {
@@ -76,7 +81,13 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
         const res = {
             totalPages: Math.ceil(resources.count / limit),
             totalResources: resources.count,
-            resources: resources.rows,
+            resources: resources.rows.map(resource => {
+                const { video, ...resourceData } = resource.get();
+                return {
+                    ...resourceData,
+                    videoId: video?.id
+                };
+            })
         }
 
         return { code: 200, data: res };
