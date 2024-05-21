@@ -35,7 +35,12 @@ const createResource = createSchemaMiddleware(
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
-        duration: Joi.string().optional()
+        duration: Joi.string().optional(),
+        totalMarks: Joi.number().integer().min(0).when('type', {
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST),
+            then: Joi.required(),
+            otherwise: Joi.optional()
+        }),
     })
 );
 
@@ -91,7 +96,12 @@ const updateResource = createSchemaMiddleware(
             RESOURCE_TYPES.ASSIGNMENT,
           ).required(),
         topic: Joi.string().required(),
-        accessToken: Joi.string().required()
+        accessToken: Joi.string().required(),
+        totalMarks: Joi.number().integer().min(0).when('type', {
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST),
+            then: Joi.required(),
+            otherwise: Joi.optional()
+        }),
     })
 );
 
