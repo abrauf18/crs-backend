@@ -1,9 +1,13 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Resource, Video } = require("../models/index.js");
+const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const createResource = async ({ name, url, type, topic, thumbnailURL, duration }) => {
+const isAssessmentResource = (type) => {
+    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET;
+};
+
+const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks }) => {
     try {
         const resource = await Resource.create({
             name,
@@ -22,8 +26,19 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration }
     
             return { code: 200, data: {resource, videoAttributes: {...videoAttributes.dataValues}} };
         }
+        let resourceDetails = resource.get();
+        if (isAssessmentResource(type)) {
+            const assessmentAttributes = await AssessmentResourcesDetail.create({
+                resourceId: resource.id,
+                totalMarks: totalMarks,
+                numberOfQuestions: 1
+            })
+            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions};
+        }
 
-        return { code: 200, data: resource };
+        return { code: 200, data: 
+            {resource: { ...resourceDetails }
+        }};
 
     } catch (error) {
         console.log('\n\n\n', error)
@@ -34,15 +49,27 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration }
 
 const deleteResource = async ({resourceID}) => {
     try {
-        const result = await Resource.destroy({
-            where: { id: resourceID }
+        const resource = await Resource.findOne({
+            where: { id: resourceID },
+            include: {
+                model: AssessmentResourcesDetail,
+                as: 'AssessmentResourcesDetail'
+            }
         });
 
-        if (result) {
-            return { code: 200, message: 'Resource deleted successfully' };
-        } else {
+        if (!resource) {
             return { code: 404 };
         }
+
+        if (isAssessmentResource(resource.type)) {
+            if (resource.AssessmentResourcesDetail) {
+                await resource.AssessmentResourcesDetail.destroy();
+            }
+        }
+
+        await resource.destroy();
+
+        return { code: 200, message: 'Resource deleted successfully' };
     } catch (error) {
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
@@ -57,11 +84,17 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
             where: {},
             offset,
             limit,
-            include: [{
-                model: Video,
-                as: 'video',
-                attributes: ['id']
-            }]
+            include: [
+                {
+                    model: Video,
+                    as: 'video',
+                    attributes: ['id']
+                },
+                {
+                    model: AssessmentResourcesDetail,
+                    as: 'AssessmentResourcesDetail'
+                }
+            ],
         };
 
         if (type) {
@@ -82,10 +115,11 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
             totalPages: Math.ceil(resources.count / limit),
             totalResources: resources.count,
             resources: resources.rows.map(resource => {
-                const { video, ...resourceData } = resource.get();
+                const { video, AssessmentResourcesDetail, ...resourceData } = resource.get();
                 return {
                     ...resourceData,
-                    videoId: video?.id
+                    videoId: video?.id,
+                    totalMarks: AssessmentResourcesDetail?.totalMarks,
                 };
             })
         }
@@ -142,17 +176,29 @@ const getResourcesCount = async ({ topic }) => {
     }
 };
 
-const updateResource = async ({ resourceId, name, type, topic }) => {
+const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => {
     try {
-        const resource = await Resource.findOne({where: {id: resourceId}});
+        const resource = await Resource.findOne({
+            where: { id: resourceId },
+            include: isAssessmentResource(type) ? [{
+                model: AssessmentResourcesDetail,
+                as: 'AssessmentResourcesDetail'
+            }] : []
+        });
 
         if (!resource) {
             return { code: 404 };
         }
 
-        await resource.update({ name, type, topic });
+        if (isAssessmentResource(resource.type)) {
+            const assessmentResourceDetail = resource.AssessmentResourcesDetail;
+            if (!assessmentResourceDetail) {
+                return { code: 404, message: 'AssessmentResourcesDetail not found' };
+            }
+            await assessmentResourceDetail.update({ totalMarks });
+        }
 
-        resource.save();
+        await resource.update({ name, type, topic });
 
         return { code: 200, data: resource };
     } catch (error) {
@@ -164,15 +210,25 @@ const updateResource = async ({ resourceId, name, type, topic }) => {
 const getResource = async ({resourceID}) => {
     try {
         const resource = await Resource.findOne({
-            where: { id: resourceID }
+            where: { id: resourceID },
         });
-
-        if (resource) {
-            return { code: 200, data: resource };
-        } else {
+        if (!resource) {
             return { code: 404 };
         }
+        const simplifiedResource = resource.get();
+        if (isAssessmentResource(resource.type)) {
+            const assessmentResourcesDetail = await resource.getAssessmentResourcesDetail();
+            return { 
+                code: 200, 
+                data: {
+                    ...simplifiedResource,
+                    totalMarks: assessmentResourcesDetail?.totalMarks || 0,
+                } 
+            };        
+        }
+        return { code: 200, data: resource };
     } catch (error) {
+        console.log('\n\n\n', error);
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
