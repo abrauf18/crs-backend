@@ -286,6 +286,22 @@ const addStudentToClassroom = async ({ classroomId, studentId }) => {
     }
 }
 
+const removeStudentFromClassroom = async ({ classroomStudentId }) => {
+    try {
+        const classroomStudent = await ClassroomStudent.findByPk(classroomStudentId);
+        if (!classroomStudent) {
+            return { code: 404 };
+        }
+        const deleted = await classroomStudent.destroy();
+
+        return { code: 200, data: deleted };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while removing student from classroom');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -295,5 +311,6 @@ module.exports = {
     getClassesAndCourses,
     deleteClassCourse,
     getClassroomStudents,
-    addStudentToClassroom
+    addStudentToClassroom,
+    removeStudentFromClassroom
 };

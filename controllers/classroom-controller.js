@@ -175,6 +175,26 @@ const addStudentToClassroom = async (req, res) => {
     }
 }
 
+const removeStudentFromClassroom = async (req, res) => {
+    try {
+        const { classroomstudentid } = req.headers;
+        const reply = await classroomService.removeStudentFromClassroom({ classroomStudentId: classroomstudentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, 'Relation between student and class not found');
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -184,5 +204,6 @@ module.exports = {
     getClassesAndCourses,
     deleteClassCourse,
     getClassroomStudents,
-    addStudentToClassroom
+    addStudentToClassroom,
+    removeStudentFromClassroom
 };
