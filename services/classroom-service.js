@@ -1,7 +1,8 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+const { add } = require("winston");
 
 const createClassroom = async ({ name, teacherId }) => {
     try {
@@ -165,6 +166,61 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
     }
 }
 
+const getClassroomStudents = async ({ classroomId }) => {
+    try {
+        const classroom = await Classroom.findOne({
+            where: { id: classroomId },
+            attributes: ['name'],
+            include: [{
+                model: ClassroomStudent,
+                as: 'classroomStudents',
+                attributes: ['id'],
+                include: [{
+                    model: User,
+                    as: 'student',
+                    attributes: ['id', 'name', 'email', 'image'],
+                }]
+            }]
+        });
+
+        if (!classroom) {
+            return { code: 404 };
+        }
+
+        const students = classroom.classroomStudents.map(classroomStudent => {
+            const { id, student } = classroomStudent.toJSON();
+            return { id, name: student.name, email: student.email, image: student.image, performance: 100};
+        });
+
+        return { code: 200, data: { className: classroom.name, students }};
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting classroom students');
+        return { code: 500 };
+    }
+}
+
+const addStudentToClassroom = async ({ classroomId, studentId }) => {
+    try {
+        const classroom = await Classroom.findOne({ where: { id: classroomId } });
+        if (!classroom) {
+            return { code: 404 };
+        }
+        const student = await User.findOne({ where: { id: studentId } });
+        if (!student) {
+            return { code: 405 };
+        }
+        const classroomStudent = await ClassroomStudent.create({ classroomId, studentId });
+
+        return { code: 200, data: classroomStudent };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while adding student to classroom');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -173,4 +229,6 @@ module.exports = {
     getSummarizedClassroomsOfTeacher,
     getClassesAndCourses,
     deleteClassCourse,
+    getClassroomStudents,
+    addStudentToClassroom
 };
