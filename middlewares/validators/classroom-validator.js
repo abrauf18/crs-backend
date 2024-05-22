@@ -69,13 +69,12 @@ const getClassesAndCourses = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
-const deleteClassroom = createSchemaMiddleware(
+const deleteClassCourse = createSchemaMiddleware(
     Joi.object({
         classroomcourseid: Joi.string().guid().required(),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
 );
-
 
 module.exports = {
     createClassroom,
@@ -84,5 +83,5 @@ module.exports = {
     assignStandardToClassroom,
     getSummarizedClassroomsOfTeacher,
     getClassesAndCourses,
-    deleteClassroom
+    deleteClassCourse,
 };

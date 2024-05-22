@@ -56,7 +56,7 @@ router.get(
 
 router.delete(
     "/deleteClassCourse",
-    classroomValidation.deleteClassroom,
+    classroomValidation.deleteClassCourse,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     classroomController.deleteClassCourse
