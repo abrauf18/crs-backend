@@ -5,7 +5,6 @@ const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createResource = async ({ name, url, type, topic, thumbnailURL, duration }) => {
     try {
-
         const resource = await Resource.create({
             name,
             url,
@@ -168,6 +167,37 @@ const getResource = async ({resourceID}) => {
     }
 };
 
+const getResourcesByType = async ({ resourceType }) => {
+    try {
+        const resources = await Resource.findAll({
+            where: { type: resourceType }
+        });
+
+        return { code: 200, data: resources };
+    } catch (error) {
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
+        return { code: 500 };
+    }
+};
+
+const getResourcesByName = async ({ resourceName, resourceType }) => {
+    try {
+        const resources = await Resource.findAll({
+            where: {
+                name: {
+                    [Sequelize.Op.like]: '%' + resourceName + '%'
+                },
+                type: resourceType
+            }
+        });
+
+        return { code: 200, data: resources };
+    } catch (error) {
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
     createResource,
     deleteResource,
@@ -175,4 +205,6 @@ module.exports = {
     getResourcesCount,
     getResource,
     updateResource,
+    getResourcesByType,
+    getResourcesByName
 };

@@ -115,11 +115,52 @@ const updateResource = async (req, res) => {
 };
 const getall = async (req, res) => {
     try {
-
         const reply = await resourceService.getall();
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
+const getResourcesByType = async (req, res) => {
+    try {
+        const { resourcetype } = req.headers;
+
+        const reply = await resourceService.getResourcesByType({ resourceType: resourcetype });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {  
+            return handleErrorResponse(res, 404, 'Resource not found')
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+};
+
+const getResourcesByName = async (req, res) => {
+    try {
+        const { resourcename, resourcetype } = req.headers;
+
+        const reply = await resourceService.getResourcesByName({ resourceName: resourcename, resourceType: resourcetype});
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {  
+            return handleErrorResponse(res, 404, 'Resource not found')
         }
         else {
             return handleInternalServerError(res);
@@ -138,4 +179,6 @@ module.exports = {
     getResourcesCount,
     updateResource,
     getall,
+    getResourcesByType,
+    getResourcesByName,
 };
