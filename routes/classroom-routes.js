@@ -78,5 +78,12 @@ router.post(
     classroomController.addStudentToClassroom
 )
 
+router.delete(
+    "/removeStudentFromClassroom",
+    classroomValidation.removeStudentFromClassroom,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.removeStudentFromClassroom
+)
 
 module.exports = router;

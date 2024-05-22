@@ -93,6 +93,13 @@ const addStudentToClassroom = createSchemaMiddleware(
     })
 );
 
+const removeStudentFromClassroom = createSchemaMiddleware(
+    Joi.object({
+        classroomstudentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -102,5 +109,6 @@ module.exports = {
     getClassesAndCourses,
     deleteClassCourse,
     getClassroomStudents,
-    addStudentToClassroom
+    addStudentToClassroom,
+    removeStudentFromClassroom
 };
