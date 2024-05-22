@@ -8,6 +8,8 @@ const resourceRouter = require("./routes/resource-routes");
 const videoRouter = require("./routes/video-routes");
 const questionRouter = require("./routes/question-routes");
 const standardRouter = require("./routes/standard-routes");
+const classroomRouter = require("./routes/classroom-routes");
+const dashboardRouter = require("./routes/dashboard-routes");
 const { logger, morganMiddleware } = require('./Logs/logger');
 const cors = require('cors');
 const db = require("./models");
@@ -27,7 +29,7 @@ const app = express();
 // Use morgan middleware for logging
 app.use(morganMiddleware);
 
-app.use(cors({origin: 'http://localhost:3000', credentials: true}));
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -39,7 +41,8 @@ app.use("/resource", resourceRouter);
 app.use("/video", videoRouter);
 app.use("/question", questionRouter);
 app.use("/standard", standardRouter);
-
+app.use("/classroom", classroomRouter);
+app.use("/dashboard", dashboardRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World! PIPELINE Working");
