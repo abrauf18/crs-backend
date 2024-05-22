@@ -26,16 +26,30 @@ router.get(
     "/getStandard",
     standardValidation.getStandard,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     standardController.getStandard
 );
 
 router.get(
     "/getAllSummarizedStandards",
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     standardController.getAllSummarizedStandards
 );
 
+router.delete(
+    "/deleteStandards",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    standardController.deleteStandards
+);
+
+router.get(
+    "/getSummarizedStandard",
+    standardValidation.getSummarizedStandard,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getSummarizedStandard
+);
 
 module.exports = router;

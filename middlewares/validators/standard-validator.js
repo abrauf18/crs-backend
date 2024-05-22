@@ -48,8 +48,16 @@ const getStandard = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const getSummarizedStandard = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createStandard,
     updateStandard,
-    getStandard
+    getStandard,
+    getSummarizedStandard
 };
