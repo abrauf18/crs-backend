@@ -252,9 +252,9 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             }]
         });
 
-        const students = classroomStudents.rows.map(classroomStudent => {
+        const students = classroomStudents.rows.map((classroomStudent, index) => {
             const { id, student } = classroomStudent.toJSON();
-            return { id, name: student.name, email: student.email, image: student.image, performance: 100};
+            return { id, index: offset + index + 1, name: student.name, email: student.email, image: student.image, performance: 100, grade: classroom.name };
         });
 
         return { code: 200, data: { className: classroom.name,  totalPages: Math.ceil(classroomStudents.count / limit), students }};
