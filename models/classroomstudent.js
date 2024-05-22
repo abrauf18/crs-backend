@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'classroomId',
         as: 'classroom',
       });
+      models.ClassroomStudent.belongsTo(models.User, {
+        foreignKey: 'studentId',
+        as: 'student',
+      })
       // define association here
     }
   }

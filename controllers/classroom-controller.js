@@ -135,6 +135,46 @@ const deleteClassCourse = async (req, res) => {
     }
 }
 
+const getClassroomStudents = async (req, res) => {
+    try {
+        const { classroomid } = req.headers;
+        const reply = await classroomService.getClassroomStudents({ classroomId: classroomid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const addStudentToClassroom = async (req, res) => {
+    try {
+        const { classroomId, studentId } = req.body;
+        const reply = await classroomService.addStudentToClassroom({ classroomId, studentId });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, 'Classroom not found');
+        }
+        else if (reply.code == 405) {
+            return handleErrorResponse(res, 404, 'Student not found');
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -143,4 +183,6 @@ module.exports = {
     getSummarizedClassroomsOfTeacher,
     getClassesAndCourses,
     deleteClassCourse,
+    getClassroomStudents,
+    addStudentToClassroom
 };
