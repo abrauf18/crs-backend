@@ -166,28 +166,93 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
     }
 }
 
-const getClassroomStudents = async ({ classroomId }) => {
+// const getClassroomStudents = async ({ classroomId, page, limit }) => {
+//     try {
+//         page = parseInt(page, 10);
+//         limit = parseInt(limit, 10);
+
+//         if (isNaN(page) || page < 1) {
+//             page = 1;
+//         }
+
+//         if (isNaN(limit) || limit < 1) {
+//             limit = 10; 
+//         }
+//         const offset = (page - 1) * limit;
+
+//         const classroom = await Classroom.findOne({
+//             where: { id: classroomId },
+//             attributes: ['name'],
+//             include: [{
+//                 model: ClassroomStudent,
+//                 as: 'classroomStudents',
+//                 attributes: ['id'],
+//                 offset,
+//                 limit,
+//                 include: [{
+//                     model: User,
+//                     as: 'student',
+//                     attributes: ['id', 'name', 'email', 'image'],
+//                 }]
+//             }]
+//         });
+
+//         if (!classroom) {
+//             return { code: 404 };
+//         }
+
+//         const students = classroom.classroomStudents.map(classroomStudent => {
+//             const { id, student } = classroomStudent.toJSON();
+//             return { id, name: student.name, email: student.email, image: student.image, performance: 100};
+//         });
+
+//         return { code: 200, data: { className: classroom.name, students }};
+
+//     } catch (error) {
+//         console.log('\n\n\n\n', error);
+//         logger.error(error?.message || 'An error occurred while getting classroom students');
+//         return { code: 500 };
+//     }
+// }
+
+const getClassroomStudents = async ({ classroomId, page, limit }) => {
     try {
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        if (isNaN(page) || page < 1) {
+            page = 1;
+        }
+
+        if (isNaN(limit) || limit < 1) {
+            limit = 10; 
+        }
+        const offset = (page - 1) * limit;
+
+        // Fetch the classroom details
         const classroom = await Classroom.findOne({
             where: { id: classroomId },
             attributes: ['name'],
-            include: [{
-                model: ClassroomStudent,
-                as: 'classroomStudents',
-                attributes: ['id'],
-                include: [{
-                    model: User,
-                    as: 'student',
-                    attributes: ['id', 'name', 'email', 'image'],
-                }]
-            }]
         });
 
         if (!classroom) {
             return { code: 404 };
         }
 
-        const students = classroom.classroomStudents.map(classroomStudent => {
+        // Fetch the students with pagination
+        const classroomStudents = await ClassroomStudent.findAndCountAll({
+            where: { classroomId: classroomId },
+            offset: offset,
+            limit: limit,
+            attributes: ['id'],
+            include: [{
+                model: User,
+                as: 'student',
+                attributes: ['id', 'name', 'email', 'image'],
+            }]
+        });
+
+        const students = classroomStudents.rows.map(classroomStudent => {
             const { id, student } = classroomStudent.toJSON();
             return { id, name: student.name, email: student.email, image: student.image, performance: 100};
         });
