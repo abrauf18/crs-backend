@@ -257,7 +257,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             return { id, name: student.name, email: student.email, image: student.image, performance: 100};
         });
 
-        return { code: 200, data: { className: classroom.name, students }};
+        return { code: 200, data: { className: classroom.name,  totalPages: Math.ceil(classroomStudents.count / limit), students }};
 
     } catch (error) {
         console.log('\n\n\n\n', error);
