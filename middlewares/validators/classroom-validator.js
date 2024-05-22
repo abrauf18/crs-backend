@@ -80,6 +80,8 @@ const getClassroomStudents = createSchemaMiddleware(
     Joi.object({
         classroomid: Joi.string().guid().required(),
         accesstoken: Joi.string().required(),
+        page: Joi.number().integer().min(1).required(), 
+        limit: Joi.number().integer().min(1).required()
     }).unknown(), 'headers'
 );
 
