@@ -54,5 +54,20 @@ router.post(
     resourceController.updateResource
 );
 
+router.get(
+    "/getResourcesByType",
+    resourceValidation.getResourcesByType,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    resourceController.getResourcesByType
+);
+
+router.get(
+    "/getResourcesByName",
+    resourceValidation.getResourcesByName,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    resourceController.getResourcesByName
+);
 
 module.exports = router;
