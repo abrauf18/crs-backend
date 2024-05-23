@@ -2,7 +2,6 @@ const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
-const { add } = require("winston");
 
 const createClassroom = async ({ name, teacherId }) => {
     try {
@@ -229,7 +228,6 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         }
         const offset = (page - 1) * limit;
 
-        // Fetch the classroom details
         const classroom = await Classroom.findOne({
             where: { id: classroomId },
             attributes: ['name'],
@@ -239,7 +237,6 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             return { code: 404 };
         }
 
-        // Fetch the students with pagination
         const classroomStudents = await ClassroomStudent.findAndCountAll({
             where: { classroomId: classroomId },
             offset: offset,
@@ -254,7 +251,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
 
         const students = classroomStudents.rows.map((classroomStudent, index) => {
             const { id, student } = classroomStudent.toJSON();
-            return { id, index: offset + index + 1, name: student.name, email: student.email, image: student.image, performance: 100, grade: classroom.name };
+            return { id, index: offset + index + 1, name: student.name, email: student.email, image: student.image, performance: 100, grade: classroom.name, gradeId: classroomId };
         });
 
         return { code: 200, data: { className: classroom.name,  totalPages: Math.ceil(classroomStudents.count / limit), students }};
