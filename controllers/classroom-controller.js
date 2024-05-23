@@ -195,6 +195,29 @@ const removeStudentFromClassroom = async (req, res) => {
     }
 }
 
+const updateClassroomStudent = async (req, res) => {
+    try {
+        const { classroomStudentId, name, email, classroomId, image } = req.body;
+        const reply = await classroomService.updateClassroomStudent({ classroomStudentId, name, email, classroomId, image });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, 'Relation between student and class not found');
+        }
+        else if (reply.code == 405) {
+            return handleErrorResponse(res, 404, 'Student not found');
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -205,5 +228,6 @@ module.exports = {
     deleteClassCourse,
     getClassroomStudents,
     addStudentToClassroom,
-    removeStudentFromClassroom
+    removeStudentFromClassroom,
+    updateClassroomStudent
 };
