@@ -100,6 +100,17 @@ const removeStudentFromClassroom = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const updateClassroomStudent = createSchemaMiddleware(
+    Joi.object({
+        classroomStudentId: Joi.string().guid().required(),
+        name: Joi.string().required(),
+        email: Joi.string().email().required(),
+        classroomId: Joi.string().guid().required(),
+        image: Joi.string().required(),
+        accessToken: Joi.string().required()
+    })
+);
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -110,5 +121,6 @@ module.exports = {
     deleteClassCourse,
     getClassroomStudents,
     addStudentToClassroom,
-    removeStudentFromClassroom
+    removeStudentFromClassroom,
+    updateClassroomStudent
 };

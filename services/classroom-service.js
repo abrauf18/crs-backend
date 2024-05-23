@@ -299,6 +299,35 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
     }
 }
 
+const updateClassroomStudent = async ({ classroomStudentId, name, email, classroomId, image }) => {
+    try {
+        const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId } });
+        if (!classroomStudent) {
+            return { code: 404 };
+        }
+        const updatedClassroomStudent = await classroomStudent.update({classroomId: classroomId});
+
+        const student = await User.findOne({ where: { id: classroomStudent.studentId } });
+        if (!student) {
+            return { code: 405 };
+        }
+        const updatedStudent = await student.update({ name, email, image });
+        const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
+        const { classroomId: updatedClassroomId } = updatedClassroomStudent.toJSON();
+
+        return { 
+            code: 200, 
+            data: {
+                id: classroomStudent.studentId, name: updatedName, email: updatedEmail, image: updatedImage,
+                classroomId: updatedClassroomId
+            }};
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while updating classroom student');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -309,5 +338,6 @@ module.exports = {
     deleteClassCourse,
     getClassroomStudents,
     addStudentToClassroom,
-    removeStudentFromClassroom
+    removeStudentFromClassroom,
+    updateClassroomStudent
 };
