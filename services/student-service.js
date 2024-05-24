@@ -44,13 +44,14 @@ const getStudentCurrentStandards = async ({ studentId }) => {
             }
         });
 
-        const summarizedStandards = currentClassroom.classroomCourses.map(course => {
+        const summarizedStandards = currentClassroom?.classroomCourses?.map(course => {
             const totalVideoUploads = course.standard.dailyUploads.reduce((count, upload) => {
                 return count + (upload.resource.type === 'video' ? 1 : 0);
             }, 0);
         
             return {
                 standardId: course.standard.id,
+                courseLength: course.standard.courseLength,
                 standardName: course.standard.name,
                 standardDescription: course.standard.description,
                 totalVideoUploads: totalVideoUploads,
