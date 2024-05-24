@@ -1,4 +1,5 @@
 'use strict';
+const { CLASSROOM_STATUS } = require('../utils/enumTypes');
 const {
   Model
 } = require('sequelize');
@@ -42,6 +43,14 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
       allowNull: false,
     },
+    status: {
+      type: DataTypes.ENUM(
+        CLASSROOM_STATUS.ACTIVE, 
+        CLASSROOM_STATUS.INACTIVE
+      ),
+      defaultValue: CLASSROOM_STATUS.ACTIVE,
+      allowNull: false
+    }
   }, {
     sequelize,
     modelName: 'Classroom',
