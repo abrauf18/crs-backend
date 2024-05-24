@@ -12,4 +12,9 @@ const RESOURCE_STATUS = {
     HIDE: "hide"
 }
 
-module.exports = {RESOURCE_TYPES, RESOURCE_STATUS}
+const CLASSROOM_STATUS = { 
+    ACTIVE: "active", 
+    INACTIVE: "inactive"
+}
+
+module.exports = {RESOURCE_TYPES, RESOURCE_STATUS, CLASSROOM_STATUS}
