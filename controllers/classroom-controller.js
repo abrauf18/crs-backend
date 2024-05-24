@@ -9,6 +9,9 @@ const createClassroom = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, "Classroom with this name already exists");
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -166,6 +169,9 @@ const addStudentToClassroom = async (req, res) => {
         else if (reply.code == 405) {
             return handleErrorResponse(res, 404, 'Student not found');
         }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, 'Student already exists in the classroom');
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -208,6 +214,12 @@ const updateClassroomStudent = async (req, res) => {
         }
         else if (reply.code == 405) {
             return handleErrorResponse(res, 404, 'Student not found');
+        }
+        else if (reply.code == 406) {
+            return handleErrorResponse(res, 404, 'Classroom not found');
+        }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, 'Student already exists in the classroom');
         }
         else {
             return handleInternalServerError(res);

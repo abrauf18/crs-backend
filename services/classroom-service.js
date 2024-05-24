@@ -5,6 +5,11 @@ const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createClassroom = async ({ name, teacherId }) => {
     try {
+        const existingClassroom = await Classroom.findOne({ where: { name } });
+        if (existingClassroom) {
+            return { code: 409 };
+        }
+
         const classroom = await Classroom.create({ name, teacherId });
         if (!classroom) {
             return { code: 500 };
@@ -273,6 +278,11 @@ const addStudentToClassroom = async ({ classroomId, studentId }) => {
         if (!student) {
             return { code: 405 };
         }
+        const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId } });
+        if (existingClassroomStudent) {
+            return { code: 409 };
+        }
+
         const classroomStudent = await ClassroomStudent.create({ classroomId, studentId });
 
         return { code: 200, data: classroomStudent };
@@ -305,12 +315,24 @@ const updateClassroomStudent = async ({ classroomStudentId, name, email, classro
         if (!classroomStudent) {
             return { code: 404 };
         }
-        const updatedClassroomStudent = await classroomStudent.update({classroomId: classroomId});
-
+    
         const student = await User.findOne({ where: { id: classroomStudent.studentId } });
         if (!student) {
             return { code: 405 };
         }
+
+        const classroom = await Classroom.findOne({ where: { id: classroomId } });
+        if (!classroom) {
+            return { code: 406 };
+        }
+
+        const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId: classroomStudent.studentId } });
+        if (existingClassroomStudent) {
+            return { code: 409 };
+        }
+
+        const updatedClassroomStudent = await classroomStudent.update({classroomId: classroomId});
+
         const updatedStudent = await student.update({ name, email, image });
         const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
         const { classroomId: updatedClassroomId } = updatedClassroomStudent.toJSON();
