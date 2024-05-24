@@ -3,49 +3,48 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Video extends Model {
+  class VideoTracking extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      VideoTracking.belongsTo(models.Video, { foreignKey: 'videoId', as: 'video' });
+      VideoTracking.belongsTo(models.User, { foreignKey: 'studentId', as: 'student' });
       // define association here
-      Video.belongsTo(models.Resource, { foreignKey: 'resourceId', as: 'resource' });
-      Video.hasMany(models.Question, { foreignKey: 'videoId', as: 'questions' });
-      Video.hasMany(models.VideoTracking, { foreignKey: 'videoId', as: 'videoTrackings' });
     }
   }
-  Video.init({
+  VideoTracking.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
       allowNull: false,
     },
-    resourceId: {
+    videoId: {
       type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
-    thumbnailURL: {
-      type: DataTypes.STRING,
+    studentId: {
+      type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
-    topics: {
-      type: DataTypes.JSON,
-      defaultValue:{},
+    saved: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
+      defaultValue: false,
     },
-    duration: {
+    last_seen_time: {
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: '00:00:00',
     }
   }, {
     sequelize,
-    modelName: 'Video',
+    modelName: 'VideoTracking',
   });
-  return Video;
+  return VideoTracking;
 };
