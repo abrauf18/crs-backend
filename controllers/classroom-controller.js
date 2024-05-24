@@ -209,6 +209,9 @@ const updateClassroomStudent = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, 'User with this email already exists');
+        }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Relation between student and class not found');
         }

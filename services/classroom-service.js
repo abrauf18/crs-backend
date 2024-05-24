@@ -311,6 +311,11 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
 
 const updateClassroomStudent = async ({ classroomStudentId, name, email, classroomId, image }) => {
     try {
+        const isEmailRegisterd = await User.findOne({ where: { email } });
+        if (isEmailRegisterd) {
+            return { code: 400 };
+        }
+
         const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId } });
         if (!classroomStudent) {
             return { code: 404 };
