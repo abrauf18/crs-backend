@@ -23,4 +23,20 @@ router.get(
     studentController.getStandardResources
 );
 
+router.get(
+    "/getStudentVideo",
+    studentValidation.getStudentVideo,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.getStudentVideo
+);
+
+router.post(
+    "/storeStudentVideo",
+    studentValidation.storeStudentVideo,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.storeStudentVideo
+);
+
 module.exports = router;
