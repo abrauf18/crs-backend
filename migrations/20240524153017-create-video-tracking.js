@@ -39,6 +39,11 @@ module.exports = {
         defaultValue: '00:00:00',
         type: Sequelize.STRING
       },
+      watchedCompletely: {
+        allowNull: false,
+        defaultValue: false,
+        type: Sequelize.BOOLEAN
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
