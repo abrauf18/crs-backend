@@ -22,13 +22,6 @@ const getStudentCurrentStandards = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
-const getStandardResources = createSchemaMiddleware(
-    Joi.object({
-        standardid: Joi.string().guid().required(),
-        accesstoken: Joi.string().required()
-    }).unknown(), 'headers'
-);
-
 const getStudentVideo = createSchemaMiddleware(
     Joi.object({
         videoid: Joi.string().guid().required(),
@@ -58,7 +51,6 @@ const getStudentStandard = createSchemaMiddleware(
 
 module.exports = {
     getStudentCurrentStandards,
-    getStandardResources,
     getStudentVideo,
     storeStudentVideo,
     getStudentStandard
