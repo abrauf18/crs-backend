@@ -9,6 +9,8 @@ const createVideoQuestionAnswer = async (req, res) => {
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
+        } else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, 'Question not found');
         }
         else {
             return handleInternalServerError(res);
