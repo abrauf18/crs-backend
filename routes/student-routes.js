@@ -39,4 +39,12 @@ router.post(
     studentController.storeStudentVideo
 );
 
+router.get(
+    "/getStudentStandard",
+    studentValidation.getStudentStandard,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.getStudentStandard
+);
+
 module.exports = router;

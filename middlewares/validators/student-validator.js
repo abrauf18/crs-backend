@@ -32,6 +32,7 @@ const getStandardResources = createSchemaMiddleware(
 const getStudentVideo = createSchemaMiddleware(
     Joi.object({
         videoid: Joi.string().guid().required(),
+        studentid: Joi.string().guid().required(),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
 );
@@ -39,6 +40,7 @@ const getStudentVideo = createSchemaMiddleware(
 const storeStudentVideo = createSchemaMiddleware(
     Joi.object({
         videoId: Joi.string().guid().required(),
+        studentId: Joi.string().guid().required(),
         last_seen_time: Joi.string().pattern(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).required().messages({
             'string.pattern.base': 'last_seen_time must be in the format HH:MM:SS',
         }),
@@ -46,10 +48,18 @@ const storeStudentVideo = createSchemaMiddleware(
     })
 );
 
+const getStudentStandard = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStandardResources,
     getStudentVideo,
-    storeStudentVideo
-
+    storeStudentVideo,
+    getStudentStandard
 };
