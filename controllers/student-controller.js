@@ -21,26 +21,6 @@ const getStudentCurrentStandards = async (req, res) => {
     }
 };
 
-const getStandardResources = async (req, res) => {
-    try {
-        const { standardid } = req.headers;
-        const reply = await studentService.getStandardResources({ standardId: standardid });
-
-        if (reply.code == 200) {
-            return handleSuccessResponse(res, 200, reply.data);
-        }
-        else if (reply.code == 404) {
-            return handleErrorResponse(res, 404, reply.message);
-        }
-        else {
-            return handleInternalServerError(res);
-        }
-    }
-    catch (error) {
-        return handleInternalServerError(res);
-    }
-}
-
 const getStudentVideo = async (req, res) => {
     try {
         const { videoid, studentid } = req.headers;
@@ -106,7 +86,6 @@ const getStudentStandard = async (req, res) => {
 
 module.exports = {
     getStudentCurrentStandards,
-    getStandardResources,
     getStudentVideo,
     storeStudentVideo,
     getStudentStandard

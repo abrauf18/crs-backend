@@ -16,14 +16,6 @@ router.get(
 );
 
 router.get(
-    "/getStandardResources",
-    studentValidation.getStandardResources,
-    roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
-    studentController.getStandardResources
-);
-
-router.get(
     "/getStudentVideo",
     studentValidation.getStudentVideo,
     roleBasedAccess.setUser,
