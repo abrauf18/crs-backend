@@ -201,7 +201,7 @@ const getStudentVideo = async ({ videoId, studentId }) => {
             return {
                 code: 200,
                 data: {
-                    video: { ...videoData, name: resource.name, videoUrl: resource.url, questions: transformedQuestions, topics }
+                    video: { ...videoData, lastSeenTime: watchedVideo.last_seen_time, name: resource.name, videoUrl: resource.url, questions: transformedQuestions, topics }
                 }
             };
             
@@ -256,6 +256,21 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time }) => {
             return { code: 400 };
         }
 
+        const existingVideoTracking = await VideoTracking.findOne({
+            where: {
+                videoId: videoId,
+                studentId: studentId
+            }
+        });
+
+        if (existingVideoTracking) {
+            await existingVideoTracking.update({
+                last_seen_time: last_seen_time
+            });
+
+            return { code: 200, data: existingVideoTracking };
+        }
+
         const videotracking = await VideoTracking.create({
             videoId: videoId,
             studentId: studentId,
@@ -270,9 +285,79 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time }) => {
     }
 }
 
+const getStudentStandard = async ({ standardId, studentId }) => {
+    try {
+        const standard = await Standard.findByPk(standardId, {
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['accessDate'],
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id', 'name', 'type', 'topic'],
+                    include: [{
+                        model: Video,
+                        as: 'video',
+                        attributes: ['id'],
+                        include: [{
+                            model: VideoTracking,
+                            as: 'videoTrackings',
+                            where: { studentId: studentId },
+                            attributes: ['id', 'watchedCompletely']
+                        }]
+                    }]
+                }]
+            }]
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
+            const date = upload.accessDate;
+            if (!result[date]) {
+                result[date] = [];
+            }
+            if (upload.resource) {
+                result[date].push(upload.resource);
+            }
+            return result;
+        }, {});
+
+        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
+            date: date,
+            released: date <= new Date().toISOString(),
+            topics: uploadsByDate[date].map(resource => ({
+                resourceId: resource.id,
+                name: resource.name,
+                type: resource.type,
+                topic: resource.topic,
+                videoId: resource.video ? resource.video.id : null,
+                watched: resource.video?.videoTrackings.length > 0,
+                completed: resource.video?.videoTrackings[0]?.watchedCompletely || false
+            }))
+        }));
+
+        const result = {
+            name: standard.name,
+            description: standard.description,
+            dailyUploads: transformedDailyUploads
+        };
+
+        return { code: 200, data: result };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
     getStudentCurrentStandards,
     getStandardResources,
     getStudentVideo,
     storeStudentVideo,
+    getStudentStandard
 };
