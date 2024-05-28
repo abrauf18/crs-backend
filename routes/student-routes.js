@@ -39,4 +39,20 @@ router.get(
     studentController.getStudentStandard
 );
 
+router.post(
+    "/UpdateStudentVideoCompleted",
+    studentValidation.UpdateStudentVideoCompleted,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.UpdateStudentVideoCompleted
+);
+
+router.post(
+    "/UpdateStudentVideoLastSeenTime",
+    studentValidation.UpdateStudentVideoLastSeenTime,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.UpdateStudentVideoLastSeenTime
+);
+
 module.exports = router;
