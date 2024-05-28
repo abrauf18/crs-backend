@@ -293,9 +293,90 @@ const getStudentStandard = async ({ standardId, studentId }) => {
     }
 };
 
+const UpdateStudentVideoCompleted = async ({ videoId, studentId, watchedCompletely, last_seen_time }) => {
+    try {
+        const video = await Video.findByPk(videoId);
+        if (!video) {
+            return { code: 404, message: 'Video not found'};
+        }
+
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const videoTracking = await VideoTracking.findOne({
+            where: {
+                videoId: videoId,
+                studentId: studentId
+            }
+        });
+
+        if (!videoTracking) {
+            return { code: 404, message: 'Video tracking not found'};
+        }
+
+        if (compareTimes(last_seen_time, video.duration) > 0) {
+            return { code: 400 };
+        }
+
+        const updatedVideoTracking = await videoTracking.update({
+            watchedCompletely: watchedCompletely,
+            last_seen_time: last_seen_time
+        });
+
+        return { code: 200, data: updatedVideoTracking };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while updating the video tracking');
+        return { code: 500 };
+    }
+}
+
+const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_time }) => {
+    try {
+        const video = await Video.findByPk(videoId);
+        if (!video) {
+            return { code: 404, message: 'Video not found'};
+        }
+
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const videoTracking = await VideoTracking.findOne({
+            where: {
+                videoId: videoId,
+                studentId: studentId
+            }
+        });
+
+        if (!videoTracking) {
+            return { code: 404, message: 'Video tracking not found'};
+        }
+
+        if (compareTimes(last_seen_time, video.duration) > 0) {
+            return { code: 400 };
+        }
+
+        const updatedVideoTracking = await videoTracking.update({
+            last_seen_time: last_seen_time
+        });
+
+        return { code: 200, data: updatedVideoTracking };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while updating the video tracking');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
     storeStudentVideo,
-    getStudentStandard
+    getStudentStandard,
+    UpdateStudentVideoCompleted,
+    UpdateStudentVideoLastSeenTime
 };

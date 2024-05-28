@@ -49,9 +49,34 @@ const getStudentStandard = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const UpdateStudentVideoCompleted = createSchemaMiddleware(
+    Joi.object({
+        videoId: Joi.string().guid().required(),
+        studentId: Joi.string().guid().required(),
+        watchedCompletely: Joi.boolean().required(),
+        last_seen_time: Joi.string().pattern(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).required().messages({
+            'string.pattern.base': 'last_seen_time must be in the format HH:MM:SS',
+        }),
+        accessToken: Joi.string().required()
+    })
+);
+
+const UpdateStudentVideoLastSeenTime = createSchemaMiddleware(
+    Joi.object({
+        videoId: Joi.string().guid().required(),
+        studentId: Joi.string().guid().required(),
+        last_seen_time: Joi.string().pattern(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).required().messages({
+            'string.pattern.base': 'last_seen_time must be in the format HH:MM:SS',
+        }),
+        accessToken: Joi.string().required()
+    })
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
     storeStudentVideo,
-    getStudentStandard
+    getStudentStandard,
+    UpdateStudentVideoCompleted,
+    UpdateStudentVideoLastSeenTime
 };
