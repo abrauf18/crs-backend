@@ -241,6 +241,7 @@ const getStudentStandard = async ({ standardId, studentId }) => {
                         include: [{
                             model: VideoTracking,
                             as: 'videoTrackings',
+                            required: false,
                             where: { studentId: studentId },
                             attributes: ['id', 'watchedCompletely']
                         }]
