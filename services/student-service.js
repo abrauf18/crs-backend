@@ -312,12 +312,19 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, watchedComplete
             }
         });
 
-        if (!videoTracking) {
-            return { code: 404, message: 'Video tracking not found'};
-        }
-
         if (compareTimes(last_seen_time, video.duration) > 0) {
             return { code: 400 };
+        }
+
+        if (!videoTracking) {
+            const newVideotracking = await VideoTracking.create({
+                videoId: videoId,
+                studentId: studentId,
+                last_seen_time: last_seen_time,
+                watchedCompletely: watchedCompletely,
+            });
+    
+            return { code: 200, data: newVideotracking};
         }
 
         const updatedVideoTracking = await videoTracking.update({
@@ -352,12 +359,18 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
             }
         });
 
-        if (!videoTracking) {
-            return { code: 404, message: 'Video tracking not found'};
-        }
-
         if (compareTimes(last_seen_time, video.duration) > 0) {
             return { code: 400 };
+        }
+
+        if (!videoTracking) {
+            const newVideotracking = await VideoTracking.create({
+                videoId: videoId,
+                studentId: studentId,
+                last_seen_time: last_seen_time,
+            });
+    
+            return { code: 200, data: newVideotracking};
         }
 
         const updatedVideoTracking = await videoTracking.update({
