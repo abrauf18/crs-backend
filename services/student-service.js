@@ -130,7 +130,7 @@ const getStudentVideo = async ({ videoId, studentId }) => {
                 });
                 return {
                     ...questionData,
-                    answer: transformedAnswers
+                    attempt: transformedAnswers[0]
                 };
             });
 
