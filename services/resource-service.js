@@ -237,10 +237,26 @@ const getResource = async ({resourceID}) => {
 const getResourcesByType = async ({ resourceType }) => {
     try {
         const resources = await Resource.findAll({
-            where: { type: resourceType }
+            where: { type: resourceType },
+            include: [
+                {
+                    model: Video,
+                    as: 'video',
+                    attributes: ['thumbnailURL'],
+                    required: false
+                },
+            ],
         });
 
-        return { code: 200, data: resources };
+        const transformedResources = resources.map(resource => {
+            const { video, createdAt, updatedAt, ...resourceData } = resource.get();
+            return {
+                ...resourceData,
+                thumbnail: video?.thumbnailURL,
+            };
+        });
+
+        return { code: 200, data: transformedResources };
     } catch (error) {
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
@@ -252,11 +268,27 @@ const getResourcesByName = async ({ resourceName, resourceType }) => {
         const resources = await Resource.findAll({
             where: {
                 name: { [Op.iLike]: '%' + resourceName + '%' },
-                type: resourceType
-            }
+                type: resourceType,
+            },
+            include: [
+                {
+                    model: Video,
+                    as: 'video',
+                    attributes: ['thumbnailURL'],
+                    required: false
+                },
+            ],
+        });
+        
+        const transformedResources = resources.map(resource => {
+            const { video, createdAt, updatedAt, ...resourceData } = resource.get();
+            return {
+                ...resourceData,
+                thumbnail: video?.thumbnailURL,
+            };
         });
 
-        return { code: 200, data: resources };
+        return { code: 200, data: transformedResources };
     } catch (error) {
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
