@@ -113,6 +113,7 @@ const getStudentVideo = async ({ videoId, studentId }) => {
                         model: VideoQuestionAnswer,
                         as: 'answers',
                         where: { userId: studentId },
+                        required: false
                     }]
                 }],
                 group: ['Video.id', 'resource.id', 'questions.id', 'questions.answers.id'],
