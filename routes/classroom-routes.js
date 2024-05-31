@@ -56,10 +56,42 @@ router.get(
 
 router.delete(
     "/deleteClassCourse",
-    classroomValidation.deleteClassroom,
+    classroomValidation.deleteClassCourse,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     classroomController.deleteClassCourse
+)
+
+router.get(
+    "/getClassroomStudents",
+    classroomValidation.getClassroomStudents,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.getClassroomStudents
+)
+
+router.post(
+    "/addStudentToClassroom",
+    classroomValidation.addStudentToClassroom,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.addStudentToClassroom
+)
+
+router.delete(
+    "/removeStudentFromClassroom",
+    classroomValidation.removeStudentFromClassroom,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.removeStudentFromClassroom
+)
+
+router.put(
+    "/updateClassroomStudent",
+    classroomValidation.updateClassroomStudent,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    classroomController.updateClassroomStudent
 )
 
 module.exports = router;
