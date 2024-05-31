@@ -1,10 +1,15 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createClassroom = async ({ name, teacherId }) => {
     try {
+        const existingClassroom = await Classroom.findOne({ where: { name } });
+        if (existingClassroom) {
+            return { code: 409 };
+        }
+
         const classroom = await Classroom.create({ name, teacherId });
         if (!classroom) {
             return { code: 500 };
@@ -165,6 +170,191 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
     }
 }
 
+// const getClassroomStudents = async ({ classroomId, page, limit }) => {
+//     try {
+//         page = parseInt(page, 10);
+//         limit = parseInt(limit, 10);
+
+//         if (isNaN(page) || page < 1) {
+//             page = 1;
+//         }
+
+//         if (isNaN(limit) || limit < 1) {
+//             limit = 10; 
+//         }
+//         const offset = (page - 1) * limit;
+
+//         const classroom = await Classroom.findOne({
+//             where: { id: classroomId },
+//             attributes: ['name'],
+//             include: [{
+//                 model: ClassroomStudent,
+//                 as: 'classroomStudents',
+//                 attributes: ['id'],
+//                 offset,
+//                 limit,
+//                 include: [{
+//                     model: User,
+//                     as: 'student',
+//                     attributes: ['id', 'name', 'email', 'image'],
+//                 }]
+//             }]
+//         });
+
+//         if (!classroom) {
+//             return { code: 404 };
+//         }
+
+//         const students = classroom.classroomStudents.map(classroomStudent => {
+//             const { id, student } = classroomStudent.toJSON();
+//             return { id, name: student.name, email: student.email, image: student.image, performance: 100};
+//         });
+
+//         return { code: 200, data: { className: classroom.name, students }};
+
+//     } catch (error) {
+//         console.log('\n\n\n\n', error);
+//         logger.error(error?.message || 'An error occurred while getting classroom students');
+//         return { code: 500 };
+//     }
+// }
+
+const getClassroomStudents = async ({ classroomId, page, limit }) => {
+    try {
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        if (isNaN(page) || page < 1) {
+            page = 1;
+        }
+
+        if (isNaN(limit) || limit < 1) {
+            limit = 10; 
+        }
+        const offset = (page - 1) * limit;
+
+        const classroom = await Classroom.findOne({
+            where: { id: classroomId },
+            attributes: ['name'],
+        });
+
+        if (!classroom) {
+            return { code: 404 };
+        }
+
+        const classroomStudents = await ClassroomStudent.findAndCountAll({
+            where: { classroomId: classroomId },
+            offset: offset,
+            limit: limit,
+            attributes: ['id'],
+            include: [{
+                model: User,
+                as: 'student',
+                attributes: ['id', 'name', 'email', 'image'],
+            }]
+        });
+
+        const students = classroomStudents.rows.map((classroomStudent, index) => {
+            const { id, student } = classroomStudent.toJSON();
+            return { id, index: offset + index + 1, name: student.name, email: student.email, image: student.image, performance: 100, grade: classroom.name, gradeId: classroomId };
+        });
+
+        return { code: 200, data: { className: classroom.name,  totalPages: Math.ceil(classroomStudents.count / limit), students }};
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while getting classroom students');
+        return { code: 500 };
+    }
+}
+
+const addStudentToClassroom = async ({ classroomId, studentId }) => {
+    try {
+        const classroom = await Classroom.findOne({ where: { id: classroomId } });
+        if (!classroom) {
+            return { code: 404 };
+        }
+        const student = await User.findOne({ where: { id: studentId } });
+        if (!student) {
+            return { code: 405 };
+        }
+        const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId } });
+        if (existingClassroomStudent) {
+            return { code: 409 };
+        }
+
+        const classroomStudent = await ClassroomStudent.create({ classroomId, studentId });
+
+        return { code: 200, data: classroomStudent };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while adding student to classroom');
+        return { code: 500 };
+    }
+}
+
+const removeStudentFromClassroom = async ({ classroomStudentId }) => {
+    try {
+        const classroomStudent = await ClassroomStudent.findByPk(classroomStudentId);
+        if (!classroomStudent) {
+            return { code: 404 };
+        }
+        const deleted = await classroomStudent.destroy();
+
+        return { code: 200, data: deleted };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while removing student from classroom');
+        return { code: 500 };
+    }
+}
+
+const updateClassroomStudent = async ({ classroomStudentId, name, email, classroomId, image }) => {
+    try {
+        const isEmailRegisterd = await User.findOne({ where: { email } });
+        if (isEmailRegisterd) {
+            return { code: 400 };
+        }
+
+        const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId } });
+        if (!classroomStudent) {
+            return { code: 404 };
+        }
+    
+        const student = await User.findOne({ where: { id: classroomStudent.studentId } });
+        if (!student) {
+            return { code: 405 };
+        }
+
+        const classroom = await Classroom.findOne({ where: { id: classroomId } });
+        if (!classroom) {
+            return { code: 406 };
+        }
+
+        const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId: classroomStudent.studentId } });
+        if (existingClassroomStudent) {
+            return { code: 409 };
+        }
+
+        const updatedClassroomStudent = await classroomStudent.update({classroomId: classroomId});
+
+        const updatedStudent = await student.update({ name, email, image });
+        const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
+        const { classroomId: updatedClassroomId } = updatedClassroomStudent.toJSON();
+
+        return { 
+            code: 200, 
+            data: {
+                id: classroomStudent.studentId, name: updatedName, email: updatedEmail, image: updatedImage,
+                classroomId: updatedClassroomId
+            }};
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while updating classroom student');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -173,4 +363,8 @@ module.exports = {
     getSummarizedClassroomsOfTeacher,
     getClassesAndCourses,
     deleteClassCourse,
+    getClassroomStudents,
+    addStudentToClassroom,
+    removeStudentFromClassroom,
+    updateClassroomStudent
 };

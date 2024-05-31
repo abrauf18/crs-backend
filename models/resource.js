@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Resource.hasOne(models.Video, {foreignKey: 'resourceId', as: 'video'});
+      Resource.hasOne(models.AssessmentResourcesDetail, {foreignKey: 'resourceId', as: 'AssessmentResourcesDetail'});
       // define association here
     }
   }

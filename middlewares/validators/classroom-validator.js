@@ -69,13 +69,47 @@ const getClassesAndCourses = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
-const deleteClassroom = createSchemaMiddleware(
+const deleteClassCourse = createSchemaMiddleware(
     Joi.object({
         classroomcourseid: Joi.string().guid().required(),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
 );
 
+const getClassroomStudents = createSchemaMiddleware(
+    Joi.object({
+        classroomid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+        page: Joi.number().integer().min(1).required(), 
+        limit: Joi.number().integer().min(1).required()
+    }).unknown(), 'headers'
+);
+
+const addStudentToClassroom = createSchemaMiddleware(
+    Joi.object({
+        classroomId: Joi.string().guid().required(),
+        studentId: Joi.string().guid().required(),
+        accessToken: Joi.string().required()
+    })
+);
+
+const removeStudentFromClassroom = createSchemaMiddleware(
+    Joi.object({
+        classroomstudentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const updateClassroomStudent = createSchemaMiddleware(
+    Joi.object({
+        classroomStudentId: Joi.string().guid().required(),
+        name: Joi.string().required(),
+        email: Joi.string().email().required(),
+        classroomId: Joi.string().guid().required(),
+        image: Joi.string().required(),
+        accessToken: Joi.string().required()
+    })
+);
 
 module.exports = {
     createClassroom,
@@ -84,5 +118,9 @@ module.exports = {
     assignStandardToClassroom,
     getSummarizedClassroomsOfTeacher,
     getClassesAndCourses,
-    deleteClassroom
+    deleteClassCourse,
+    getClassroomStudents,
+    addStudentToClassroom,
+    removeStudentFromClassroom,
+    updateClassroomStudent
 };

@@ -3,9 +3,9 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createResource = async (req, res) => {
     try {
-        const { name, url, type, topic, thumbnailURL = '', duration = '00:00:00' } = req.body;
+        const { name, url, type, topic, thumbnailURL = '', duration = '00:00:00', totalMarks = 0 } = req.body;
 
-        const reply = await resourceService.createResource({ name, url, type, topic, thumbnailURL, duration });
+        const reply = await resourceService.createResource({ name, url, type, topic, thumbnailURL, duration, totalMarks });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -95,9 +95,9 @@ const getResourcesCount = async (req, res) => {
 
 const updateResource = async (req, res) => {
     try {
-        const { resourceId, name, type, topic } = req.body
+        const { resourceId, name, type, topic, totalMarks = 0 } = req.body
 
-        const reply = await resourceService.updateResource({ resourceId, name, type, topic });
+        const reply = await resourceService.updateResource({ resourceId, name, type, topic, totalMarks });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
