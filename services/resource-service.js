@@ -107,6 +107,8 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
 
         if (orderBy && sortBy) {
             queryOptions.order = [[orderBy, sortBy]];
+        } else {
+            queryOptions.order = [['id', 'ASC']];
         }
 
         const resources = await Resource.findAndCountAll(queryOptions);

@@ -86,6 +86,8 @@ const getAllUsersProfile = async ({user, page= 1, limit= 10, orderBy, sortBy, ke
       
         if (orderBy && sortBy) {
             queryOptions.order = [[orderBy, sortBy]];
+        } else {
+            queryOptions.order = [['id', 'ASC']];
         }
 
         if (keyword) {
