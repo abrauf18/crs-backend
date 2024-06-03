@@ -10,6 +10,16 @@ const createVideoQuestionAnswer = async (userId, questionId, answer) => {
             return { code: 404 };
         }
 
+        const existingAnswer = await VideoQuestionAnswer.findOne({
+            where: {
+                userId,
+                questionId,
+            },
+        });
+        if (existingAnswer) {
+            return { code: 409 };
+        }
+
         let videoQuestionAnswer = {};
 
         if ( !question.correctOption ) {
