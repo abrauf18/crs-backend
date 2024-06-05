@@ -3,9 +3,9 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createAssessmentAnswer = async (req, res) => {
     try {
-        const {userId, assessmentResourcesDetailId, answerURL} = req.body;
+        const {userId, resourceId, answerURL} = req.body;
 
-        const reply = await assessmentAnswerService.createAssessmentAnswer({userId, assessmentResourcesDetailId, answerURL});
+        const reply = await assessmentAnswerService.createAssessmentAnswer({userId, resourceId, answerURL});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
