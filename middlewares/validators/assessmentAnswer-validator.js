@@ -19,7 +19,7 @@ const createSchemaMiddleware = (schema, target = 'body') => async (req, res, nex
 const createAssessmentAnswer = createSchemaMiddleware(
     Joi.object({
         userId: Joi.string().guid().required(),
-        assessmentResourcesDetailId: Joi.string().guid().required(),
+        resourceId: Joi.string().guid().required(),
         answerURL: Joi.string().required(),
         accessToken: Joi.string().required(),
     })

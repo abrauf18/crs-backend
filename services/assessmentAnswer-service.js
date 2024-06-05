@@ -1,22 +1,54 @@
 const { Sequelize, where } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { User, AssessmentResourcesDetail, AssessmentAnswer, Resource } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const createAssessmentAnswer = async ({userId, assessmentResourcesDetailId, answerURL}) => {
+const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
     try {
         const existingUser = await User.findByPk(userId);
         if (!existingUser) {
             return { code: 404, message: "User not found" };
         }
 
-        const existingAssessmentResourcesDetail = await AssessmentResourcesDetail.findByPk(assessmentResourcesDetailId);
+        const existingResource = await Resource.findByPk(resourceId);
+        if (!existingResource) {
+            return { code: 404, message: "Resource not found" };
+        }
+
+        const existingAssessmentResourcesDetail = await AssessmentResourcesDetail.findOne({
+            where: { resourceId }
+        });
         if (!existingAssessmentResourcesDetail) {
             return { code: 404, message: "AssessmentResourcesDetail not found" };
         }
 
-        const createdAssessmentAnswer = await AssessmentAnswer.create({userId, assessmentResourcesDetailId, answerURL});
-        return { code: 200, data: createdAssessmentAnswer };
+        const existingAssessmentAnswer = await AssessmentAnswer.findOne({
+            where: {
+                userId,
+                assessmentResourcesDetailId: existingAssessmentResourcesDetail.id
+            }
+        });
+
+        if (existingAssessmentAnswer) {
+            existingAssessmentAnswer.answerURL = answerURL;
+
+            await existingAssessmentAnswer.save();
+            
+            return { code: 200, data: existingAssessmentAnswer };
+        } 
+        else {
+            const createdAssessmentAnswer = await AssessmentAnswer.create({
+                userId,
+                assessmentResourcesDetailId: existingAssessmentResourcesDetail.id,
+                answerURL
+            });
+            if (!createdAssessmentAnswer) {
+                return { code: 500 };
+            }
+
+            return { code: 200, data: createdAssessmentAnswer };
+        }
     } catch (error) {
         console.log('\n\n\n', error);
         logger.error(error?.message || 'An error occurred while getting the videos');
@@ -59,6 +91,7 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
         });
 
         const transformedAssesmentAnswer = {
+            name: assessmentAnswer?.name,
             documentURL: assessmentAnswer?.url,
             answerURL: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.answerURL || null,
             totalMarks: assessmentAnswer?.AssessmentResourcesDetail?.totalMarks,
