@@ -1,5 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Standard, DailyUpload, Resource, Video } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
@@ -9,6 +10,7 @@ const createStandard = async ({ name, description, dailyUploads }) => {
         const minDate = new Date(Math.min.apply(null, dates));
         const maxDate = new Date(Math.max.apply(null, dates));
 
+        // @ts-ignore
         const diffTime = Math.abs(maxDate - minDate);
         const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
 
@@ -64,6 +66,7 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             const minDate = new Date(Math.min.apply(null, dates));
             const maxDate = new Date(Math.max.apply(null, dates));
 
+            // @ts-ignore
             const diffTime = Math.abs(maxDate - minDate);
             const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
             await standard.update( {courseLength} );

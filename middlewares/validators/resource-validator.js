@@ -41,6 +41,11 @@ const createResource = createSchemaMiddleware(
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
+        deadline: Joi.number().integer().min(0).when('type', {
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST),
+            then: Joi.required(),
+            otherwise: Joi.optional()
+        }),
     })
 );
 

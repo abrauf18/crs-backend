@@ -1,8 +1,18 @@
 const { Sequelize, where } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { User, AssessmentResourcesDetail, AssessmentAnswer, Resource } = require("../models/index.js");
+const { User, AssessmentResourcesDetail, AssessmentAnswer, Resource, DailyUpload } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+
+function canSubmitAssessment(uploadDate, daysToAdd) {
+    const uploadDateObj = new Date(uploadDate);
+    uploadDateObj.setDate(uploadDateObj.getDate() + daysToAdd);
+    const today = new Date();
+    if (today > uploadDateObj) {
+        return false;
+    }
+    return true;
+}
 
 const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
     try {
@@ -20,7 +30,18 @@ const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
             where: { resourceId }
         });
         if (!existingAssessmentResourcesDetail) {
-            return { code: 404, message: "AssessmentResourcesDetail not found" };
+            return { code: 404, message: "Assessment Resource not found" };
+        }
+
+        const dailyUpload = await DailyUpload.findOne({
+            where: { resourceId }
+        });
+        if (!dailyUpload) {
+            return { code: 404, message: "Daily Upload not found" };
+        }
+
+        if (canSubmitAssessment(dailyUpload.accessDate,existingAssessmentResourcesDetail.deadline) === false) {
+            return { code: 400, message: "Deadline has passed" };
         }
 
         const existingAssessmentAnswer = await AssessmentAnswer.findOne({
@@ -75,19 +96,27 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
         const assessmentAnswer = await Resource.findOne({
             where: { id: resourceId },
             attributes: ['id', 'name', 'url'],
-            include: [{
-                model: AssessmentResourcesDetail,
-                as: 'AssessmentResourcesDetail',
-                attributes: ['id', 'totalMarks'],
-                required: false,
-                include: [{
-                    model: AssessmentAnswer,
-                    as: 'assessmentAnswers',
+            include: [
+                {
+                    model: AssessmentResourcesDetail,
+                    as: 'AssessmentResourcesDetail',
+                    attributes: ['id', 'totalMarks', 'deadline'],
                     required: false,
-                    attributes: ['id', 'answerURL', 'obtainedMarks'],
-                    where: { userId },
-                }]
-            }]
+                    include: [{
+                        model: AssessmentAnswer,
+                        as: 'assessmentAnswers',
+                        required: false,
+                        attributes: ['id', 'answerURL', 'obtainedMarks'],
+                        where: { userId },
+                    }]
+                },
+                {
+                    model: DailyUpload,
+                    as: 'DailyUpload',
+                    attributes: ['accessDate'],
+                    required: false,
+                }
+            ]
         });
 
         const transformedAssesmentAnswer = {
@@ -96,6 +125,7 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
             answerURL: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.answerURL || null,
             totalMarks: assessmentAnswer?.AssessmentResourcesDetail?.totalMarks,
             obtainedMarks: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.obtainedMarks || null,
+            canWrite: canSubmitAssessment(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline)
         }
         return { code: 200, data: transformedAssesmentAnswer };
     } catch (error) {

@@ -37,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:0,
       allowNull: false,
     },
+    deadline: {
+      type: DataTypes.INTEGER,
+      defaultValue:0,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'AssessmentResourcesDetail',
