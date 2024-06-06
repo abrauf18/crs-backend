@@ -6,7 +6,7 @@ const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 function canSubmitAssessment(uploadDate, daysToAdd) {
     const uploadDateObj = new Date(uploadDate);
-    uploadDateObj.setDate(uploadDateObj.getDate() + daysToAdd);
+    uploadDateObj.setDate(uploadDateObj.getDate() + daysToAdd + 1);
     const today = new Date();
     if (today > uploadDateObj) {
         return false;
