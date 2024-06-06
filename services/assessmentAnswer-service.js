@@ -14,6 +14,12 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     return true;
 }
 
+function getDeadline(uploadDate, daysToAdd) {
+    const deadlineDate = new Date(uploadDate);
+    deadlineDate.setDate(deadlineDate.getDate() + daysToAdd + 1);
+    return deadlineDate
+}
+
 const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
     try {
         const existingUser = await User.findByPk(userId);
@@ -125,7 +131,8 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
             answerURL: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.answerURL || null,
             totalMarks: assessmentAnswer?.AssessmentResourcesDetail?.totalMarks,
             obtainedMarks: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.obtainedMarks || null,
-            canWrite: canSubmitAssessment(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline)
+            canWrite: canSubmitAssessment(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline),
+            deadline: getDeadline(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline).toISOString().split('T')[0],
         }
         return { code: 200, data: transformedAssesmentAnswer };
     } catch (error) {
