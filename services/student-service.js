@@ -1,6 +1,7 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, where } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question,VideoQuestionAnswer } = require("../models/index.js");
+// @ts-ignore
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 function timeToSeconds(time) {
@@ -19,6 +20,16 @@ function compareTimes(time1, time2) {
     } else {
         return 0; // time1 is equal to time2
     }
+}
+
+function canSubmitAssessment(uploadDate, daysToAdd) {
+    const uploadDateObj = new Date(uploadDate);
+    uploadDateObj.setDate(uploadDateObj.getDate() + daysToAdd + 1);
+    const today = new Date();
+    if (today > uploadDateObj) {
+        return false;
+    }
+    return true;
 }
 
 const getStudentCurrentStandards = async ({ studentId }) => {
@@ -235,18 +246,25 @@ const getStudentStandard = async ({ standardId, studentId }) => {
                     model: Resource,
                     as: 'resource',
                     attributes: ['id', 'name', 'type', 'topic'],
-                    include: [{
-                        model: Video,
-                        as: 'video',
-                        attributes: ['id'],
-                        include: [{
-                            model: VideoTracking,
-                            as: 'videoTrackings',
-                            required: false,
-                            where: { studentId: studentId },
-                            attributes: ['id', 'watchedCompletely']
-                        }]
-                    }]
+                    include: [
+                        {
+                            model: Video,
+                            as: 'video',
+                            attributes: ['id'],
+                            include: [{
+                                model: VideoTracking,
+                                as: 'videoTrackings',
+                                required: false,
+                                attributes: ['id', 'watchedCompletely'],
+                                where: { studentId: studentId }
+                            }]
+                        },
+                        {
+                            model: AssessmentResourcesDetail,
+                            as: 'AssessmentResourcesDetail',
+                            attributes: ['id', 'totalMarks', 'deadline'],
+                        }
+                    ]
                 }]
             }]
         });
@@ -276,7 +294,8 @@ const getStudentStandard = async ({ standardId, studentId }) => {
                 topic: resource.topic,
                 videoId: resource.video ? resource.video.id : null,
                 watched: resource.video?.videoTrackings.length > 0,
-                completed: resource.video?.videoTrackings[0]?.watchedCompletely || false
+                completed: resource.video?.videoTrackings[0]?.watchedCompletely || false,
+                canWrite: resource?.AssessmentResourcesDetail ? canSubmitAssessment(date, resource.AssessmentResourcesDetail.deadline) : false
             }))
         }));
 
