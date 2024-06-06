@@ -1,5 +1,6 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
@@ -7,7 +8,7 @@ const isAssessmentResource = (type) => {
     return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET;
 };
 
-const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks }) => {
+const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline }) => {
     try {
         const resource = await Resource.create({
             name,
@@ -31,9 +32,10 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
             const assessmentAttributes = await AssessmentResourcesDetail.create({
                 resourceId: resource.id,
                 totalMarks: totalMarks,
-                numberOfQuestions: 1
+                numberOfQuestions: 1,
+                deadline: deadline
             })
-            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions};
+            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions, deadline: assessmentAttributes.deadline};
         }
 
         return { code: 200, data: 
