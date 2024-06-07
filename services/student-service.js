@@ -3,6 +3,7 @@ const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
+const standard = require("../models/standard.js");
 
 function timeToSeconds(time) {
     const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -407,6 +408,8 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
 
 const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
     try {
+        console.log(`\n\n\n videoId: ${videoId}, studentId: ${studentId}`);
+
         const video = await Video.findByPk(videoId);
         if (!video) {
             return { code: 404, message: 'Video not found'};
@@ -433,6 +436,8 @@ const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
         }
 
         const videotracking = await VideoTracking.create({
+            videoId: videoId,
+            studentId: studentId,
             saved: save,
         });
 
@@ -456,7 +461,7 @@ const getSavedVideos = async ({ studentId }) => {
                 studentId: studentId,
                 saved: true
             },
-            attributes: ['videoId', 'last_seen_time'],
+            attributes: ['videoId', 'last_seen_time', 'watchedCompletely'],
             include: [{
                 model: Video,
                 as: 'video',
@@ -469,7 +474,7 @@ const getSavedVideos = async ({ studentId }) => {
                         include: [{
                             model: DailyUpload,
                             as: 'DailyUpload',
-                            attributes: ['accessDate'],
+                            attributes: ['accessDate', 'standardId'],
                         }]
                     },
                     {
@@ -482,31 +487,36 @@ const getSavedVideos = async ({ studentId }) => {
         });
 
         const transformedVideos = savedVideos.map(savedVideo => {
-            const { videoId, last_seen_time, video } = savedVideo.get({ plain: true });
+            const { videoId, last_seen_time, watchedCompletely, video } = savedVideo.get({ plain: true });
             const { resource, ...videoData } = video
             return {
                 videoId: videoId,
                 name: resource.name,
-                videoUrl: resource.url,
                 lastSeenTime: last_seen_time,
                 thumbnailURL: videoData.thumbnailURL,
                 duration: videoData.duration,
-                topicCount: videoData.topics.length,
+                topicCount: Object.keys(videoData.topics).length,
                 questionCount: videoData.questions.length,
                 accessDate: resource.DailyUpload.accessDate,
+                completed: watchedCompletely,
+                standardId: resource.DailyUpload.standardId
             };
         });
 
         const groupedVideos = transformedVideos.reduce((grouped, video) => {
             const date = video.accessDate;
-            if (!grouped[date]) {
-                grouped[date] = [];
+            const index = grouped.findIndex(group => group.date === date);
+            if (index === -1) {
+                grouped.push({ date, videos: [video] });
+            } else {
+                grouped[index].videos.push(video);
             }
-            grouped[date].push(video);
             return grouped;
-        }, {});
+        }, []);
         
-        return { code: 200, data: groupedVideos };
+        const sortedGroupedVideos = groupedVideos.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+
+        return { code: 200, data: sortedGroupedVideos };
     } catch (error) {
         console.log('\n\n\n\n', error)
         logger.error(error?.message || 'An error occurred while fetching the saved videos');
