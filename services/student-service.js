@@ -405,11 +405,122 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
     }
 }
 
+const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
+    try {
+        const video = await Video.findByPk(videoId);
+        if (!video) {
+            return { code: 404, message: 'Video not found'};
+        }
+
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const existingVideoTracking = await VideoTracking.findOne({
+            where: {
+                videoId: videoId,
+                studentId: studentId
+            }
+        });
+
+        if (existingVideoTracking) {
+            await existingVideoTracking.update({
+                saved: save
+            });
+
+            return { code: 200, data: existingVideoTracking };
+        }
+
+        const videotracking = await VideoTracking.create({
+            saved: save,
+        });
+
+        return { code: 200, data: videotracking};
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while storing the video');
+        return { code: 500 };
+    }
+}
+
+const getSavedVideos = async ({ studentId }) => {
+    try {
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const savedVideos = await VideoTracking.findAll({
+            where: {
+                studentId: studentId,
+                saved: true
+            },
+            attributes: ['videoId', 'last_seen_time'],
+            include: [{
+                model: Video,
+                as: 'video',
+                attributes: ['id', 'thumbnailURL', 'duration', 'topics'],
+                include: [
+                    {
+                        model: Resource,
+                        as: 'resource',
+                        attributes: ['id', 'name'],
+                        include: [{
+                            model: DailyUpload,
+                            as: 'DailyUpload',
+                            attributes: ['accessDate'],
+                        }]
+                    },
+                    {
+                        model: Question,
+                        as: 'questions',
+                        attributes: ['id'],
+                    }
+                ]
+            }]
+        });
+
+        const transformedVideos = savedVideos.map(savedVideo => {
+            const { videoId, last_seen_time, video } = savedVideo.get({ plain: true });
+            const { resource, ...videoData } = video
+            return {
+                videoId: videoId,
+                name: resource.name,
+                videoUrl: resource.url,
+                lastSeenTime: last_seen_time,
+                thumbnailURL: videoData.thumbnailURL,
+                duration: videoData.duration,
+                topicCount: videoData.topics.length,
+                questionCount: videoData.questions.length,
+                accessDate: resource.DailyUpload.accessDate,
+            };
+        });
+
+        const groupedVideos = transformedVideos.reduce((grouped, video) => {
+            const date = video.accessDate;
+            if (!grouped[date]) {
+                grouped[date] = [];
+            }
+            grouped[date].push(video);
+            return grouped;
+        }, {});
+        
+        return { code: 200, data: groupedVideos };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the saved videos');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
     storeStudentVideo,
     getStudentStandard,
     UpdateStudentVideoCompleted,
-    UpdateStudentVideoLastSeenTime
+    UpdateStudentVideoLastSeenTime,
+    SaveOrRemoveVideo,
+    getSavedVideos
 };
