@@ -124,11 +124,53 @@ const UpdateStudentVideoLastSeenTime = async (req, res) => {
     }
 }
 
+const SaveOrRemoveVideo = async (req, res) => {
+    try {
+        const { videoId, studentId, save } = req.body;
+        const reply = await studentService.SaveOrRemoveVideo({ videoId, studentId, save });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getSavedVideos = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getSavedVideos({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
     storeStudentVideo,
     getStudentStandard,
     UpdateStudentVideoCompleted,
-    UpdateStudentVideoLastSeenTime
+    UpdateStudentVideoLastSeenTime,
+    SaveOrRemoveVideo,
+    getSavedVideos
 };

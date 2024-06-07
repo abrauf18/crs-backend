@@ -55,4 +55,20 @@ router.post(
     studentController.UpdateStudentVideoLastSeenTime
 );
 
+router.post(
+    "/SaveOrRemoveVideo",
+    studentValidation.SaveOrRemoveVideo,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.SaveOrRemoveVideo
+);
+
+router.get(
+    "/getSavedVideos",
+    studentValidation.getSavedVideos,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.getSavedVideos
+);
+
 module.exports = router;

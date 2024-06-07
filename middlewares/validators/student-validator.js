@@ -72,11 +72,29 @@ const UpdateStudentVideoLastSeenTime = createSchemaMiddleware(
     })
 );
 
+const SaveOrRemoveVideo = createSchemaMiddleware(
+    Joi.object({
+        videoId: Joi.string().guid().required(),
+        studentId: Joi.string().guid().required(),
+        save: Joi.boolean().required(),
+        accessToken: Joi.string().required()
+    })
+);
+
+const getSavedVideos = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
     storeStudentVideo,
     getStudentStandard,
     UpdateStudentVideoCompleted,
-    UpdateStudentVideoLastSeenTime
+    UpdateStudentVideoLastSeenTime,
+    SaveOrRemoveVideo,
+    getSavedVideos
 };
