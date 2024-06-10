@@ -71,4 +71,12 @@ router.get(
     studentController.getSavedVideos
 );
 
+router.get(
+    "/getStandardsResourcesAndCount",
+    studentValidation.getStandardsResourcesAndCount,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.getStandardsResourcesAndCount
+);
+
 module.exports = router;

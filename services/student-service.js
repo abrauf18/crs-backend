@@ -1,9 +1,8 @@
-const { Sequelize, where } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
-const standard = require("../models/standard.js");
 
 function timeToSeconds(time) {
     const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -524,6 +523,154 @@ const getSavedVideos = async ({ studentId }) => {
     }
 }
 
+// const getStandardsResourcesAndCount = async ({ studentId }) => {
+//     try {
+//         const student = await User.findByPk(studentId);
+//         if (!student) {
+//             return { code: 404, message: 'Student not found'};
+//         }
+
+//         const currentStandardsWithResources = await ClassroomStudent.findOne({
+//             where: {
+//                 studentId: studentId
+//             },
+//             attributes: [ "id" ],
+//             include: [ 
+//                 {
+//                     model: Classroom,
+//                     as: 'classroom',
+//                     where: { status: CLASSROOM_STATUS.ACTIVE },
+//                     attributes: [ "id" ],
+//                     include: [{
+//                         model: ClassroomCourses,
+//                         as: 'classroomCourses',
+//                         attributes: [ "id" ],
+//                         include: [{
+//                             model: Standard,
+//                             as: 'standard',
+//                             attributes: [ "id", "name" ],
+//                             include: [{ 
+//                                 model: DailyUpload, 
+//                                 as: 'dailyUploads',
+//                                 attributes: ['id', 'accessDate'],
+//                                 include: [{
+//                                     model: Resource,
+//                                     as: 'resource',
+//                                     where: { 'type': {[Op.ne]: 'video'}},
+//                                     attributes: ['id', 'name', 'type', 'topic', 'url'],
+//                                 }]
+//                             }]
+//                         }],
+//                     }],
+//                 }
+//             ],
+//         });
+
+//         const transformedData = {
+//             id: currentStandardsWithResources.id,
+//             standards: currentStandardsWithResources.classroom.classroomCourses.map(course => ({
+//                 id: course.standard.id,
+//                 name: course.standard.name,
+//                 resourceCount: course.standard.dailyUploads.length,
+//                 resources: course.standard.dailyUploads.map(upload => ({
+//                     id: upload.resource.id,
+//                     name: upload.resource.name,
+//                     type: upload.resource.type,
+//                     topic: upload.resource.topic,
+//                     url: upload.resource.url
+//                 }))
+//             }))
+//         };
+
+//         return { code: 200, data: transformedData };
+//     } catch (error) {
+//         console.log('\n\n\n\n', error)
+//         logger.error(error?.message || 'An error occurred while fetching the standard');
+//         return { code: 500 };
+//     }
+// };
+
+const getStandardsResourcesAndCount = async ({ studentId, page, limit }) => {
+    try {
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const offset = (page - 1) * limit;
+
+        const currentStandardsWithCourses = await ClassroomStudent.findOne({
+            where: {
+                studentId: studentId
+            },
+            include: [{
+                model: Classroom,
+                as: 'classroom',
+                where: { status: CLASSROOM_STATUS.ACTIVE },
+                include: [{
+                    model: ClassroomCourses,
+                    as: 'classroomCourses',
+                    include: [{
+                        model: Standard,
+                        as: 'standard',
+                    }],
+                }],
+            }],
+        });
+
+        const standardsData = currentStandardsWithCourses.classroom.classroomCourses.map(course => ({
+            id: course.standard.id,
+            name: course.standard.name,
+        }));
+
+        const resourceCounts = await Promise.all(standardsData.map(async (standard) => {
+            const count = await DailyUpload.count({
+                where: { standardId: standard.id },
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    where: { type: { [Op.ne]: 'video' } },
+                }],
+            });
+            return count;
+        }));
+
+        const resourcesData = await Promise.all(standardsData.map(async (standard) => {
+            const dailyUploads = await DailyUpload.findAll({
+                where: { standardId: standard.id },
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    where: { type: { [Op.ne]: 'video' } },
+                }],
+                offset,
+                limit,
+                order: [['id', 'ASC']],
+            });
+            return dailyUploads.map(upload => ({
+                id: upload.resource.id,
+                name: upload.resource.name,
+                type: upload.resource.type,
+                topic: upload.resource.topic,
+                url: upload.resource.url,
+            }));
+        }));
+
+        const transformedData = standardsData.map((standard, index) => ({
+            id: standard.id,
+            name: standard.name,
+            resourceCount: resourceCounts[index],
+            resources: resourcesData[index],
+        }));
+
+        return { code: 200, data: {totalPages: Math.ceil(standardsData.length / limit), standards: transformedData} };
+    } catch (error) {
+        console.log(error);
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -532,5 +679,6 @@ module.exports = {
     UpdateStudentVideoCompleted,
     UpdateStudentVideoLastSeenTime,
     SaveOrRemoveVideo,
-    getSavedVideos
+    getSavedVideos,
+    getStandardsResourcesAndCount
 };
