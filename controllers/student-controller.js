@@ -166,8 +166,8 @@ const getSavedVideos = async (req, res) => {
 
 const getStandardsResourcesAndCount = async (req, res) => {
     try {
-        const { studentid, page=1, limit=10 } = req.headers;
-        const reply = await studentService.getStandardsResourcesAndCount({ studentId: studentid, page, limit });
+        const { studentid, page=1, limit=10, orderby='id', sortby='asc' } = req.headers;
+        const reply = await studentService.getStandardsResourcesAndCount({ studentId: studentid, page, limit, orderBy: orderby, sortBy: sortby });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);

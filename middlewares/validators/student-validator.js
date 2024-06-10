@@ -93,7 +93,9 @@ const getStandardsResourcesAndCount = createSchemaMiddleware(
         studentid: Joi.string().guid().required(),
         accesstoken: Joi.string().required(),
         page: Joi.number().integer().min(1).required(), 
-        limit: Joi.number().integer().min(1).required()
+        limit: Joi.number().integer().min(1).required(),
+        orderby: Joi.string().valid('name', '').optional(),
+        sortby: Joi.string().valid('asc', 'desc', '').optional(),
     }).unknown(), 'headers'
 );
 
