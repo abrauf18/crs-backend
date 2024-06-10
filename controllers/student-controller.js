@@ -164,6 +164,26 @@ const getSavedVideos = async (req, res) => {
     }
 }
 
+const getStandardsResourcesAndCount = async (req, res) => {
+    try {
+        const { studentid, page=1, limit=10 } = req.headers;
+        const reply = await studentService.getStandardsResourcesAndCount({ studentId: studentid, page, limit });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -172,5 +192,6 @@ module.exports = {
     UpdateStudentVideoCompleted,
     UpdateStudentVideoLastSeenTime,
     SaveOrRemoveVideo,
-    getSavedVideos
+    getSavedVideos,
+    getStandardsResourcesAndCount
 };
