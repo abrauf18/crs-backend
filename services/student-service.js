@@ -590,16 +590,16 @@ const getSavedVideos = async ({ studentId }) => {
 //     }
 // };
 
-const getStandardsResourcesAndCount = async ({ studentId, page, limit }) => {
+const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, sortBy }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const offset = (page - 1) * limit;
 
-        const currentStandardsWithCourses = await ClassroomStudent.findOne({
+        const activeClassroom = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
             },
@@ -607,63 +607,66 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit }) => {
                 model: Classroom,
                 as: 'classroom',
                 where: { status: CLASSROOM_STATUS.ACTIVE },
+                attributes: ['id'],
                 include: [{
                     model: ClassroomCourses,
                     as: 'classroomCourses',
-                    include: [{
-                        model: Standard,
-                        as: 'standard',
-                    }],
+                    attributes: ['standardId'],
                 }],
             }],
         });
 
-        const standardsData = currentStandardsWithCourses.classroom.classroomCourses.map(course => ({
-            id: course.standard.id,
-            name: course.standard.name,
-        }));
+        if (!activeClassroom) {
+            return { code: 404, message: 'Active classroom not found' };
+        }
 
-        const resourceCounts = await Promise.all(standardsData.map(async (standard) => {
-            const count = await DailyUpload.count({
-                where: { standardId: standard.id },
+        const standardIds = activeClassroom.classroom.classroomCourses.map(course => course.standardId);
+
+        const standards = await Standard.findAll({
+            where: { id: standardIds },
+            attributes: ['id', 'name'],
+            order: [[orderBy, sortBy]],
+            offset,
+            limit,
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['id', 'resourceId', 'accessDate'],
                 include: [{
                     model: Resource,
                     as: 'resource',
-                    where: { type: { [Op.ne]: 'video' } },
+                    attributes: ['id', 'name', 'type', 'topic', 'url'],
+                    where: { 
+                        type: { [Op.ne]: 'video' } 
+                    },
                 }],
-            });
-            return count;
-        }));
+            }],
+        });
 
-        const resourcesData = await Promise.all(standardsData.map(async (standard) => {
-            const dailyUploads = await DailyUpload.findAll({
-                where: { standardId: standard.id },
-                include: [{
-                    model: Resource,
-                    as: 'resource',
-                    where: { type: { [Op.ne]: 'video' } },
-                }],
-                offset,
-                limit,
-                order: [['id', 'ASC']],
-            });
-            return dailyUploads.map(upload => ({
+        const totalStandardsCount = await Standard.count({
+            where: { id: standardIds },
+        });
+
+        const transformedData = standards.map(standard => ({
+            id: standard.id,
+            name: standard.name,
+            resourceCount: standard.dailyUploads.length,
+            resources: standard.dailyUploads.map(upload => ({
                 id: upload.resource.id,
                 name: upload.resource.name,
                 type: upload.resource.type,
                 topic: upload.resource.topic,
                 url: upload.resource.url,
-            }));
+            }))
         }));
 
-        const transformedData = standardsData.map((standard, index) => ({
-            id: standard.id,
-            name: standard.name,
-            resourceCount: resourceCounts[index],
-            resources: resourcesData[index],
-        }));
-
-        return { code: 200, data: {totalPages: Math.ceil(standardsData.length / limit), standards: transformedData} };
+        return {
+            code: 200,
+            data: {
+                totalPages: Math.ceil(totalStandardsCount / limit),
+                standards: transformedData
+            }
+        };
     } catch (error) {
         console.log(error);
         logger.error(error?.message || 'An error occurred while fetching the standard');
