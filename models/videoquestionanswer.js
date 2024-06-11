@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     obtainedMarks: {
       type: DataTypes.INTEGER,
-      defaultValue: 0,
+      defaultValue: -1,
       allowNull: false,
     },
   }, {
