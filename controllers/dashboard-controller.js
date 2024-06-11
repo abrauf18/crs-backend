@@ -34,7 +34,25 @@ const getAdminDashboardSummaries = async (req, res) => {
     }
 }
 
+const getStudentDashboardSummaries = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await dashboardService.getStudentDashboardSummaries({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     getTeacherDashboardSummaries,
-    getAdminDashboardSummaries
+    getAdminDashboardSummaries,
+    getStudentDashboardSummaries
 };
