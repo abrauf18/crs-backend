@@ -135,6 +135,9 @@ const SaveOrRemoveVideo = async (req, res) => {
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, reply.message);
         }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, reply.message);
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -183,6 +186,26 @@ const getStandardsResourcesAndCount = async (req, res) => {
         return handleInternalServerError(res);
     }
 }
+const getStudentProfileVideoResults = async (req, res) => {
+    try {
+        const { studentid, standardid } = req.headers;
+        const reply = await studentService.getStudentProfileVideoResults({ studentId: studentid, standardId: standardid});
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 
 module.exports = {
     getStudentCurrentStandards,
@@ -193,5 +216,6 @@ module.exports = {
     UpdateStudentVideoLastSeenTime,
     SaveOrRemoveVideo,
     getSavedVideos,
-    getStandardsResourcesAndCount
+    getStandardsResourcesAndCount,
+    getStudentProfileVideoResults
 };
