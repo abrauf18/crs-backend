@@ -657,6 +657,7 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
                 type: upload.resource.type,
                 topic: upload.resource.topic,
                 url: upload.resource.url,
+                released: upload.accessDate <= new Date().toISOString(),
             }))
         }));
 
