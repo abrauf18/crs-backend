@@ -407,8 +407,6 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
 
 const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
     try {
-        console.log(`\n\n\n videoId: ${videoId}, studentId: ${studentId}`);
-
         const video = await Video.findByPk(videoId);
         if (!video) {
             return { code: 404, message: 'Video not found'};
@@ -427,6 +425,9 @@ const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
         });
 
         if (existingVideoTracking) {
+            if (save === true && existingVideoTracking.saved === true) {
+                return { code: 409, message: 'Video is already saved' };
+            }
             await existingVideoTracking.update({
                 saved: save
             });
@@ -675,6 +676,61 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
     }
 };
 
+const getStudentProfileVideoResults = async ({ studentId, standardId }) => {
+    try {
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found' };
+        }
+
+       const standard = await Standard.findByPk(standardId, {
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['id', 'accessDate'],
+                where: {
+                    accessDate: {
+                        [Op.lte]: new Date()
+                    }
+                },
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id', 'name', 'type'],
+                    where: { type: 'video' },
+                    include: [{
+                        model: Video,
+                        as: 'video',
+                        attributes: ['id'],
+                        required: true,
+                        include: [{
+                            model: Question,
+                            as: 'questions',
+                            attributes: ['id', 'totalMarks'],
+                            required: true,
+                            include: [{
+                                model: VideoQuestionAnswer,
+                                as: 'answers',
+                                where: { userId: studentId },
+                                required: false
+                            }]
+                        }]
+                    }]
+                }]
+            }]
+        });
+
+        return {
+            code: 200,
+            data: standard
+        };
+    } catch (error) {
+        console.log(error);
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -684,5 +740,6 @@ module.exports = {
     UpdateStudentVideoLastSeenTime,
     SaveOrRemoveVideo,
     getSavedVideos,
-    getStandardsResourcesAndCount
+    getStandardsResourcesAndCount,
+    getStudentProfileVideoResults
 };

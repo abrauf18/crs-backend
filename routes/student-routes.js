@@ -79,4 +79,12 @@ router.get(
     studentController.getStandardsResourcesAndCount
 );
 
+router.get(
+    "/getStudentProfileVideoResults",
+    studentValidation.getStudentProfileVideoResults,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    studentController.getStudentProfileVideoResults
+);
+
 module.exports = router;
