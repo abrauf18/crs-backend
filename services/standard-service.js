@@ -16,6 +16,17 @@ const createStandard = async ({ name, description, dailyUploads }) => {
 
         const createdStandard = await Standard.create({name, description, courseLength});
         
+        // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
+        //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
+        // }));
+
+        // const duplicates = existingResourceInStandards.filter(Boolean);
+
+        // if (duplicates.length > 0) {
+        //     const duplicateResourceIds = duplicates.map(resource => resource.resourceId);
+        //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResourceIds.join(', ')}`};
+        // }
+
         const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
             return DailyUpload.create({ ...upload, standardId: createdStandard.id });
         }));
@@ -49,6 +60,20 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
 
         let newDailyUploads = [];
         if (dailyUploads) {
+            // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
+            //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
+            // }));
+    
+            // const duplicates = existingResourceInStandards.filter(Boolean);
+    
+            // if (duplicates.length > 0) {
+            //     const duplicateResource = await Promise.all(duplicates.map(async resource => {
+            //         const foundResource = await Resource.findByPk(resource.resourceId);
+            //         return foundResource.name;
+            //     }));
+            //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
+            // }
+
             const oldDailyUploads = await standard.getDailyUploads();
 
             for (let dailyUpload of oldDailyUploads) {
