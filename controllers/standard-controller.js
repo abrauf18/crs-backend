@@ -10,6 +10,9 @@ const createStandard = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        // if (reply.code == 409) {
+        //     return handleErrorResponse(res, 409, reply.message);
+        // }
         else {
             return handleInternalServerError(res);
         }
@@ -31,6 +34,9 @@ const updateStandard = async (req, res) => {
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, "Standard not found");
         }
+        // if (reply.code == 409) {
+        //     return handleErrorResponse(res, 409, reply.message);
+        // }
         else {
             return handleInternalServerError(res);
         }
