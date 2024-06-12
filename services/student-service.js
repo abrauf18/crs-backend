@@ -95,7 +95,7 @@ const getStudentCurrentStandards = async ({ studentId }) => {
     }
 };
 
-const getStudentVideo = async ({ videoId, studentId }) => {
+const getStudentVideo = async ({ videoId, studentId, standardId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
@@ -105,7 +105,8 @@ const getStudentVideo = async ({ videoId, studentId }) => {
         const watchedVideo = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
-                studentId: studentId
+                studentId: studentId,
+                standardId: standardId
             }
         });
 
@@ -190,7 +191,7 @@ const getStudentVideo = async ({ videoId, studentId }) => {
     }
 }
 
-const storeStudentVideo = async ({ videoId, studentId, last_seen_time }) => {
+const storeStudentVideo = async ({ videoId, studentId, last_seen_time, standardId }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -202,6 +203,11 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time }) => {
             return { code: 404, message: 'Student not found'};
         }
 
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found'};
+        }
+
         if (compareTimes(last_seen_time, video.duration) > 0) {
             return { code: 400 };
         }
@@ -209,7 +215,8 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time }) => {
         const existingVideoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
-                studentId: studentId
+                studentId: studentId,
+                standardId: standardId
             }
         });
 
@@ -225,6 +232,7 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time }) => {
             videoId: videoId,
             studentId: studentId,
             last_seen_time: last_seen_time,
+            standardId: standardId
         });
 
         return { code: 200, data: videotracking};
@@ -256,7 +264,10 @@ const getStudentStandard = async ({ standardId, studentId }) => {
                                 as: 'videoTrackings',
                                 required: false,
                                 attributes: ['id', 'watchedCompletely'],
-                                where: { studentId: studentId }
+                                where: { 
+                                    studentId: studentId,
+                                    standardId: standardId
+                                }
                             }]
                         },
                         {
@@ -313,7 +324,7 @@ const getStudentStandard = async ({ standardId, studentId }) => {
     }
 };
 
-const UpdateStudentVideoCompleted = async ({ videoId, studentId, watchedCompletely, last_seen_time }) => {
+const UpdateStudentVideoCompleted = async ({ videoId, studentId, standardId, watchedCompletely, last_seen_time }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -325,10 +336,16 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, watchedComplete
             return { code: 404, message: 'Student not found'};
         }
 
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found'};
+        }
+
         const videoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
-                studentId: studentId
+                studentId: studentId,
+                standardId: standardId
             }
         });
 
@@ -340,6 +357,7 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, watchedComplete
             const newVideotracking = await VideoTracking.create({
                 videoId: videoId,
                 studentId: studentId,
+                standardId: standardId,
                 last_seen_time: last_seen_time,
                 watchedCompletely: watchedCompletely,
             });
@@ -360,7 +378,7 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, watchedComplete
     }
 }
 
-const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_time }) => {
+const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, standardId, last_seen_time }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -372,10 +390,16 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
             return { code: 404, message: 'Student not found'};
         }
 
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found'};
+        }
+
         const videoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
-                studentId: studentId
+                studentId: studentId,
+                standardId: standardId
             }
         });
 
@@ -387,6 +411,7 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
             const newVideotracking = await VideoTracking.create({
                 videoId: videoId,
                 studentId: studentId,
+                standardId: standardId,
                 last_seen_time: last_seen_time,
             });
     
@@ -405,7 +430,7 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, last_seen_ti
     }
 }
 
-const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
+const SaveOrRemoveVideo = async ({ videoId, studentId, standardId, save }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -417,10 +442,16 @@ const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
             return { code: 404, message: 'Student not found'};
         }
 
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found'};
+        }
+
         const existingVideoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
-                studentId: studentId
+                studentId: studentId,
+                standardId: standardId
             }
         });
 
@@ -438,6 +469,7 @@ const SaveOrRemoveVideo = async ({ videoId, studentId, save }) => {
         const videotracking = await VideoTracking.create({
             videoId: videoId,
             studentId: studentId,
+            standardId: standardId,
             saved: save,
         });
 
@@ -456,39 +488,56 @@ const getSavedVideos = async ({ studentId }) => {
             return { code: 404, message: 'Student not found'};
         }
 
-        const savedVideos = await VideoTracking.findAll({
+        const videoTrackingData = await VideoTracking.findAll({
             where: {
                 studentId: studentId,
                 saved: true
             },
-            attributes: ['videoId', 'last_seen_time', 'watchedCompletely'],
-            include: [{
-                model: Video,
-                as: 'video',
-                attributes: ['id', 'thumbnailURL', 'duration', 'topics'],
-                include: [
-                    {
-                        model: Resource,
-                        as: 'resource',
-                        attributes: ['id', 'name'],
-                        include: [{
-                            model: DailyUpload,
-                            as: 'DailyUpload',
-                            attributes: ['accessDate', 'standardId'],
-                        }]
-                    },
-                    {
-                        model: Question,
-                        as: 'questions',
-                        attributes: ['id'],
-                    }
-                ]
-            }]
+            attributes: ['videoId', 'standardId', 'last_seen_time', 'watchedCompletely']
+        });
+
+        // Fetch the video data
+        const videos = await Video.findAll({
+            where: {
+                id: videoTrackingData.map(data => data.videoId)
+            },
+            attributes: ['id', 'thumbnailURL', 'duration', 'topics'],
+            include: [
+                {
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id', 'name'],
+                    include: [{
+                        model: DailyUpload,
+                        as: 'DailyUpload',
+                        where: {
+                            standardId: videoTrackingData.map(data => data.standardId)
+                        },
+                        attributes: ['accessDate', 'standardId'],
+                        required: true
+                    }]
+                },
+                {
+                    model: Question,
+                    as: 'questions',
+                    attributes: ['id'],
+                }
+            ]
+        });
+
+        // Map the video tracking data to the videos
+        const savedVideos = videoTrackingData.map(trackingData => {
+            const video = videos.find(video => video.id === trackingData.videoId);
+            return {
+                ...trackingData.get({ plain: true }),
+                video: video.get({ plain: true })
+            };
         });
 
         const transformedVideos = savedVideos.map(savedVideo => {
-            const { videoId, last_seen_time, watchedCompletely, video } = savedVideo.get({ plain: true });
+            const { videoId, last_seen_time, watchedCompletely, video } = savedVideo;
             const { resource, ...videoData } = video
+            console.log('\n\n\n\n', videoId, last_seen_time, watchedCompletely, video, resource, videoData, '\n\n\n\n')
             return {
                 videoId: videoId,
                 name: resource.name,

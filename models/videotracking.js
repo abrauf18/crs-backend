@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       VideoTracking.belongsTo(models.Video, { foreignKey: 'videoId', as: 'video' });
       VideoTracking.belongsTo(models.User, { foreignKey: 'studentId', as: 'student' });
+      VideoTracking.belongsTo(models.Standard, { foreignKey: 'standardId' });
       // define association here
     }
   }
@@ -28,6 +29,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     studentId: {
+      type: DataTypes.UUID,
+      defaultValue:'',
+      allowNull: false,
+    },
+    standardId: {
       type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
