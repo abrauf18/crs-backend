@@ -138,7 +138,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
         const classroomName = classroomStudent.classroom.name;
 
         // For each standard, get its name and count of video and non-video resources
-        const standardsData = await Promise.all(classroomCourses.map(async (course) => {
+        const standardsData = await Promise.all(classroomCourses.slice(0, Math.min(3, classroomCourses.length)).map(async (course) => {
             const dailyUploads = await DailyUpload.findAll({
                 where: { standardId: course.standard.id },
                 include: [{
@@ -151,6 +151,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             const nonVideoResourcesCount = dailyUploads?.length - videoResourcesCount;
 
             return {
+                standardId: course.standard.id,
                 standardName: course.standard.name,
                 videoResourcesCount,
                 nonVideoResourcesCount
@@ -166,26 +167,38 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 include: [{
                     model: Video,
                     as: 'video',
-                    include: [{
-                        model: VideoTracking,
-                        as: 'videoTrackings',
-                        where: { saved: true },
-                        required: true
-                    }],
+                    include: [
+                        {
+                            model: VideoTracking,
+                            as: 'videoTrackings',
+                            where: { saved: true },
+                            required: true
+                        },
+                        {
+                            model: Question,
+                            as: 'questions',
+                            required: false
+                        }
+                    ],
                     required: true
                 }],
                 required: true
-            }]
+            }],
+            order: [['createdAt', 'DESC']],
+            limit: 6
         });
 
         // For each video, get the required data
-        const videosData = allDailyVideoUploads.map(upload => ({
-            videoName: upload.resource?.video?.name,
+        const videosData = allDailyVideoUploads?.map(upload => ({
+            standardId: upload?.standardId,
+            videoId: upload.resource?.video?.id,
+            videoName: upload.resource?.name,
             questionsCount: upload.resource?.video?.questions?.length,
-            topicsCount: upload.resource?.video?.topics?.length,
+            topicsCount: Object.keys(upload.resource?.video?.topics).length,
             lastSeenTime: upload.resource?.video?.videoTrackings?.length > 0 ? upload.resource?.video?.videoTrackings[0]?.last_seen_time : null,
             duration: upload.resource?.video?.duration,
-            thumbnailURL: upload.resource?.video?.thumbnailURL
+            thumbnailURL: upload.resource?.video?.thumbnailURL,
+            completed: upload.resource.video.videoTrackings[0].watchedCompletely,
         }));
         // Final result
         const result = {
