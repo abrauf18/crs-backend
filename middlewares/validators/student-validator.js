@@ -34,6 +34,7 @@ const storeStudentVideo = createSchemaMiddleware(
     Joi.object({
         videoId: Joi.string().guid().required(),
         studentId: Joi.string().guid().required(),
+        standardId: Joi.string().guid().required(),
         last_seen_time: Joi.string().pattern(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).required().messages({
             'string.pattern.base': 'last_seen_time must be in the format HH:MM:SS',
         }),
@@ -53,6 +54,7 @@ const UpdateStudentVideoCompleted = createSchemaMiddleware(
     Joi.object({
         videoId: Joi.string().guid().required(),
         studentId: Joi.string().guid().required(),
+        standardId: Joi.string().guid().required(),
         watchedCompletely: Joi.boolean().required(),
         last_seen_time: Joi.string().pattern(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).required().messages({
             'string.pattern.base': 'last_seen_time must be in the format HH:MM:SS',
@@ -65,6 +67,7 @@ const UpdateStudentVideoLastSeenTime = createSchemaMiddleware(
     Joi.object({
         videoId: Joi.string().guid().required(),
         studentId: Joi.string().guid().required(),
+        standardId: Joi.string().guid().required(),
         last_seen_time: Joi.string().pattern(/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).required().messages({
             'string.pattern.base': 'last_seen_time must be in the format HH:MM:SS',
         }),
@@ -76,6 +79,7 @@ const SaveOrRemoveVideo = createSchemaMiddleware(
     Joi.object({
         videoId: Joi.string().guid().required(),
         studentId: Joi.string().guid().required(),
+        standardId: Joi.string().guid().required(),
         save: Joi.boolean().required(),
         accessToken: Joi.string().required()
     })

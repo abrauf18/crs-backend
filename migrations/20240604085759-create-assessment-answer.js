@@ -29,6 +29,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
+      standardId: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        references: {
+          model: 'Standards',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
       questionNumber: {
         allowNull: false,
         defaultValue: 0,
