@@ -106,6 +106,11 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
         //     }]
         // });
 
+        const existingStudent = await User.findByPk(studentId)
+        if (!existingStudent){
+            return { code: 404, message: 'Student not found' };
+        }
+
         // First, find the classroom student
         const classroomStudent = await ClassroomStudent.findOne({
             where: { studentId },
@@ -126,37 +131,72 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             }]
         });
 
-        // When you need the daily uploads, you can load them
-        const dailyUploads = await DailyUpload.findAll({
-            where: { standardId: { [Op.in]: classroomCourses.map(course => course.standard.id) } },
+        // Count of standards
+        const standardsCount = classroomCourses?.length;
+
+        // Classroom name
+        const classroomName = classroomStudent.classroom.name;
+
+        // For each standard, get its name and count of video and non-video resources
+        const standardsData = await Promise.all(classroomCourses.map(async (course) => {
+            const dailyUploads = await DailyUpload.findAll({
+                where: { standardId: course.standard.id },
+                include: [{
+                    model: Resource,
+                    as: 'resource'
+                }]
+            });
+
+            const videoResourcesCount = dailyUploads.filter(upload => upload.resource.type === 'video')?.length;
+            const nonVideoResourcesCount = dailyUploads?.length - videoResourcesCount;
+
+            return {
+                standardName: course.standard.name,
+                videoResourcesCount,
+                nonVideoResourcesCount
+            };
+        }));
+
+        // Fetch all daily uploads for the classroom student
+        const allDailyVideoUploads = await DailyUpload.findAll({
+            where: { standardId: classroomCourses.map(course => course.standard.id) },
             include: [{
                 model: Resource,
-                as: 'resource'
+                as: 'resource',
+                include: [{
+                    model: Video,
+                    as: 'video',
+                    include: [{
+                        model: VideoTracking,
+                        as: 'videoTrackings',
+                        where: { saved: true },
+                        required: true
+                    }],
+                    required: true
+                }],
+                required: true
             }]
         });
 
-        // When you need the video, you can load it
-        const videos = await Video.findAll({
-            where: { resourceId: { [Op.in]: dailyUploads.map(upload => upload.resource.id) } },
-            include: [
-                {
-                    model: VideoTracking,
-                    as: 'videoTrackings',
-                    separate: true,
-                    where: {saved: true}
-                },
-                {
-                    model: Question,
-                    as: 'questions',
-                    separate: true,
-                    attributes: ['id']
-                }
-            ]
-        });
+        // For each video, get the required data
+        const videosData = allDailyVideoUploads.map(upload => ({
+            videoName: upload.resource?.video?.name,
+            questionsCount: upload.resource?.video?.questions?.length,
+            topicsCount: upload.resource?.video?.topics?.length,
+            lastSeenTime: upload.resource?.video?.videoTrackings?.length > 0 ? upload.resource?.video?.videoTrackings[0]?.last_seen_time : null,
+            duration: upload.resource?.video?.duration,
+            thumbnailURL: upload.resource?.video?.thumbnailURL
+        }));
+        // Final result
+        const result = {
+            studentName: existingStudent.name,
+            standardsCount,
+            classroomName,
+            standardsData,
+            videosData
+        };
 
-        
-
-        return { code: 200, data: videos };
+        return { code: 200, data: result };
 
     } catch (error) {
         console.log('\n\n\n\n', error);

@@ -42,6 +42,9 @@ const getStudentDashboardSummaries = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
         else {
             return handleInternalServerError(res);
         }
