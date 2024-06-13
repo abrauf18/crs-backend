@@ -106,7 +106,6 @@ const getAssessmentAnswer = async ({ assessmentAnswerId }) => {
 
 const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardId }) => {
     try {
-        console.log('\n\n\n', resourceId, userId, standardId)
         const assessmentAnswer = await Resource.findOne({
             where: { id: resourceId },
             attributes: ['id', 'name', 'url'],
