@@ -24,7 +24,7 @@ const getStudentCurrentStandards = async (req, res) => {
 const getStudentVideo = async (req, res) => {
     try {
         const { videoid, studentid, standardid } = req.headers;
-        const reply = await studentService.getStudentVideo({ videoId: videoid, studentId: studentid, standardId: standardid});
+        const reply = await studentService.getStudentVideo({ role: req.user.role, videoId: videoid, studentId: studentid, standardId: standardid});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -44,7 +44,7 @@ const getStudentVideo = async (req, res) => {
 const storeStudentVideo = async (req, res) => {
     try {
         const { videoId, studentId, standardId, last_seen_time } = req.body;
-        const reply = await studentService.storeStudentVideo({ videoId, studentId, standardId, last_seen_time });
+        const reply = await studentService.storeStudentVideo({ role: req.user.role, videoId, studentId, standardId, last_seen_time });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -67,7 +67,7 @@ const storeStudentVideo = async (req, res) => {
 const getStudentStandard = async (req, res) => {
     try {
         const { standardid, studentid } = req.headers;
-        const reply = await studentService.getStudentStandard({ standardId: standardid, studentId: studentid});
+        const reply = await studentService.getStudentStandard({ role: req.user.role, standardId: standardid, studentId: studentid});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -87,7 +87,7 @@ const getStudentStandard = async (req, res) => {
 const UpdateStudentVideoCompleted = async (req, res) => {
     try {
         const { videoId, studentId, standardId, watchedCompletely, last_seen_time } = req.body;
-        const reply = await studentService.UpdateStudentVideoCompleted({ videoId, studentId, standardId, watchedCompletely, last_seen_time });
+        const reply = await studentService.UpdateStudentVideoCompleted({ role: req.user.role, videoId, studentId, standardId, watchedCompletely, last_seen_time });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -107,7 +107,7 @@ const UpdateStudentVideoCompleted = async (req, res) => {
 const UpdateStudentVideoLastSeenTime = async (req, res) => {
     try {
         const { videoId, studentId, standardId, last_seen_time } = req.body;
-        const reply = await studentService.UpdateStudentVideoLastSeenTime({ videoId, studentId, standardId, last_seen_time });
+        const reply = await studentService.UpdateStudentVideoLastSeenTime({ role: req.user.role, videoId, studentId, standardId, last_seen_time });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -127,7 +127,7 @@ const UpdateStudentVideoLastSeenTime = async (req, res) => {
 const SaveOrRemoveVideo = async (req, res) => {
     try {
         const { videoId, studentId, standardId, save } = req.body;
-        const reply = await studentService.SaveOrRemoveVideo({ videoId, studentId, standardId, save });
+        const reply = await studentService.SaveOrRemoveVideo({ role: req.user.role, videoId, studentId, standardId, save });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -189,7 +189,7 @@ const getStandardsResourcesAndCount = async (req, res) => {
 const getStudentProfileVideoResults = async (req, res) => {
     try {
         const { studentid, standardid } = req.headers;
-        const reply = await studentService.getStudentProfileVideoResults({ studentId: studentid, standardId: standardid});
+        const reply = await studentService.getStudentProfileVideoResults({ role: req.user.role, studentId: studentid, standardId: standardid});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
