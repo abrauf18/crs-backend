@@ -3,6 +3,7 @@ const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
+const ROLES = require("../models/roles/index.js");
 
 function timeToSeconds(time) {
     const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -32,7 +33,10 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     return true;
 }
 
-async function checkStandardActive({studentId, standardId}) {
+async function checkStandardActive({role, studentId, standardId}) {
+    if (role === ROLES.ADMIN || role === ROLES.SCHOOL) {
+        return true;
+    }
     const studentData = await ClassroomStudent.findOne({
         where: {
             studentId: studentId,
@@ -50,7 +54,7 @@ async function checkStandardActive({studentId, standardId}) {
         }]
     })
 
-    if (!studentData) {
+    if (!studentData) {        
         return false;
     }
     return true;
@@ -119,14 +123,15 @@ const getStudentCurrentStandards = async ({ studentId }) => {
     }
 };
 
-const getStudentVideo = async ({ videoId, studentId, standardId }) => {
+const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
             return { code: 404, message: 'Student not found'};
         }
 
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
@@ -219,7 +224,7 @@ const getStudentVideo = async ({ videoId, studentId, standardId }) => {
     }
 }
 
-const storeStudentVideo = async ({ videoId, studentId, last_seen_time, standardId }) => {
+const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, standardId }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -240,7 +245,8 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time, standardI
             return { code: 400 };
         }
 
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
@@ -275,7 +281,7 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time, standardI
     }
 }
 
-const getStudentStandard = async ({ standardId, studentId }) => {
+const getStudentStandard = async ({ role, standardId, studentId }) => {
     try {
         const standard = await Standard.findByPk(standardId, {
             include: [{
@@ -316,7 +322,8 @@ const getStudentStandard = async ({ standardId, studentId }) => {
             return { code: 404, message: 'Standard not found' };
         }
 
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
@@ -360,7 +367,7 @@ const getStudentStandard = async ({ standardId, studentId }) => {
     }
 };
 
-const UpdateStudentVideoCompleted = async ({ videoId, studentId, standardId, watchedCompletely, last_seen_time }) => {
+const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardId, watchedCompletely, last_seen_time }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -377,7 +384,8 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, standardId, wat
             return { code: 404, message: 'Standard not found'};
         }
 
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
@@ -418,7 +426,7 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, standardId, wat
     }
 }
 
-const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, standardId, last_seen_time }) => {
+const UpdateStudentVideoLastSeenTime = async ({ role, videoId, studentId, standardId, last_seen_time }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -435,7 +443,8 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, standardId, 
             return { code: 404, message: 'Standard not found'};
         }
 
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
@@ -474,7 +483,7 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, standardId, 
     }
 }
 
-const SaveOrRemoveVideo = async ({ videoId, studentId, standardId, save }) => {
+const SaveOrRemoveVideo = async ({ role, videoId, studentId, standardId, save }) => {
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
@@ -491,7 +500,8 @@ const SaveOrRemoveVideo = async ({ videoId, studentId, standardId, save }) => {
             return { code: 404, message: 'Standard not found'};
         }
 
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
@@ -824,7 +834,7 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
     }
 };
 
-const getStudentProfileVideoResults = async ({ studentId, standardId }) => {
+const getStudentProfileVideoResults = async ({ role, studentId, standardId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
@@ -868,7 +878,8 @@ const getStudentProfileVideoResults = async ({ studentId, standardId }) => {
             }]
         });
         
-        if (!checkStandardActive({studentId, standardId})){
+        const isActive = await checkStandardActive({role, studentId, standardId});
+        if (!isActive){
             return { code: 404, message: 'Standard not active any more' };
         }
 
