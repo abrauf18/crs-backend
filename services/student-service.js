@@ -32,6 +32,30 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     return true;
 }
 
+async function checkStandardActive({studentId, standardId}) {
+    const studentData = await ClassroomStudent.findOne({
+        where: {
+            studentId: studentId,
+        },
+        include: [{
+            model: Classroom,
+            as: 'classroom',
+            where: { status: CLASSROOM_STATUS.ACTIVE },
+            include: [{
+                model: ClassroomCourses,
+                as: 'classroomCourses',
+                where: { standardId: standardId },
+                required: true
+            }]
+        }]
+    })
+
+    if (!studentData) {
+        return false;
+    }
+    return true;
+}
+
 const getStudentCurrentStandards = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
@@ -100,6 +124,10 @@ const getStudentVideo = async ({ videoId, studentId, standardId }) => {
         const student = await User.findByPk(studentId);
         if (!student) {
             return { code: 404, message: 'Student not found'};
+        }
+
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
         }
 
         const watchedVideo = await VideoTracking.findOne({
@@ -212,6 +240,10 @@ const storeStudentVideo = async ({ videoId, studentId, last_seen_time, standardI
             return { code: 400 };
         }
 
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
+        }
+
         const existingVideoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
@@ -284,6 +316,10 @@ const getStudentStandard = async ({ standardId, studentId }) => {
             return { code: 404, message: 'Standard not found' };
         }
 
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
+        }
+
         const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
             const date = upload.accessDate;
             if (!result[date]) {
@@ -341,6 +377,10 @@ const UpdateStudentVideoCompleted = async ({ videoId, studentId, standardId, wat
             return { code: 404, message: 'Standard not found'};
         }
 
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
+        }
+
         const videoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
@@ -395,6 +435,10 @@ const UpdateStudentVideoLastSeenTime = async ({ videoId, studentId, standardId, 
             return { code: 404, message: 'Standard not found'};
         }
 
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
+        }
+
         const videoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
@@ -445,6 +489,10 @@ const SaveOrRemoveVideo = async ({ videoId, studentId, standardId, save }) => {
         const standard = await Standard.findByPk(standardId);
         if (!standard) {
             return { code: 404, message: 'Standard not found'};
+        }
+
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
         }
 
         const existingVideoTracking = await VideoTracking.findOne({
@@ -585,8 +633,14 @@ const getSavedVideos = async ({ studentId }) => {
                                                 "DailyUploads" AS DU ON DU."resourceId" = V."resourceId" AND DU."standardId" = VT."standardId"
                                             LEFT JOIN 
                                                 "Questions" AS Q ON Q."videoId" = V."id"
+                                            INNER JOIN 
+                                                "ClassroomStudents" AS CS ON CS."studentId" = '${studentId}'
+                                            INNER JOIN 
+                                                "Classrooms" AS C ON C."id" = CS."classroomId"
+                                            INNER JOIN 
+                                                "ClassroomCourses" AS CC ON CC."classroomId" = C."id" AND CC."standardId" = DU."standardId"
                                             WHERE 
-                                                VT."saved" = true AND '${studentId}' = VT."studentId"
+                                                VT."saved" = true AND '${studentId}' = VT."studentId" AND C."status" = 'active'
                                             GROUP BY 
                                                 V."id", R."name", VT."last_seen_time", V."thumbnailURL", V."duration", DU."accessDate", VT."watchedCompletely", DU."standardId";`
                                         );
@@ -813,6 +867,10 @@ const getStudentProfileVideoResults = async ({ studentId, standardId }) => {
                 }]
             }]
         });
+        
+        if (!checkStandardActive({studentId, standardId})){
+            return { code: 404, message: 'Standard not active any more' };
+        }
 
         return {
             code: 200,
