@@ -488,71 +488,116 @@ const getSavedVideos = async ({ studentId }) => {
             return { code: 404, message: 'Student not found'};
         }
 
-        const videoTrackingData = await VideoTracking.findAll({
-            where: {
-                studentId: studentId,
-                saved: true
-            },
-            attributes: ['videoId', 'standardId', 'last_seen_time', 'watchedCompletely']
+        // const videoTrackingData = await VideoTracking.findAll({
+        //     where: {
+        //         studentId: studentId,
+        //         saved: true
+        //     },
+        //     attributes: ['videoId', 'standardId', 'last_seen_time', 'watchedCompletely']
+        // });
+
+        // // Fetch the video data
+        // const videos = await Video.findAll({
+        //     where: {
+        //         id: videoTrackingData.map(data => data.videoId)
+        //     },
+        //     attributes: ['id', 'thumbnailURL', 'duration', 'topics'],
+        //     include: [
+        //         {
+        //             model: Resource,
+        //             as: 'resource',
+        //             attributes: ['id', 'name'],
+        //             include: [{
+        //                 model: DailyUpload,
+        //                 as: 'DailyUpload',
+        //                 where: {
+        //                     standardId: videoTrackingData.map(data => data.standardId)
+        //                 },
+        //                 attributes: ['accessDate', 'standardId'],
+        //                 required: true
+        //             }]
+        //         },
+        //         {
+        //             model: Question,
+        //             as: 'questions',
+        //             attributes: ['id'],
+        //         }
+        //     ]
+        // });
+
+        // // Map the video tracking data to the videos
+        // const savedVideos = videoTrackingData.map(trackingData => {
+        //     const video = videos.find(video => video.id === trackingData.videoId);
+        //     return {
+        //         ...trackingData.get({ plain: true }),
+        //         video: video.get({ plain: true })
+        //     };
+        // });
+
+        // const transformedVideos = savedVideos.map(savedVideo => {
+        //     const { videoId, last_seen_time, watchedCompletely, video } = savedVideo;
+        //     const { resource, ...videoData } = video
+        //     return {
+        //         videoId: videoId,
+        //         name: resource.name,
+        //         lastSeenTime: last_seen_time,
+        //         thumbnailURL: videoData.thumbnailURL,
+        //         duration: videoData.duration,
+        //         topicCount: Object.keys(videoData.topics).length,
+        //         questionCount: videoData.questions.length,
+        //         accessDate: resource.DailyUpload.accessDate,
+        //         completed: watchedCompletely,
+        //         standardId: resource.DailyUpload.standardId
+        //     };
+        // });
+
+        // const groupedVideos = transformedVideos.reduce((grouped, video) => {
+        //     const date = video.accessDate;
+        //     const index = grouped.findIndex(group => group.date === date);
+        //     if (index === -1) {
+        //         grouped.push({ date, videos: [video] });
+        //     } else {
+        //         grouped[index].videos.push(video);
+        //     }
+        //     return grouped;
+        // }, []);
+        
+        // const sortedGroupedVideos = groupedVideos.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+
+        const data = await Video.sequelize.query(`SELECT  
+                                                V."id" AS "videoId",
+                                                R."name" AS "name",
+                                                VT."last_seen_time" AS "lastSeenTime",
+                                                V."thumbnailURL" AS "thumbnailURL",
+                                                V."duration" AS "duration",
+                                                V."topics" AS "topics",
+                                                COUNT(Q."id") AS "questionCount",
+                                                DU."accessDate" AS "accessDate",
+                                                VT."watchedCompletely" AS "completed",
+                                                DU."standardId" AS "standardId"
+                                            FROM 
+                                                "VideoTrackings" AS VT
+                                            INNER JOIN 
+                                                "Videos" AS V ON VT."videoId" = V."id"
+                                            INNER JOIN 
+                                                "Resources" AS R ON V."resourceId" = R."id"
+                                            INNER JOIN 
+                                                "DailyUploads" AS DU ON DU."resourceId" = V."resourceId" AND DU."standardId" = VT."standardId"
+                                            LEFT JOIN 
+                                                "Questions" AS Q ON Q."videoId" = V."id"
+                                            WHERE 
+                                                VT."saved" = true AND '${studentId}' = VT."studentId"
+                                            GROUP BY 
+                                                V."id", R."name", VT."last_seen_time", V."thumbnailURL", V."duration", DU."accessDate", VT."watchedCompletely", DU."standardId";`
+                                        );
+
+        const transformedData = data[0].map(item => {
+            const {topics, ...other} = item;
+            const topicCount = Object.keys(topics).length;
+            return { ...other, topicCount };
         });
 
-        // Fetch the video data
-        const videos = await Video.findAll({
-            where: {
-                id: videoTrackingData.map(data => data.videoId)
-            },
-            attributes: ['id', 'thumbnailURL', 'duration', 'topics'],
-            include: [
-                {
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['id', 'name'],
-                    include: [{
-                        model: DailyUpload,
-                        as: 'DailyUpload',
-                        where: {
-                            standardId: videoTrackingData.map(data => data.standardId)
-                        },
-                        attributes: ['accessDate', 'standardId'],
-                        required: true
-                    }]
-                },
-                {
-                    model: Question,
-                    as: 'questions',
-                    attributes: ['id'],
-                }
-            ]
-        });
-
-        // Map the video tracking data to the videos
-        const savedVideos = videoTrackingData.map(trackingData => {
-            const video = videos.find(video => video.id === trackingData.videoId);
-            return {
-                ...trackingData.get({ plain: true }),
-                video: video.get({ plain: true })
-            };
-        });
-
-        const transformedVideos = savedVideos.map(savedVideo => {
-            const { videoId, last_seen_time, watchedCompletely, video } = savedVideo;
-            const { resource, ...videoData } = video
-            console.log('\n\n\n\n', videoId, last_seen_time, watchedCompletely, video, resource, videoData, '\n\n\n\n')
-            return {
-                videoId: videoId,
-                name: resource.name,
-                lastSeenTime: last_seen_time,
-                thumbnailURL: videoData.thumbnailURL,
-                duration: videoData.duration,
-                topicCount: Object.keys(videoData.topics).length,
-                questionCount: videoData.questions.length,
-                accessDate: resource.DailyUpload.accessDate,
-                completed: watchedCompletely,
-                standardId: resource.DailyUpload.standardId
-            };
-        });
-
-        const groupedVideos = transformedVideos.reduce((grouped, video) => {
+        const groupedVideos = transformedData.reduce((grouped, video) => {
             const date = video.accessDate;
             const index = grouped.findIndex(group => group.date === date);
             if (index === -1) {
