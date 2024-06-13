@@ -1,5 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Resource, Video, Question } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
