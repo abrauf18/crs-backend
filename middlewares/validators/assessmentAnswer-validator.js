@@ -20,6 +20,7 @@ const createAssessmentAnswer = createSchemaMiddleware(
     Joi.object({
         userId: Joi.string().guid().required(),
         resourceId: Joi.string().guid().required(),
+        standardId: Joi.string().guid().required(),
         answerURL: Joi.string().required(),
         accessToken: Joi.string().required(),
     })
@@ -36,6 +37,7 @@ const getAssessmentAnswerToCreateOrEdit = createSchemaMiddleware(
     Joi.object({
         resourceid: Joi.string().guid().required(),
         userid: Joi.string().guid().required(),
+        standardid: Joi.string().guid().required(),
         accesstoken: Joi.string().required(),
       }).unknown(), 'headers'
 );

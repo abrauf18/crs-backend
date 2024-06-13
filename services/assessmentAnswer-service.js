@@ -1,7 +1,7 @@
 const { Sequelize, where } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { User, AssessmentResourcesDetail, AssessmentAnswer, Resource, DailyUpload } = require("../models/index.js");
+const { User, Standard, AssessmentResourcesDetail, AssessmentAnswer, Resource, DailyUpload } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 function canSubmitAssessment(uploadDate, daysToAdd) {
@@ -20,7 +20,7 @@ function getDeadline(uploadDate, daysToAdd) {
     return deadlineDate
 }
 
-const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
+const createAssessmentAnswer = async ({userId, resourceId, standardId, answerURL}) => {
     try {
         const existingUser = await User.findByPk(userId);
         if (!existingUser) {
@@ -32,6 +32,11 @@ const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
             return { code: 404, message: "Resource not found" };
         }
 
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
+            return { code: 404, message: "Resource not found" };
+        }
+
         const existingAssessmentResourcesDetail = await AssessmentResourcesDetail.findOne({
             where: { resourceId }
         });
@@ -40,19 +45,20 @@ const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
         }
 
         const dailyUpload = await DailyUpload.findOne({
-            where: { resourceId }
+            where: { resourceId, standardId }
         });
         if (!dailyUpload) {
             return { code: 404, message: "Daily Upload not found" };
         }
 
-        if (canSubmitAssessment(dailyUpload.accessDate,existingAssessmentResourcesDetail.deadline) === false) {
+        if (canSubmitAssessment(dailyUpload.accessDate, existingAssessmentResourcesDetail.deadline) === false) {
             return { code: 400, message: "Deadline has passed" };
         }
 
         const existingAssessmentAnswer = await AssessmentAnswer.findOne({
             where: {
                 userId,
+                standardId,
                 assessmentResourcesDetailId: existingAssessmentResourcesDetail.id
             }
         });
@@ -67,6 +73,7 @@ const createAssessmentAnswer = async ({userId, resourceId, answerURL}) => {
         else {
             const createdAssessmentAnswer = await AssessmentAnswer.create({
                 userId,
+                standardId,
                 assessmentResourcesDetailId: existingAssessmentResourcesDetail.id,
                 answerURL
             });
@@ -97,8 +104,9 @@ const getAssessmentAnswer = async ({ assessmentAnswerId }) => {
     }
 };
 
-const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
+const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardId }) => {
     try {
+        console.log('\n\n\n', resourceId, userId, standardId)
         const assessmentAnswer = await Resource.findOne({
             where: { id: resourceId },
             attributes: ['id', 'name', 'url'],
@@ -113,13 +121,17 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
                         as: 'assessmentAnswers',
                         required: false,
                         attributes: ['id', 'answerURL', 'obtainedMarks'],
-                        where: { userId },
+                        where: { 
+                            userId: userId, 
+                            standardId: standardId, 
+                        },
                     }]
                 },
                 {
                     model: DailyUpload,
                     as: 'DailyUpload',
                     attributes: ['accessDate'],
+                    where: { resourceId, standardId },
                     required: false,
                 }
             ]
@@ -134,7 +146,8 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId }) => {
             canWrite: canSubmitAssessment(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline),
             deadline: getDeadline(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline).toISOString().split('T')[0],
         }
-        return { code: 200, data: transformedAssesmentAnswer };
+
+        return { code: 200, data: assessmentAnswer };
     } catch (error) {
         console.log('\n\n\n', error);
         logger.error(error?.message || 'An error occurred while creating the video');
