@@ -64,13 +64,10 @@ const assignStandardToClassrooms = async (req, res) => {
             return handleSuccessResponse(res, 200, reply.data);
         }
         else if (reply.code == 400) {
-            return handleErrorResponse(res, 400, "Duplicate classrooms are not allowed.");
-        }
-        else if (reply.code == 404) {
             return handleErrorResponse(res, 400, reply.message);
         }
-        else if (reply.code == 405) {
-            return handleErrorResponse(res, 404, "Standard not found");
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
         }
         else if (reply.code == 409) {
             return handleErrorResponse(res, 409, reply.message);
@@ -127,7 +124,7 @@ const deleteClassCourse = async (req, res) => {
             return handleSuccessResponse(res, 200, reply.data);
         }
         if (reply.code == 404) {
-            return handleErrorResponse(res, 404, 'Relation between standard and class Not found');
+            return handleErrorResponse(res, 404, reply.message);
         }
         else {
             return handleInternalServerError(res);
@@ -146,6 +143,9 @@ const getClassroomStudents = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -163,6 +163,9 @@ const addStudentToClassroom = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, reply.message);
+        }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Classroom not found');
         }
@@ -170,7 +173,7 @@ const addStudentToClassroom = async (req, res) => {
             return handleErrorResponse(res, 404, 'Student not found');
         }
         else if (reply.code == 409) {
-            return handleErrorResponse(res, 409, 'Student already exists in the classroom');
+            return handleErrorResponse(res, 409, reply.message);
         }
         else {
             return handleInternalServerError(res);
@@ -190,7 +193,7 @@ const removeStudentFromClassroom = async (req, res) => {
             return handleSuccessResponse(res, 200, reply.data);
         }
         else if (reply.code == 404) {
-            return handleErrorResponse(res, 404, 'Relation between student and class not found');
+            return handleErrorResponse(res, 404, reply.message);
         }
         else {
             return handleInternalServerError(res);
@@ -213,13 +216,7 @@ const updateClassroomStudent = async (req, res) => {
             return handleErrorResponse(res, 400, 'User with this email already exists');
         }
         else if (reply.code == 404) {
-            return handleErrorResponse(res, 404, 'Relation between student and class not found');
-        }
-        else if (reply.code == 405) {
-            return handleErrorResponse(res, 404, 'Student not found');
-        }
-        else if (reply.code == 406) {
-            return handleErrorResponse(res, 404, 'Classroom not found');
+            return handleErrorResponse(res, 404, reply.message);
         }
         else if (reply.code == 409) {
             return handleErrorResponse(res, 409, 'Student already exists in the classroom');
