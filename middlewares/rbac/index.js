@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { User } = require("../../models/index.js");
 const jwt = require("../../utils/jwt.js");
 const { errorHandlingWrapper, handleInternalServerError, handleErrorResponse } = require("../../utils/response-handlers.js")
