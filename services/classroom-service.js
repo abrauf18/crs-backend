@@ -1,7 +1,8 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 const createClassroom = async ({ name, teacherId }) => {
     try {
@@ -37,8 +38,13 @@ const getClassroom = async ({ classroomId }) => {
 
 const getAllClassroomsOfTeacher = async ({ teacherId }) => {
     try {
-        const classrooms = await Classroom.findAll({ where: { teacherId } });
-        const options = classrooms.map(classroom => {
+        const classrooms = await Classroom.findAll({ 
+            where: { 
+                teacherId: teacherId,
+                status: CLASSROOM_STATUS.ACTIVE
+            } 
+        });
+        const options = classrooms?.map(classroom => {
             return { label: classroom.id, value: classroom.name };
         });
         return { code: 200, data: options };
@@ -52,18 +58,30 @@ const getAllClassroomsOfTeacher = async ({ teacherId }) => {
 
 const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
     try {
-        if (new Set(classroomIds).size !== classroomIds.length) {
-            return { code: 400 };
+        const standard = await Standard.findOne({ where: { id: standardId } });
+        if (!standard) {
+            return { code: 404, message: "Standard not found" };
         }
 
-        const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({ where: { id } })));
+        if (new Set(classroomIds).size !== classroomIds.length) {
+            return { code: 400, message: "Duplicate classrooms are not allowed." };
+        }
+
+        const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({ 
+            where: { id },
+            raw: true
+        })));
+        
         const notFoundIds = classroomIds.filter((id, index) => !classrooms[index]);
         if (notFoundIds.length > 0) {
             return { code: 404, message: `Classrooms not found: ${notFoundIds.join(', ')}` };
         }
-        const standard = await Standard.findOne({ where: { id: standardId } });
-        if (!standard) {
-            return { code: 405 };
+
+        const inactiveNames = classrooms
+                                .filter(classroom => classroom && classroom.status === CLASSROOM_STATUS.INACTIVE)
+                                .map(classroom => classroom.name);
+        if (inactiveNames.length > 0) {
+            return { code: 404, message: `Inactive classrooms: ${inactiveNames.join(', ')}` };
         }
 
         const classroomsWithStandard = await Classroom.findAll({
@@ -99,14 +117,17 @@ const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
 const getSummarizedClassroomsOfTeacher = async ({ teacherId }) => {
     try {
         const classrooms = await Classroom.findAll({
-            where: { teacherId },
+            where: { 
+                teacherId: teacherId,
+                status: CLASSROOM_STATUS.ACTIVE
+            },
             include: [{
                 model: ClassroomStudent,
                 as: 'classroomStudents'
             }]
         });
 
-        const classroomsWithStudents = classrooms.map(classroom => {
+        const classroomsWithStudents = classrooms?.map(classroom => {
             const { id, name, classroomStudents } = classroom.toJSON();
             return {
                 id,
@@ -131,7 +152,10 @@ const getClassesAndCourses = async ({ teacherId }) => {
             include: [{
                 model: Classroom,
                 as: 'classroom',
-                where: { teacherId },
+                where: { 
+                    teacherId: teacherId,
+                    status: CLASSROOM_STATUS.ACTIVE 
+                },
                 attributes: ['name']
             },
             {
@@ -141,7 +165,7 @@ const getClassesAndCourses = async ({ teacherId }) => {
             }],
         })
 
-        const transformedSummarizedStandards = summarizedStandards.map(traversingStandard => {
+        const transformedSummarizedStandards = summarizedStandards?.map(traversingStandard => {
             const { id, classroom, standard } = traversingStandard.toJSON();
             return { id, className: classroom.name, standardName: standard.name, standardId: standard.id }
         });
@@ -158,8 +182,17 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
     try {
         const classroomCourse = await ClassroomCourses.findByPk(classroomCourseId);
         if (!classroomCourse) {
-            return { code: 404 };
+            return { code: 404, message: 'Relation between standard and class Not found' };
         }
+
+        const classroom = await Classroom.findOne({ where: { id: classroomCourse.classroomId } });
+        if (!classroom) {
+            return { code: 404, message: 'Classroom not found' };
+        }
+        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            return { code: 404, message: 'Classroom is not active any more' };
+        }
+
         const deleted = await classroomCourse.destroy();
 
         return { code: 200, data: deleted };
@@ -234,12 +267,18 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         const offset = (page - 1) * limit;
 
         const classroom = await Classroom.findOne({
-            where: { id: classroomId },
-            attributes: ['name'],
+            where: { 
+                id: classroomId,
+            },
+            attributes: ['name', 'status'],
+            raw: true
         });
 
         if (!classroom) {
-            return { code: 404 };
+            return { code: 404, message: 'Classroom not found'};
+        }
+        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            return { code: 404, message: 'Classroom is not active any more' };
         }
 
         const classroomStudents = await ClassroomStudent.findAndCountAll({
@@ -274,13 +313,27 @@ const addStudentToClassroom = async ({ classroomId, studentId }) => {
         if (!classroom) {
             return { code: 404 };
         }
+        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            return { code: 400, message: 'Classroom is not active any more' };
+        }
+
         const student = await User.findOne({ where: { id: studentId } });
         if (!student) {
             return { code: 405 };
         }
-        const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId } });
+        
+        const existingClassroomStudent = await ClassroomStudent.findOne({ 
+            where: { studentId },
+            include: [
+                {
+                    model: Classroom,
+                    as: 'classroom',
+                    where: { status: CLASSROOM_STATUS.ACTIVE }
+                }
+            ]
+        });
         if (existingClassroomStudent) {
-            return { code: 409 };
+            return { code: 409, message: `Student is already enrolled in ${existingClassroomStudent.classroom.name}` };
         }
 
         const classroomStudent = await ClassroomStudent.create({ classroomId, studentId });
@@ -297,8 +350,17 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
     try {
         const classroomStudent = await ClassroomStudent.findByPk(classroomStudentId);
         if (!classroomStudent) {
-            return { code: 404 };
+            return { code: 404, message: 'Relation between student and class not found' };
         }
+
+        const classroom = await Classroom.findOne({ where: { id: classroomStudent.classroomId } });
+        if (!classroom) {
+            return { code: 404, message: 'Classroom not found' };
+        }
+        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            return { code: 404, message: 'Classroom is not active any more' };
+        }
+
         const deleted = await classroomStudent.destroy();
 
         return { code: 200, data: deleted };
@@ -318,17 +380,20 @@ const updateClassroomStudent = async ({ classroomStudentId, name, email, classro
 
         const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId } });
         if (!classroomStudent) {
-            return { code: 404 };
+            return { code: 404, message: 'Relation between student and class not found' };
         }
     
         const student = await User.findOne({ where: { id: classroomStudent.studentId } });
         if (!student) {
-            return { code: 405 };
+            return { code: 404, message: 'Student not found' };
         }
 
         const classroom = await Classroom.findOne({ where: { id: classroomId } });
         if (!classroom) {
-            return { code: 406 };
+            return { code: 404, message: 'Classroom not found' };
+        }
+        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            return { code: 404, message: 'Classroom is not active any more' };
         }
 
         const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId: classroomStudent.studentId } });
