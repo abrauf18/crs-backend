@@ -26,6 +26,7 @@ const getStudentVideo = createSchemaMiddleware(
     Joi.object({
         videoid: Joi.string().guid().required(),
         studentid: Joi.string().guid().required(),
+        standardid: Joi.string().guid().required(),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
 );
