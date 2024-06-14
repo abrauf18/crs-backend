@@ -37,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: DataTypes.NOW
     },
+    weightage: {
+      type: DataTypes.INTEGER,
+      defaultValue:0,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'DailyUpload',
