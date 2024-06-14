@@ -186,10 +186,10 @@ const getStandardsResourcesAndCount = async (req, res) => {
         return handleInternalServerError(res);
     }
 }
-const getStudentProfileVideoResults = async (req, res) => {
+const getStudentProfileStandardResults = async (req, res) => {
     try {
         const { studentid, standardid } = req.headers;
-        const reply = await studentService.getStudentProfileVideoResults({ role: req.user.role, studentId: studentid, standardId: standardid});
+        const reply = await studentService.getStudentProfileStandardResults({ role: req.user.role, studentId: studentid, standardId: standardid});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -217,5 +217,5 @@ module.exports = {
     SaveOrRemoveVideo,
     getSavedVideos,
     getStandardsResourcesAndCount,
-    getStudentProfileVideoResults
+    getStudentProfileStandardResults
 };
