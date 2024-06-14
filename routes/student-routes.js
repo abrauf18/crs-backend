@@ -80,11 +80,11 @@ router.get(
 );
 
 router.get(
-    "/getStudentProfileVideoResults",
-    studentValidation.getStudentProfileVideoResults,
+    "/getStudentProfileStandardResults",
+    studentValidation.getStudentProfileStandardResults,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
-    studentController.getStudentProfileVideoResults
+    studentController.getStudentProfileStandardResults
 );
 
 module.exports = router;

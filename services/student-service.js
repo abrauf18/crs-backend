@@ -1,7 +1,7 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail } = require("../models/index.js");
+const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
 
@@ -33,10 +33,17 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     return true;
 }
 
-async function checkStandardActive({role, studentId, standardId}) {
-    if (role === ROLES.ADMIN || role === ROLES.SCHOOL) {
-        return true;
+async function checkStudentAndStandard({role, studentId, standardId}) {
+    const student = await User.findByPk(studentId);
+    if (!student) {
+        return { code: 404, message: 'Student not found'};
     }
+
+    const standard = await Standard.findByPk(standardId);
+    if (!standard) {
+        return { code: 404, message: 'Standard not found'};
+    }
+    
     const studentData = await ClassroomStudent.findOne({
         where: {
             studentId: studentId,
@@ -45,19 +52,29 @@ async function checkStandardActive({role, studentId, standardId}) {
             model: Classroom,
             as: 'classroom',
             where: { status: CLASSROOM_STATUS.ACTIVE },
+            required: false,
             include: [{
                 model: ClassroomCourses,
                 as: 'classroomCourses',
                 where: { standardId: standardId },
-                required: true
+                required: false
             }]
         }]
     })
 
-    if (!studentData) {        
-        return false;
+    if (!studentData) {
+        return { code: 404, message: 'Student is not enrolled in any classroom' }
     }
-    return true;
+
+    if (!studentData.classroom) {
+        return { code: 404, message: 'Classroom not active any more' }
+    }
+
+    if (!studentData.classroom.classroomCourses || studentData.classroom.classroomCourses.length === 0) {
+        return { code: 404, message: 'Classroom of student does not have this standard' }
+    }
+
+    return { code: 200, message: 'relation between student and standard found' }
 }
 
 const getStudentCurrentStandards = async ({ studentId }) => {
@@ -125,14 +142,9 @@ const getStudentCurrentStandards = async ({ studentId }) => {
 
 const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
     try {
-        const student = await User.findByPk(studentId);
-        if (!student) {
-            return { code: 404, message: 'Student not found'};
-        }
-
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
         }
 
         const watchedVideo = await VideoTracking.findOne({
@@ -231,23 +243,13 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
             return { code: 404, message: 'Video not found'};
         }
 
-        const student = await User.findByPk(studentId);
-        if (!student) {
-            return { code: 404, message: 'Student not found'};
-        }
-
-        const standard = await Standard.findByPk(standardId);
-        if (!standard) {
-            return { code: 404, message: 'Standard not found'};
-        }
-
         if (compareTimes(last_seen_time, video.duration) > 0) {
             return { code: 400 };
         }
 
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
         }
 
         const existingVideoTracking = await VideoTracking.findOne({
@@ -283,6 +285,11 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
 
 const getStudentStandard = async ({ role, standardId, studentId }) => {
     try {
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
+        }
+
         const standard = await Standard.findByPk(standardId, {
             include: [{
                 model: DailyUpload,
@@ -322,10 +329,6 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
             return { code: 404, message: 'Standard not found' };
         }
 
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
-        }
 
         const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
             const date = upload.accessDate;
@@ -374,19 +377,9 @@ const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardI
             return { code: 404, message: 'Video not found'};
         }
 
-        const student = await User.findByPk(studentId);
-        if (!student) {
-            return { code: 404, message: 'Student not found'};
-        }
-
-        const standard = await Standard.findByPk(standardId);
-        if (!standard) {
-            return { code: 404, message: 'Standard not found'};
-        }
-
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
         }
 
         const videoTracking = await VideoTracking.findOne({
@@ -433,19 +426,9 @@ const UpdateStudentVideoLastSeenTime = async ({ role, videoId, studentId, standa
             return { code: 404, message: 'Video not found'};
         }
 
-        const student = await User.findByPk(studentId);
-        if (!student) {
-            return { code: 404, message: 'Student not found'};
-        }
-
-        const standard = await Standard.findByPk(standardId);
-        if (!standard) {
-            return { code: 404, message: 'Standard not found'};
-        }
-
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
         }
 
         const videoTracking = await VideoTracking.findOne({
@@ -490,19 +473,9 @@ const SaveOrRemoveVideo = async ({ role, videoId, studentId, standardId, save })
             return { code: 404, message: 'Video not found'};
         }
 
-        const student = await User.findByPk(studentId);
-        if (!student) {
-            return { code: 404, message: 'Student not found'};
-        }
-
-        const standard = await Standard.findByPk(standardId);
-        if (!standard) {
-            return { code: 404, message: 'Standard not found'};
-        }
-
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
         }
 
         const existingVideoTracking = await VideoTracking.findOne({
@@ -834,61 +807,118 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
     }
 };
 
-const getStudentProfileVideoResults = async ({ role, studentId, standardId }) => {
+const getStudentProfileStandardResults = async ({ role, studentId, standardId }) => {
     try {
-        const student = await User.findByPk(studentId);
-        if (!student) {
-            return { code: 404, message: 'Student not found' };
+        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
+        if (checkActiveStandardResult.code !== 200){
+            return checkActiveStandardResult
         }
 
        const standard = await Standard.findByPk(standardId, {
+            attributes: ['id', 'name', 'description', 'courseLength'],
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['id', 'accessDate'],
+                attributes: ['id', 'accessDate', 'weightage'],
                 where: {
-                    accessDate: {
-                        [Op.lte]: new Date()
-                    }
+                    // accessDate: {
+                    //     [Op.lte]: new Date()
+                    // }
+                    weightage: {
+                        [Op.gt]: 0
+                    },
                 },
                 include: [{
                     model: Resource,
                     as: 'resource',
                     attributes: ['id', 'name', 'type'],
-                    where: { type: 'video' },
-                    include: [{
-                        model: Video,
-                        as: 'video',
-                        attributes: ['id'],
-                        required: true,
-                        include: [{
-                            model: Question,
-                            as: 'questions',
-                            attributes: ['id', 'totalMarks'],
-                            required: true,
+                    include: [
+                        {
+                            model: Video,
+                            as: 'video',
+                            attributes: ['id'],
                             include: [{
-                                model: VideoQuestionAnswer,
-                                as: 'answers',
-                                where: { userId: studentId },
-                                required: false
+                                model: Question,
+                                as: 'questions',
+                                attributes: ['id', 'totalMarks'],
+                                required: false,
+                                include: [{
+                                    model: VideoQuestionAnswer,
+                                    as: 'answers',
+                                    where: { userId: studentId },
+                                    attributes: ['obtainedMarks', 'answer'],
+                                    required: false
+                                }]
                             }]
-                        }]
-                    }]
+                        },
+                        {
+                            model: AssessmentResourcesDetail,
+                            as: 'AssessmentResourcesDetail',
+                            attributes: ['id', 'totalMarks', 'deadline'],
+                            include: [{
+                                model: AssessmentAnswer,
+                                as: 'assessmentAnswers',
+                                where: { userId: studentId },
+                                attributes: ['obtainedMarks', 'answerURL'],
+                                required: false,
+                                separate: true
+                            }]
+                        }
+                    ]
                 }]
-            }]
+            }],
         });
-        
-        const isActive = await checkStandardActive({role, studentId, standardId});
-        if (!isActive){
-            return { code: 404, message: 'Standard not active any more' };
+
+        // Current date for comparison
+        const today = new Date();
+
+        const result = await standard?.get({plain: true});
+
+        if (!result) {
+            return {
+                code: 200,
+                data: []
+            };
         }
+
+        // Add accessible field and calculate performance
+        result.dailyUploads = result?.dailyUploads?.map(dailyUpload => {
+            const accessDate = new Date(dailyUpload.accessDate);
+            dailyUpload.accessible = accessDate < today;
+
+            let totalObtainedMarks = 0;
+            let totalPossibleMarks = 0;
+
+            // Calculate total obtained marks and total possible marks for the video
+            if (dailyUpload.resource.video) {
+                dailyUpload.resource.video?.questions?.forEach(question => {
+                    question?.answers?.forEach(answer => {
+                        totalObtainedMarks += answer?.obtainedMarks || 0;
+                    });
+                    totalPossibleMarks += question?.totalMarks || 0;
+                });
+            }
+
+            // Calculate total obtained marks and total possible marks for the assessment
+            if (dailyUpload.resource.AssessmentResourcesDetail) {
+                dailyUpload.resource.AssessmentResourcesDetail?.assessmentAnswers?.forEach(answer => {
+                    totalObtainedMarks += answer?.obtainedMarks || 0;
+                });
+                totalPossibleMarks += dailyUpload.resource.AssessmentResourcesDetail?.totalMarks || 0;
+            }
+
+            // Calculate performance
+            dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * dailyUpload.weightage : dailyUpload.weightage;
+
+            return dailyUpload;
+        });
 
         return {
             code: 200,
             data: standard
         };
     } catch (error) {
-        console.log(error);
+        console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while fetching the standard');
         return { code: 500 };
     }
@@ -904,5 +934,5 @@ module.exports = {
     SaveOrRemoveVideo,
     getSavedVideos,
     getStandardsResourcesAndCount,
-    getStudentProfileVideoResults
+    getStudentProfileStandardResults
 };

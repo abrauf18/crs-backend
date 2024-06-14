@@ -104,7 +104,7 @@ const getStandardsResourcesAndCount = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
-const getStudentProfileVideoResults = createSchemaMiddleware(
+const getStudentProfileStandardResults = createSchemaMiddleware(
     Joi.object({
         studentid: Joi.string().guid().required(),
         standardid: Joi.string().guid().required(),
@@ -122,5 +122,5 @@ module.exports = {
     SaveOrRemoveVideo,
     getSavedVideos,
     getStandardsResourcesAndCount,
-    getStudentProfileVideoResults
+    getStudentProfileStandardResults
 };
