@@ -146,7 +146,7 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardI
             deadline: getDeadline(assessmentAnswer?.DailyUpload?.accessDate, assessmentAnswer?.AssessmentResourcesDetail?.deadline).toISOString().split('T')[0],
         }
 
-        return { code: 200, data: assessmentAnswer };
+        return { code: 200, data: transformedAssesmentAnswer };
     } catch (error) {
         console.log('\n\n\n', error);
         logger.error(error?.message || 'An error occurred while creating the video');
