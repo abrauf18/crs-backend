@@ -865,8 +865,11 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                             }]
                         }
                     ]
-                }]
+                }],
             }],
+            order: [
+                [{ model: DailyUpload, as: 'dailyUploads' }, 'accessDate', 'ASC']
+            ],
         });
 
         // Current date for comparison
@@ -881,6 +884,10 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             };
         }
 
+        let currentTotalWeightage = 0;
+        let currentAcheivedWeightage = 0;
+        let yetToMarkWeightage = 0;
+
         // Add accessible field and calculate performance
         result.dailyUploads = result?.dailyUploads?.map(dailyUpload => {
             const accessDate = new Date(dailyUpload.accessDate);
@@ -889,33 +896,48 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             let totalObtainedMarks = 0;
             let totalPossibleMarks = 0;
 
+            
             // Calculate total obtained marks and total possible marks for the video
             if (dailyUpload.resource.video) {
+                let unmarkedQuestionsTotal = 0;
                 dailyUpload.resource.video?.questions?.forEach(question => {
                     question?.answers?.forEach(answer => {
-                        totalObtainedMarks += answer?.obtainedMarks || 0;
+                        totalObtainedMarks += answer?.obtainedMarks === -1 ? 0 : answer?.obtainedMarks;
+                        unmarkedQuestionsTotal += (answer?.obtainedMarks === -1 ? question.totalMarks : 0);
                     });
                     totalPossibleMarks += question?.totalMarks || 0;
+                    yetToMarkWeightage += (unmarkedQuestionsTotal / totalPossibleMarks) * dailyUpload.weightage;
                 });
             }
 
             // Calculate total obtained marks and total possible marks for the assessment
             if (dailyUpload.resource.AssessmentResourcesDetail) {
                 dailyUpload.resource.AssessmentResourcesDetail?.assessmentAnswers?.forEach(answer => {
-                    totalObtainedMarks += answer?.obtainedMarks || 0;
+                    totalObtainedMarks += answer?.obtainedMarks === -1 ? 0 : answer?.obtainedMarks;
+                    yetToMarkWeightage += (answer?.obtainedMarks === -1 ? dailyUpload.weightage : 0);
+
                 });
                 totalPossibleMarks += dailyUpload.resource.AssessmentResourcesDetail?.totalMarks || 0;
             }
 
             // Calculate performance
-            dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * dailyUpload.weightage : dailyUpload.weightage;
+            dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * (dailyUpload.weightage / 100) : dailyUpload.weightage;
+
+            if (dailyUpload.accessible) {
+                currentTotalWeightage += dailyUpload.weightage;
+                currentAcheivedWeightage += dailyUpload.performance;
+            }
 
             return dailyUpload;
         });
 
+        result.currentTotalWeightage = currentTotalWeightage;
+        result.currentAcheivedWeightage = currentAcheivedWeightage;
+        result.yetToMarkWeightage = yetToMarkWeightage;
+
         return {
             code: 200,
-            data: standard
+            data: result
         };
     } catch (error) {
         console.log('\n\n\n\n', error);
