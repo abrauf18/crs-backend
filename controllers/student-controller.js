@@ -206,6 +206,26 @@ const getStudentProfileStandardResults = async (req, res) => {
     }
 }
 
+const getStudentProfileSummarizedStandards = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getStudentProfileSummarizedStandards({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 
 module.exports = {
     getStudentCurrentStandards,
@@ -217,5 +237,6 @@ module.exports = {
     SaveOrRemoveVideo,
     getSavedVideos,
     getStandardsResourcesAndCount,
-    getStudentProfileStandardResults
+    getStudentProfileStandardResults,
+    getStudentProfileSummarizedStandards
 };

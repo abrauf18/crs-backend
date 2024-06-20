@@ -962,6 +962,131 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
     }
 };
 
+const getStudentProfileSummarizedStandards = async ({ studentId }) => {
+    try {
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        // const data = await User.sequelize.query(`
+        //     SELECT  
+        //         *
+        //     FROM 
+        //         "ClassroomStudents" AS CS
+        //     INNER JOIN 
+        //         "Classrooms" AS C ON C."id" = CS."classroomId"
+        //     INNER JOIN 
+        //         "ClassroomCourses" AS CC ON CC."classroomId" = C."id"
+        //     INNER JOIN 
+        //         "Standards" AS S ON S."id" = CC."standardId"
+        //     INNER JOIN 
+        //         "DailyUploads" AS DU ON DU."standardId" = S."id"
+        //     LEFT JOIN 
+        //         "Resources" AS R ON R."id" = DU."resourceId"
+        //     LEFT JOIN 
+        //         "AssessmentResourcesDetails" AS ARD ON R."id" = ARD."resourceId"
+        //     LEFT JOIN 
+        //         "AssessmentAnswers" AS AA ON AA."assessmentResourcesDetailId" = ARD."id"
+        //     LEFT JOIN 
+        //         "Videos" AS V ON R."id" = V."resourceId"
+        //     LEFT JOIN 
+        //         "VideoTrackings" AS VT ON VT."videoId" = V."id"
+        //     LEFT JOIN 
+        //         "Questions" AS Q ON Q."videoId" = V."id"
+        //     LEFT JOIN 
+        //         "VideoQuestionAnswers" AS VQA ON VQA."questionId" = Q."id"
+        //     WHERE 
+        //         CS."studentId" = '${studentId}' AND C."status" = 'active'
+        // `);
+        
+        // const rows = data[0];
+
+        const currentStandardsWithResources = await ClassroomStudent.findOne({
+            where: {
+                studentId: studentId
+            },
+            attributes: [ "id" ],
+            include: [ 
+                {
+                    model: Classroom,
+                    as: 'classroom',
+                    where: { status: CLASSROOM_STATUS.ACTIVE },
+                    attributes: [ "id" ],
+                    include: [{
+                        model: ClassroomCourses,
+                        as: 'classroomCourses',
+                        attributes: [ "id" ],
+                        include: [{
+                            model: Standard,
+                            as: 'standard',
+                            attributes: [ "id", "name" ],
+                            include: [{ 
+                                model: DailyUpload, 
+                                as: 'dailyUploads',
+                                attributes: ['id', 'accessDate', 'weightage'],
+                                where: {
+                                    weightage: {
+                                        [Op.gt]: 0
+                                    }
+                                },
+                                required: true,
+                                separate: true,
+                                include: [{
+                                    model: Resource,
+                                    as: 'resource',
+                                    attributes: ['id', 'name', 'type', 'topic', 'url'],
+                                    include: [
+                                        {
+                                            model: Video,
+                                            as: 'video',
+                                            attributes: ['id'],
+                                            include: [{
+                                                separate: true,
+                                                model: Question,
+                                                as: 'questions',
+                                                required: false,
+                                                attributes: ['id', 'totalMarks'],
+                                                include: [{
+                                                    separate: true,
+                                                    model: VideoQuestionAnswer,
+                                                    as: 'answers',
+                                                    where: { userId: studentId },
+                                                    required: false,
+                                                    attributes: ['obtainedMarks']
+                                                }]
+                                            }]
+                                        },
+                                        {
+                                            model: AssessmentResourcesDetail,
+                                            as: 'AssessmentResourcesDetail',
+                                            attributes: ['id', 'totalMarks', 'deadline'],
+                                            include: [{
+                                                separate: true,
+                                                model: AssessmentAnswer,
+                                                as: 'assessmentAnswers',
+                                                where: { userId: studentId },
+                                                attributes: ['obtainedMarks', 'answerURL'],
+                                                required: false,
+                                            }]
+                                        }
+                                    ]
+                                }]
+                            }]
+                        }],
+                    }],
+                }
+            ],
+        });
+
+        return { code: 200, data: currentStandardsWithResources };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the saved videos');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -972,5 +1097,6 @@ module.exports = {
     SaveOrRemoveVideo,
     getSavedVideos,
     getStandardsResourcesAndCount,
-    getStudentProfileStandardResults
+    getStudentProfileStandardResults,
+    getStudentProfileSummarizedStandards
 };
