@@ -979,7 +979,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                     model: Classroom,
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE },
-                    attributes: [ "id" ],
+                    attributes: [ "id", "name" ],
                     include: [{
                         model: ClassroomCourses,
                         as: 'classroomCourses',
