@@ -932,7 +932,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             }
 
             // Calculate performance
-            dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * (dailyUpload.weightage / 100) : dailyUpload.weightage;
+            dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * dailyUpload.weightage : dailyUpload.weightage;
             dailyUpload.yetToMarkWeightage = parseFloat(yetToMarkWeightage.toFixed(1));
             dailyUpload.unAnsweredWeightage = parseFloat(unAnsweredWeightage.toFixed(1));
             totalUnMarkedWeightage += parseFloat(yetToMarkWeightage.toFixed(1));
@@ -969,40 +969,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             return { code: 404, message: 'Student not found'};
         }
 
-        // const data = await User.sequelize.query(`
-        //     SELECT  
-        //         *
-        //     FROM 
-        //         "ClassroomStudents" AS CS
-        //     INNER JOIN 
-        //         "Classrooms" AS C ON C."id" = CS."classroomId"
-        //     INNER JOIN 
-        //         "ClassroomCourses" AS CC ON CC."classroomId" = C."id"
-        //     INNER JOIN 
-        //         "Standards" AS S ON S."id" = CC."standardId"
-        //     INNER JOIN 
-        //         "DailyUploads" AS DU ON DU."standardId" = S."id"
-        //     LEFT JOIN 
-        //         "Resources" AS R ON R."id" = DU."resourceId"
-        //     LEFT JOIN 
-        //         "AssessmentResourcesDetails" AS ARD ON R."id" = ARD."resourceId"
-        //     LEFT JOIN 
-        //         "AssessmentAnswers" AS AA ON AA."assessmentResourcesDetailId" = ARD."id"
-        //     LEFT JOIN 
-        //         "Videos" AS V ON R."id" = V."resourceId"
-        //     LEFT JOIN 
-        //         "VideoTrackings" AS VT ON VT."videoId" = V."id"
-        //     LEFT JOIN 
-        //         "Questions" AS Q ON Q."videoId" = V."id"
-        //     LEFT JOIN 
-        //         "VideoQuestionAnswers" AS VQA ON VQA."questionId" = Q."id"
-        //     WHERE 
-        //         CS."studentId" = '${studentId}' AND C."status" = 'active'
-        // `);
-        
-        // const rows = data[0];
-
-        const currentStandardsWithResources = await ClassroomStudent.findOne({
+        const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
             },
@@ -1079,7 +1046,101 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             ],
         });
 
-        return { code: 200, data: currentStandardsWithResources };
+        // Current date for comparison
+        const today = new Date();
+
+        const result = await data?.get({plain: true});
+
+        if (!result || !result.classroom || !result.classroom.classroomCourses) {
+            return {
+                code: 200,
+                data: [],
+            };
+        }
+
+        const transformedData = data?.classroom?.classroomCourses?.map(course => {
+            const standard = course?.standard;
+            let totalWeightage = 0;
+            let obtainedWeightage = 0;
+    
+            standard?.dailyUploads?.forEach(upload => {
+                let totalObtainedMarks = 0;
+                let totalPossibleMarks = 0;
+                const accessDate = new Date(upload.accessDate);
+    
+                // Only consider uploads with accessDate < today
+                if (accessDate < today) {
+                    totalWeightage += upload.weightage;
+    
+                    // Process resource's video questions
+                    if (upload.resource.video) {
+                        totalPossibleMarks = upload.resource.video?.questions?.reduce((total, question) => {
+                            return total + question.totalMarks;
+                        }, 0);
+                        upload.resource.video.questions.forEach(question => {
+                            question?.answers?.forEach(answer => {
+                                totalObtainedMarks += answer.obtainedMarks === -1 ? 0 : answer.obtainedMarks;
+                            });
+                        });
+                    }
+    
+                    // Process resource's assessment answers
+                    if (upload.resource.AssessmentResourcesDetail) {
+                        upload.resource.AssessmentResourcesDetail.assessmentAnswers.forEach(answer => {
+                            totalObtainedMarks += answer?.obtainedMarks === -1 ? 0 : answer?.obtainedMarks;
+                        });
+                        totalPossibleMarks += upload.resource.AssessmentResourcesDetail?.totalMarks || 0;
+                    }
+                    obtainedWeightage += totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * upload.weightage : upload.weightage;
+                }
+            })
+            return {
+                standardId: standard.id,
+                standardName: standard.name,
+                totalWeightage: totalWeightage,
+                obtainedWeightage: obtainedWeightage
+            };
+        })?.filter(entry => entry.totalWeightage > 0);
+
+        // Calculate average total weightage
+        const totalTotalWeightage = transformedData?.reduce((total, entry) => {
+            return total + entry.totalWeightage;
+        }, 0);
+        const averageTotalWeightage = transformedData?.length > 0 ? totalTotalWeightage / transformedData.length : 0;
+        
+        // Calculate average obtained weightage
+        const totalObtainedWeightage = transformedData?.reduce((total, entry) => {
+            return total + entry.obtainedWeightage;
+        }, 0);
+        const averageObtainedWeightage = transformedData?.length > 0 ? totalObtainedWeightage / transformedData.length : 0;
+        
+        const classroomName = result.classroom.name;
+
+        // Find worst performing standard
+        let bestPerformingStandard = null;
+        let bestPerformingWeightage = -1;
+        
+        transformedData?.forEach(entry => {
+            if (entry.obtainedWeightage > bestPerformingWeightage) {
+                bestPerformingWeightage = entry.obtainedWeightage;
+                bestPerformingStandard = {
+                    standardId: entry.standardId,
+                    standardName: entry.standardName,
+                    obtainedWeightage: entry.obtainedWeightage
+                };
+            }
+        });
+
+        return {
+            code: 200,
+            data: {
+                summarizedStandardResults: transformedData,
+                averageTotalWeightage: averageTotalWeightage,
+                averageObtainedWeightage: averageObtainedWeightage,
+                classroomName: classroomName,
+                bestPerformingStandard: bestPerformingStandard
+            }
+        };
     } catch (error) {
         console.log('\n\n\n\n', error)
         logger.error(error?.message || 'An error occurred while fetching the saved videos');
