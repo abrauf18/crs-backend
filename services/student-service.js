@@ -840,7 +840,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                             include: [{
                                 model: Question,
                                 as: 'questions',
-                                attributes: ['id', 'totalMarks'],
+                                attributes: ['id', 'statement', 'totalMarks', 'options', 'correctOption', 'correctOptionExplanation'],
                                 required: false,
                                 include: [{
                                     model: VideoQuestionAnswer,
@@ -886,7 +886,8 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
 
         let currentTotalWeightage = 0;
         let currentAcheivedWeightage = 0;
-        let yetToMarkWeightage = 0;
+        let totalUnMarkedWeightage = 0;
+        let totalunAnsweredWeightage = 0;
 
         // Add accessible field and calculate performance
         result.dailyUploads = result?.dailyUploads?.map(dailyUpload => {
@@ -895,23 +896,33 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
 
             let totalObtainedMarks = 0;
             let totalPossibleMarks = 0;
+            let yetToMarkWeightage = 0;
+            let unAnsweredWeightage = 0;
 
             
             // Calculate total obtained marks and total possible marks for the video
             if (dailyUpload.resource.video) {
                 let unmarkedQuestionsTotal = 0;
+                totalPossibleMarks = dailyUpload.resource.video?.questions?.reduce((total, question) => {
+                    return total + question.totalMarks;
+                }, 0);
                 dailyUpload.resource.video?.questions?.forEach(question => {
+                    if (!question?.answers || question.answers.length === 0) {
+                        unAnsweredWeightage += (question.totalMarks / totalPossibleMarks) * dailyUpload.weightage;
+                    }
                     question?.answers?.forEach(answer => {
                         totalObtainedMarks += answer?.obtainedMarks === -1 ? 0 : answer?.obtainedMarks;
                         unmarkedQuestionsTotal += (answer?.obtainedMarks === -1 ? question.totalMarks : 0);
+                        yetToMarkWeightage += (unmarkedQuestionsTotal / totalPossibleMarks) * dailyUpload.weightage;
                     });
-                    totalPossibleMarks += question?.totalMarks || 0;
-                    yetToMarkWeightage += (unmarkedQuestionsTotal / totalPossibleMarks) * dailyUpload.weightage;
                 });
             }
 
             // Calculate total obtained marks and total possible marks for the assessment
             if (dailyUpload.resource.AssessmentResourcesDetail) {
+                if (!dailyUpload.resource.AssessmentResourcesDetail?.assessmentAnswers || dailyUpload.resource.AssessmentResourcesDetail.assessmentAnswers.length === 0) {
+                    unAnsweredWeightage += dailyUpload.weightage;
+                }
                 dailyUpload.resource.AssessmentResourcesDetail?.assessmentAnswers?.forEach(answer => {
                     totalObtainedMarks += answer?.obtainedMarks === -1 ? 0 : answer?.obtainedMarks;
                     yetToMarkWeightage += (answer?.obtainedMarks === -1 ? dailyUpload.weightage : 0);
@@ -922,6 +933,10 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
 
             // Calculate performance
             dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * (dailyUpload.weightage / 100) : dailyUpload.weightage;
+            dailyUpload.yetToMarkWeightage = parseFloat(yetToMarkWeightage.toFixed(1));
+            dailyUpload.unAnsweredWeightage = parseFloat(unAnsweredWeightage.toFixed(1));
+            totalUnMarkedWeightage += parseFloat(yetToMarkWeightage.toFixed(1));
+            totalunAnsweredWeightage += parseFloat(unAnsweredWeightage.toFixed(1));
 
             if (dailyUpload.accessible) {
                 currentTotalWeightage += dailyUpload.weightage;
@@ -931,9 +946,10 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             return dailyUpload;
         });
 
-        result.currentTotalWeightage = currentTotalWeightage;
-        result.currentAcheivedWeightage = currentAcheivedWeightage;
-        result.yetToMarkWeightage = yetToMarkWeightage;
+        result.currentTotalWeightage = parseFloat(currentTotalWeightage.toFixed(1));
+        result.currentAcheivedWeightage = parseFloat(currentAcheivedWeightage.toFixed(1));
+        result.totalUnMarkedWeightage = parseFloat(totalUnMarkedWeightage.toFixed(1));
+        result.totalunAnsweredWeightage = parseFloat(totalunAnsweredWeightage.toFixed(1));
 
         return {
             code: 200,
