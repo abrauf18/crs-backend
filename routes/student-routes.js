@@ -95,4 +95,28 @@ router.get(
     studentController.getStudentProfileSummarizedStandards
 )
 
+router.get(
+    "/getSummarizedStudentStandardsForTeacher",
+    studentValidation.getSummarizedStudentStandardsForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getSummarizedStudentStandardsForTeacher
+)
+
+router.get(
+    "/getSummarizedStudentForTeacher",
+    studentValidation.getSummarizedStudentForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getSummarizedStudentForTeacher
+)
+
+router.get(
+    "/getStudentNameEmailForTeacher",
+    studentValidation.getStudentNameEmailForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getStudentNameEmailForTeacher
+)
+
 module.exports = router;

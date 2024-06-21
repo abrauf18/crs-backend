@@ -119,6 +119,27 @@ const getStudentProfileSummarizedStandards = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const getSummarizedStudentStandardsForTeacher = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+const getSummarizedStudentForTeacher = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+const getStudentNameEmailForTeacher = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -130,5 +151,8 @@ module.exports = {
     getSavedVideos,
     getStandardsResourcesAndCount,
     getStudentProfileStandardResults,
-    getStudentProfileSummarizedStandards
+    getStudentProfileSummarizedStandards,
+    getSummarizedStudentStandardsForTeacher,
+    getSummarizedStudentForTeacher,
+    getStudentNameEmailForTeacher
 };

@@ -226,6 +226,65 @@ const getStudentProfileSummarizedStandards = async (req, res) => {
     }
 }
 
+const getSummarizedStudentStandardsForTeacher = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getSummarizedStudentStandardsForTeacher({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getSummarizedStudentForTeacher = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getSummarizedStudentForTeacher({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getStudentNameEmailForTeacher = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getStudentNameEmailForTeacher({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
 
 module.exports = {
     getStudentCurrentStandards,
@@ -238,5 +297,8 @@ module.exports = {
     getSavedVideos,
     getStandardsResourcesAndCount,
     getStudentProfileStandardResults,
-    getStudentProfileSummarizedStandards
+    getStudentProfileSummarizedStandards,
+    getSummarizedStudentStandardsForTeacher,
+    getSummarizedStudentForTeacher,
+    getStudentNameEmailForTeacher
 };
