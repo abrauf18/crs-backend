@@ -22,8 +22,14 @@ const getTeacherDashboardSummaries = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
-
+const getStudentDashboardSummaries = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
 
 module.exports = {
     getTeacherDashboardSummaries,
+    getStudentDashboardSummaries
 };

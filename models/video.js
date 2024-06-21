@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Video.belongsTo(models.Resource, { foreignKey: 'resourceId', as: 'resource' });
       Video.hasMany(models.Question, { foreignKey: 'videoId', as: 'questions' });
+      Video.hasMany(models.VideoTracking, { foreignKey: 'videoId', as: 'videoTrackings' });
     }
   }
   Video.init({

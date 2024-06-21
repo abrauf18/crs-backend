@@ -3,23 +3,29 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class DailyUpload extends Model {
+  class AssessmentAnswer extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      AssessmentAnswer.belongsTo(models.User, { foreignKey: 'userId', as: 'user' })
+      AssessmentAnswer.belongsTo(models.AssessmentResourcesDetail, { foreignKey: 'assessmentResourcesDetailId', as: 'assessmentResourcesDetail' })
+      AssessmentAnswer.belongsTo(models.Standard, { foreignKey: 'standardId' })
       // define association here
-      DailyUpload.belongsTo(models.Standard, { foreignKey: 'standardId', as: 'standard' });
-      DailyUpload.belongsTo(models.Resource, { foreignKey: 'resourceId', as: 'resource' });
     }
   }
-  DailyUpload.init({
+  AssessmentAnswer.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
+    },
+    userId: {
+      type: DataTypes.UUID,
+      defaultValue:'',
       allowNull: false,
     },
     standardId: {
@@ -27,24 +33,29 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
       allowNull: false,
     },
-    resourceId: {
+    assessmentResourcesDetailId: {
       type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
-    accessDate: {
-      type: DataTypes.DATEONLY,
-      allowNull: false,
-      defaultValue: DataTypes.NOW
-    },
-    weightage: {
+    questionNumber: {
       type: DataTypes.INTEGER,
       defaultValue:0,
       allowNull: false,
     },
+    obtainedMarks: {
+      type: DataTypes.INTEGER,
+      defaultValue:-1,
+      allowNull: false,
+    },
+    answerURL: {
+      type: DataTypes.STRING,
+      defaultValue:'',
+      allowNull: false,
+    },
   }, {
     sequelize,
-    modelName: 'DailyUpload',
+    modelName: 'AssessmentAnswer',
   });
-  return DailyUpload;
+  return AssessmentAnswer;
 };
