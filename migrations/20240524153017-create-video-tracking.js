@@ -2,14 +2,24 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('VideoQuestionAnswers', {
+    await queryInterface.createTable('VideoTrackings', {
       id: {
         allowNull: false,
         primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
         type: Sequelize.UUID,
       },
-      userId: {
+      videoId: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        references: {
+          model: 'Videos',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
+      studentId: {
         allowNull: false,
         type: Sequelize.UUID,
         references: {
@@ -19,25 +29,30 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      questionId: {
+      standardId: {
         allowNull: false,
         type: Sequelize.UUID,
         references: {
-          model: 'Questions',
+          model: 'Standards',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      answer: {
+      saved: {
         allowNull: false,
-        type: Sequelize.STRING,
-        defaultValue: ''
+        defaultValue: false,
+        type: Sequelize.BOOLEAN
       },
-      obtainedMarks: {
+      last_seen_time: {
         allowNull: false,
-        type: Sequelize.INTEGER,
-        defaultValue: -1
+        defaultValue: '00:00:00',
+        type: Sequelize.STRING
+      },
+      watchedCompletely: {
+        allowNull: false,
+        defaultValue: false,
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,
@@ -50,6 +65,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('VideoQuestionAnswers');
+    await queryInterface.dropTable('VideoTrackings');
   }
 };

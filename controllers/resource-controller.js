@@ -3,9 +3,9 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createResource = async (req, res) => {
     try {
-        const { name, url, type, topic, thumbnailURL = '', duration = '00:00:00', totalMarks = 0 } = req.body;
+        const { name, url, type, topic, thumbnailURL = '', duration = '00:00:00', totalMarks = 0, deadline = 0 } = req.body;
 
-        const reply = await resourceService.createResource({ name, url, type, topic, thumbnailURL, duration, totalMarks });
+        const reply = await resourceService.createResource({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -113,21 +113,21 @@ const updateResource = async (req, res) => {
         return handleInternalServerError(res);
     }
 };
-const getall = async (req, res) => {
-    try {
-        const reply = await resourceService.getall();
+// const getall = async (req, res) => {
+//     try {
+//         const reply = await resourceService.getall();
 
-        if (reply.code == 200) {
-            return handleSuccessResponse(res, 200, reply.data);
-        }
-        else {
-            return handleInternalServerError(res);
-        }
-    }
-    catch (error) {
-        return handleInternalServerError(res);
-    }
-};
+//         if (reply.code == 200) {
+//             return handleSuccessResponse(res, 200, reply.data);
+//         }
+//         else {
+//             return handleInternalServerError(res);
+//         }
+//     }
+//     catch (error) {
+//         return handleInternalServerError(res);
+//     }
+// };
 
 const getResourcesByType = async (req, res) => {
     try {
@@ -178,7 +178,7 @@ module.exports = {
     getResource,
     getResourcesCount,
     updateResource,
-    getall,
+    // getall,
     getResourcesByType,
     getResourcesByName,
 };

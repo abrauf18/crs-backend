@@ -11,6 +11,8 @@ const standardRouter = require("./routes/standard-routes");
 const classroomRouter = require("./routes/classroom-routes");
 const dashboardRouter = require("./routes/dashboard-routes");
 const videoQuestionAnswerRouter = require("./routes/videoQuestionAnswer-routes");
+const studentRouter = require("./routes/student-routes");
+const assessmentAnswerRouter = require("./routes/assessmentAnswer-routes");
 const { logger, morganMiddleware } = require('./Logs/logger');
 const cors = require('cors');
 const db = require("./models");
@@ -45,6 +47,8 @@ app.use("/standard", standardRouter);
 app.use("/classroom", classroomRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/videoQuestionAnswer", videoQuestionAnswerRouter);
+app.use("/student", studentRouter);
+app.use("/assessmentAnswer", assessmentAnswerRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World! PIPELINE Working");

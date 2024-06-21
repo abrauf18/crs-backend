@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       AssessmentResourcesDetail.belongsTo(models.Resource, { foreignKey: 'resourceId', as: 'resource' })
+      AssessmentResourcesDetail.hasMany(models.AssessmentAnswer, { foreignKey: 'assessmentResourcesDetailId', as: 'assessmentAnswers' })
       // define association here
     }
   }
@@ -32,6 +33,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     numberOfQuestions: {
+      type: DataTypes.INTEGER,
+      defaultValue:0,
+      allowNull: false,
+    },
+    deadline: {
       type: DataTypes.INTEGER,
       defaultValue:0,
       allowNull: false,

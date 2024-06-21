@@ -1,5 +1,6 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
@@ -7,7 +8,7 @@ const isAssessmentResource = (type) => {
     return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET;
 };
 
-const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks }) => {
+const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline }) => {
     try {
         const resource = await Resource.create({
             name,
@@ -31,9 +32,10 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
             const assessmentAttributes = await AssessmentResourcesDetail.create({
                 resourceId: resource.id,
                 totalMarks: totalMarks,
-                numberOfQuestions: 1
+                numberOfQuestions: 1,
+                deadline: deadline
             })
-            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions};
+            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions, deadline: assessmentAttributes.deadline};
         }
 
         return { code: 200, data: 
@@ -107,6 +109,8 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
 
         if (orderBy && sortBy) {
             queryOptions.order = [[orderBy, sortBy]];
+        } else {
+            queryOptions.order = [['id', 'ASC']];
         }
 
         const resources = await Resource.findAndCountAll(queryOptions);
@@ -237,10 +241,26 @@ const getResource = async ({resourceID}) => {
 const getResourcesByType = async ({ resourceType }) => {
     try {
         const resources = await Resource.findAll({
-            where: { type: resourceType }
+            where: { type: resourceType },
+            include: [
+                {
+                    model: Video,
+                    as: 'video',
+                    attributes: ['thumbnailURL'],
+                    required: false
+                },
+            ],
         });
 
-        return { code: 200, data: resources };
+        const transformedResources = resources.map(resource => {
+            const { video, createdAt, updatedAt, ...resourceData } = resource.get();
+            return {
+                ...resourceData,
+                thumbnail: video?.thumbnailURL,
+            };
+        });
+
+        return { code: 200, data: transformedResources };
     } catch (error) {
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
@@ -252,11 +272,27 @@ const getResourcesByName = async ({ resourceName, resourceType }) => {
         const resources = await Resource.findAll({
             where: {
                 name: { [Op.iLike]: '%' + resourceName + '%' },
-                type: resourceType
-            }
+                type: resourceType,
+            },
+            include: [
+                {
+                    model: Video,
+                    as: 'video',
+                    attributes: ['thumbnailURL'],
+                    required: false
+                },
+            ],
+        });
+        
+        const transformedResources = resources.map(resource => {
+            const { video, createdAt, updatedAt, ...resourceData } = resource.get();
+            return {
+                ...resourceData,
+                thumbnail: video?.thumbnailURL,
+            };
         });
 
-        return { code: 200, data: resources };
+        return { code: 200, data: transformedResources };
     } catch (error) {
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };

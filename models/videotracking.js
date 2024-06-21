@@ -3,19 +3,20 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Question extends Model {
+  class VideoTracking extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Question.belongsTo(models.Video, { foreignKey: 'videoId', as: 'video' });
-      Question.hasMany(models.VideoQuestionAnswer, { foreignKey: 'questionId', as: 'answers' });
+      VideoTracking.belongsTo(models.Video, { foreignKey: 'videoId', as: 'video' });
+      VideoTracking.belongsTo(models.User, { foreignKey: 'studentId', as: 'student' });
+      VideoTracking.belongsTo(models.Standard, { foreignKey: 'standardId' });
       // define association here
     }
   }
-  Question.init({
+  VideoTracking.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -27,39 +28,34 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
       allowNull: false,
     },
-    statement: {
-      type: DataTypes.STRING,
+    studentId: {
+      type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
-    options: {
-      type: DataTypes.JSON,
-      defaultValue:{},
-      allowNull: false,
-    },
-    correctOption: {
-      type: DataTypes.STRING,
+    standardId: {
+      type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,
     },
-    correctOptionExplanation: {
+    saved: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    last_seen_time: {
       type: DataTypes.STRING,
-      defaultValue:'',
       allowNull: false,
+      defaultValue: '00:00:00',
     },
-    totalMarks: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
+    watchedCompletely: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
+      defaultValue: false,
     },
-    popUpTime: {
-      type: DataTypes.TIME,
-      defaultValue:'00:00:00',
-      allowNull: false,
-    }
   }, {
     sequelize,
-    modelName: 'Question',
+    modelName: 'VideoTracking',
   });
-  return Question;
+  return VideoTracking;
 };

@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('VideoQuestionAnswers', {
+    await queryInterface.createTable('AssessmentAnswers', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -19,25 +19,40 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      questionId: {
+      assessmentResourcesDetailId: {
         allowNull: false,
         type: Sequelize.UUID,
         references: {
-          model: 'Questions',
+          model: 'AssessmentResourcesDetails',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      answer: {
+      standardId: {
         allowNull: false,
-        type: Sequelize.STRING,
-        defaultValue: ''
+        type: Sequelize.UUID,
+        references: {
+          model: 'Standards',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
+      questionNumber: {
+        allowNull: false,
+        defaultValue: 0,
+        type: Sequelize.INTEGER
       },
       obtainedMarks: {
         allowNull: false,
-        type: Sequelize.INTEGER,
-        defaultValue: -1
+        defaultValue: -1,
+        type: Sequelize.INTEGER
+      },
+      answerURL: {
+        allowNull: false,
+        defaultValue: "",
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -50,6 +65,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('VideoQuestionAnswers');
+    await queryInterface.dropTable('AssessmentAnswers');
   }
 };

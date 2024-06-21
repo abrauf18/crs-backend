@@ -1,5 +1,6 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Standard, DailyUpload, Resource, Video } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
@@ -9,11 +10,23 @@ const createStandard = async ({ name, description, dailyUploads }) => {
         const minDate = new Date(Math.min.apply(null, dates));
         const maxDate = new Date(Math.max.apply(null, dates));
 
+        // @ts-ignore
         const diffTime = Math.abs(maxDate - minDate);
         const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
 
         const createdStandard = await Standard.create({name, description, courseLength});
         
+        // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
+        //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
+        // }));
+
+        // const duplicates = existingResourceInStandards.filter(Boolean);
+
+        // if (duplicates.length > 0) {
+        //     const duplicateResourceIds = duplicates.map(resource => resource.resourceId);
+        //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResourceIds.join(', ')}`};
+        // }
+
         const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
             return DailyUpload.create({ ...upload, standardId: createdStandard.id });
         }));
@@ -47,6 +60,20 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
 
         let newDailyUploads = [];
         if (dailyUploads) {
+            // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
+            //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
+            // }));
+    
+            // const duplicates = existingResourceInStandards.filter(Boolean);
+    
+            // if (duplicates.length > 0) {
+            //     const duplicateResource = await Promise.all(duplicates.map(async resource => {
+            //         const foundResource = await Resource.findByPk(resource.resourceId);
+            //         return foundResource.name;
+            //     }));
+            //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
+            // }
+
             const oldDailyUploads = await standard.getDailyUploads();
 
             for (let dailyUpload of oldDailyUploads) {
@@ -64,6 +91,7 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             const minDate = new Date(Math.min.apply(null, dates));
             const maxDate = new Date(Math.max.apply(null, dates));
 
+            // @ts-ignore
             const diffTime = Math.abs(maxDate - minDate);
             const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
             await standard.update( {courseLength} );
@@ -90,7 +118,7 @@ const getStandard = async ({ standardId }) => {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate'],
+                attributes: ['accessDate', 'weightage'],
                 include: [{
                     model: Resource,
                     as: 'resource',
@@ -115,7 +143,7 @@ const getStandard = async ({ standardId }) => {
                 result[date] = [];
             }
             if (upload.resource) {
-                result[date].push(upload.resource);
+                result[date].push({ resource: upload.resource, weightage: upload.weightage });
             }
             return result;
         }, {});
@@ -128,12 +156,14 @@ const getStandard = async ({ standardId }) => {
         // as required on frontend
         const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
             date: date,
-            topics: uploadsByDate[date].map(resource => ({
+            topics: uploadsByDate[date].map(({ resource, weightage }) => ({
+
                 resourceId: resource.id,
                 name: resource.name,
                 type: resource.type,
                 topic: resource.topic,
-                videoId: resource.video ? resource.video.id : null
+                videoId: resource.video ? resource.video.id : null,
+                weightage: weightage || 0
             }))
         }));
 
