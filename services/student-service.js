@@ -1,7 +1,7 @@
-const { Sequelize, Op } = require("sequelize");
+const { Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer } = require("../models/index.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
 
@@ -933,6 +933,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
 
             // Calculate performance
             dailyUpload.performance = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * dailyUpload.weightage : dailyUpload.weightage;
+            dailyUpload.performance = parseFloat(dailyUpload.performance.toFixed(1))
             dailyUpload.yetToMarkWeightage = parseFloat(yetToMarkWeightage.toFixed(1));
             dailyUpload.unAnsweredWeightage = parseFloat(unAnsweredWeightage.toFixed(1));
             totalUnMarkedWeightage += parseFloat(yetToMarkWeightage.toFixed(1));
@@ -1097,8 +1098,8 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             return {
                 standardId: standard.id,
                 standardName: standard.name,
-                totalWeightage: totalWeightage,
-                obtainedWeightage: obtainedWeightage
+                totalWeightage: parseFloat(totalWeightage.toFixed(1)),
+                obtainedWeightage: parseFloat(obtainedWeightage.toFixed(1))
             };
         })?.filter(entry => entry.totalWeightage > 0);
 
@@ -1135,8 +1136,8 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             code: 200,
             data: {
                 summarizedStandardResults: transformedData,
-                averageTotalWeightage: averageTotalWeightage,
-                averageObtainedWeightage: averageObtainedWeightage,
+                averageTotalWeightage: parseFloat(averageTotalWeightage.toFixed(1)),
+                averageObtainedWeightage: parseFloat(averageObtainedWeightage.toFixed(1)),
                 classroomName: classroomName,
                 bestPerformingStandard: bestPerformingStandard
             }
@@ -1283,8 +1284,8 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
             return {
                 standardId: standard.id,
                 standardName: standard.name,
-                totalWeightage: totalWeightage,
-                obtainedWeightage: obtainedWeightage
+                totalWeightage: parseFloat(totalWeightage.toFixed(1)),
+                obtainedWeightage: parseFloat(obtainedWeightage.toFixed(1))
             };
         })?.filter(entry => entry.totalWeightage > 0);
 
@@ -1304,8 +1305,8 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
             code: 200,
             data: {
                 summarizedStandardResults: transformedData,
-                averageTotalWeightage: averageTotalWeightage,
-                averageObtainedWeightage: averageObtainedWeightage,
+                averageTotalWeightage: parseFloat(averageTotalWeightage.toFixed(1)),
+                averageObtainedWeightage: parseFloat(averageObtainedWeightage.toFixed(1)),
             }
         };
     } catch (error) {
@@ -1328,6 +1329,11 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             },
             attributes: [ "id" ],
             include: [ 
+                {
+                    model: DailyProgress,
+                    attributes: ["id", "classroomStudentId", "obtainedWeightage", "totalWeightage", "date"],
+                    required: false
+                },
                 {
                     model: Classroom,
                     as: 'classroom',
@@ -1451,8 +1457,8 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             return {
                 standardId: standard.id,
                 standardName: standard.name,
-                totalWeightage: totalWeightage,
-                obtainedWeightage: obtainedWeightage
+                totalWeightage: parseFloat(totalWeightage.toFixed(1)),
+                obtainedWeightage: parseFloat(obtainedWeightage.toFixed(1)),
             };
         })?.filter(entry => entry.totalWeightage > 0);
 
@@ -1480,10 +1486,11 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                     email: email, 
                     image: image, 
                     classroomName: classroomName,
-                    averageTotalWeightage: averageTotalWeightage,
-                    averageObtainedWeightage: averageObtainedWeightage,
+                    averageTotalWeightage: parseFloat(averageTotalWeightage.toFixed(1)),
+                    averageObtainedWeightage: parseFloat(averageObtainedWeightage.toFixed(1)),
                 },
                 summarizedStandardResults: transformedData,
+                DailyProgress: result.DailyProgresses || []
             }
         };
     } catch (error) {
@@ -1520,6 +1527,91 @@ const getStudentNameEmailForTeacher = async ({ studentId }) => {
     }
 }
 
+const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            await transaction.rollback();
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const results = [];
+
+        if (targetType === 'videoQuestion') {
+            for (const [targetId, marks] of Object.entries(idsAndMarks)) {
+                const videoQuestion = await Question.findByPk(targetId);
+                
+                if (!videoQuestion) {
+                    await transaction.rollback();
+                    return { code: 404, message: `Video question with Id: ${targetId} not found`};
+                }
+
+                const videoQuestionAnswer = await VideoQuestionAnswer.findOne({
+                    where: {
+                        userId: studentId, 
+                        questionId: videoQuestion.id
+                    }
+                });
+
+                if (!videoQuestionAnswer) {
+                    await transaction.rollback();
+                    return { code: 404, message: `Answer of question with this statement: ${videoQuestion.statement} not found`};
+                }
+
+                if (marks > videoQuestion.totalMarks) {
+                    await transaction.rollback();
+                    return { code: 400, message: `Obtained Marks of question with this statement: ${videoQuestion.statement} are exceeding Total Marks`};
+                }
+
+                const updatedAnswer = await videoQuestionAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
+                results.push(updatedAnswer);
+            }
+        } 
+        else {
+            for (const [targetId, marks] of Object.entries(idsAndMarks)) {  
+                const assessment = await AssessmentResourcesDetail.findByPk(targetId);
+
+                if (!assessment) {
+                    await transaction.rollback();
+                    return { code: 404, message: `Assessment with Id: ${targetId} not found`};
+                }
+
+                const assessmentAnswer = await AssessmentAnswer.findOne({
+                    where: {
+                        userId: studentId, 
+                        assessmentId: assessment.id
+                    }
+                });
+
+                if (!assessmentAnswer) {
+                    await transaction.rollback();
+                    return { code: 404, message: 'Answer of this Assessment not found'};
+                }
+
+                if (marks > assessment.totalMarks) {
+                    await transaction.rollback();
+                    return { code: 400, message: 'Obtained Marks are exceeding Total Marks'};
+                }
+
+                const updatedAnswer = await assessmentAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
+                results.push(updatedAnswer);
+            }
+        }
+        await transaction.commit();
+        return {
+            code: 200,
+            data: results
+        };
+        
+    } catch (error) {
+        await transaction.rollback();
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the saved videos');
+        return { code: 500 };
+    }
+}
+
 
 module.exports = {
     getStudentCurrentStandards,
@@ -1535,5 +1627,6 @@ module.exports = {
     getStudentProfileSummarizedStandards,
     getSummarizedStudentStandardsForTeacher,
     getSummarizedStudentForTeacher,
-    getStudentNameEmailForTeacher
+    getStudentNameEmailForTeacher,
+    assignMarksToStudentAnswer
 };

@@ -119,4 +119,12 @@ router.get(
     studentController.getStudentNameEmailForTeacher
 )
 
+router.post(
+    "/assignMarksToStudentAnswer",
+    studentValidation.assignMarksToStudentAnswer,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.assignMarksToStudentAnswer
+)
+
 module.exports = router;
