@@ -140,6 +140,19 @@ const getStudentNameEmailForTeacher = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const marksSchema = Joi.object().pattern(
+    Joi.string().uuid(),
+    Joi.number().integer().min(0).required()
+);
+const assignMarksToStudentAnswer = createSchemaMiddleware(
+    Joi.object({
+        accessToken: Joi.string().required(),
+        targetType: Joi.string().valid('videoQuestion', 'assessmentResource').required(), 
+        studentId: Joi.string().guid().required(),
+        idsAndMarks: marksSchema.required(),
+    })
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -154,5 +167,6 @@ module.exports = {
     getStudentProfileSummarizedStandards,
     getSummarizedStudentStandardsForTeacher,
     getSummarizedStudentForTeacher,
-    getStudentNameEmailForTeacher
+    getStudentNameEmailForTeacher,
+    assignMarksToStudentAnswer
 };
