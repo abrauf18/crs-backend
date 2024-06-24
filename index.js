@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const express = require("express");
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
+require('./cronJobs/dailyProgress'); 
 const authRouter = require("./routes/auth-routes");
 const userRouter = require("./routes/user-routes");
 const schoolRouter = require("./routes/school-routes");
