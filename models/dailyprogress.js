@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     obtainedWeightage: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.DECIMAL,
       defaultValue:0,
       allowNull: false,
     },

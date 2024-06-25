@@ -22,7 +22,7 @@ module.exports = {
       obtainedWeightage: {
         allowNull: false,
         defaultValue: 0,
-        type: Sequelize.INTEGER
+        type: Sequelize.DECIMAL
       },
       totalWeightage: {
         allowNull: false,
