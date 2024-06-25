@@ -1,50 +1,55 @@
-const schoolService = require("../services/school-service.js");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
-const {logger} = require("../Logs/logger.js");
+const Model = require("../models");
+const { logger } = require("../Logs/logger.js");
+const { successResponse, failureResponse } = require("../utils/response.js");
+const { where } = require("sequelize");
 
-const getSchoolProfile = async (req, res) => {
+const createSchool = async (req, res) => {
+  const transaction = await Model.sequelize.transaction();
   try {
-    const reply = await schoolService.getSchoolProfile({ user: req.user });
+    const { name, email, password, schoolName } = req.body;
 
-    if (reply.code == 200) {
-      return handleSuccessResponse(res, 200, reply.data);
+    const existingUser = await Model.User.findOne({
+      where: {
+        email: email,
+      },
+      transaction
+    });
+
+    if (existingUser) {
+      await transaction.rollback();
+      return successResponse(
+        res,
+        200,
+        "User already exists"
+      );
     }
-    else {
-      return handleInternalServerError(res);
-    }
-  }
-  catch (error) {
-    logger.error(error?.message || 'An error occurred, but no error message was provided');
-    return handleInternalServerError(res);
+
+    const school = await Model.School.create({
+      name: schoolName,
+    }, { transaction });
+
+    const user = await Model.User.create({
+      name: name,
+      email: email,
+      password: password,
+      school_id: school.id, 
+      role:"admin",
+    }, { transaction });
+
+    await transaction.commit();
+
+    return successResponse(
+      res,
+      200,
+      "User and School created successfully"
+    );
+  } catch (error) {
+    await transaction.rollback();
+    return failureResponse(res, 500, error.message);
   }
 };
 
-const updateSchoolAndUserProfile = async (req, res) => {
-  try {
-    const { image, username, email, password, schoolName, numOfClasses, classesStart, classesEnd } = req.body
-
-    const reply = await schoolService.updateSchoolAndUserProfile({ user: req.user, image, username, email, password, schoolName, numOfClasses, classesStart, classesEnd });
-
-    if (reply.code == 200) {
-      return handleSuccessResponse(res, 200, reply.data);
-    }
-    else if (reply.code == 403) {
-      return handleErrorResponse(res, 403, "School with this email already exists, pleasy try another one");
-    }
-    else if (reply.code == 409) {
-      return handleErrorResponse(res, 409, "User with this email already exists, pleasy try another one");
-    }
-    else {
-      return handleInternalServerError(res);
-    }
-  }
-  catch (error) {
-    logger.error(error?.message || 'An error occurred, but no error message was provided');
-    return handleInternalServerError(res);
-  }
-};
 
 module.exports = {
-  getSchoolProfile,
-  updateSchoolAndUserProfile,
+  createSchool,
 };

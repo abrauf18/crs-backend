@@ -1,6 +1,12 @@
 "use strict";
 const { Model } = require("sequelize");
 const ROLES = require("./roles")
+
+const Joi = require("joi");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     /**
@@ -48,6 +54,48 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "User",
     }
+
+    
   );
+
+
+  User.beforeUpdate(async (user, options) => {
+    if (user.changed("password")) {
+      try {
+        console.log("Password is being updated");
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        user.setDataValue("password", hashedPassword);
+      } catch (error) {
+        console.error("Error updating password:", error);
+      }
+    }
+  });
+
+  User.beforeCreate(async (user, options) => {
+    try {
+      console.log("New user is being created");
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      user.setDataValue("password", hashedPassword);
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
+  });
+
+  // function to compare encrypted password
+  User.prototype.comparePassword = async function (userPassword) {
+    try {
+      if (!this.password) {
+        return { error: true, message: "Password not set" };
+      }
+      const result = await bcrypt.compare(userPassword, this.password);
+      return { error: false, result };
+    } catch (error) {
+      console.error("Error comparing passwords:", error);
+      return { error: true, message: "Error comparing passwords" };
+    }
+  };
+
+
+
   return User;
 };
