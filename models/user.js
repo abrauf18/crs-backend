@@ -1,6 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
-const ROLES = require("./roles")
+const ROLES = require("./roles");
 
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
@@ -16,7 +16,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      User.hasMany(models.VideoTracking, { foreignKey: 'studentId', as: 'videoTrackings' })
+      User.hasMany(models.VideoTracking, {
+        foreignKey: "studentId",
+        as: "videoTrackings",
+      });
+      User.hasOne(models.Classroom, {
+        foreignKey: "teacherId",
+      });
     }
   }
   User.init(
@@ -41,23 +47,26 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       role: {
-        type: DataTypes.ENUM(ROLES.STUDENT, ROLES.TEACHER, ROLES.SCHOOL, ROLES.ADMIN),
+        type: DataTypes.ENUM(
+          ROLES.STUDENT,
+          ROLES.TEACHER,
+          ROLES.SCHOOL,
+          ROLES.ADMIN
+        ),
         allowNull: false,
       },
       image: {
         type: DataTypes.STRING,
-        defaultValue:'https://crs-data-storage-bucket.s3.ap-southeast-2.amazonaws.com/ProfilePictures/defaultImage.JPG',
+        defaultValue:
+          "https://crs-data-storage-bucket.s3.ap-southeast-2.amazonaws.com/ProfilePictures/defaultImage.JPG",
         allowNull: false,
-      }
+      },
     },
     {
       sequelize,
       modelName: "User",
     }
-
-    
   );
-
 
   User.beforeUpdate(async (user, options) => {
     if (user.changed("password")) {
@@ -94,8 +103,6 @@ module.exports = (sequelize, DataTypes) => {
       return { error: true, message: "Error comparing passwords" };
     }
   };
-
-
 
   return User;
 };
