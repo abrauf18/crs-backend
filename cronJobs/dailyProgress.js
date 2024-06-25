@@ -178,7 +178,19 @@ const calculateAndStoreAveragesForAllStudents = async () => {
     try {
         const students = await User.findAll({
             where: { role: 'student' }, 
-            attributes: ['id']
+            attributes: ['id'],
+            include: [{
+                model: ClassroomStudent,
+                required: true,
+                include: [ 
+                    {
+                        model: Classroom,
+                        as: 'classroom',
+                        where: { status: CLASSROOM_STATUS.ACTIVE },
+                        required: true,
+                    }
+                ]
+            }]
         });
 
         const tasks = students.map(async (student) => {
