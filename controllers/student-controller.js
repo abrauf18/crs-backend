@@ -307,6 +307,26 @@ const assignMarksToStudentAnswer = async (req, res) => {
     }
 }
 
+const getStudentAssessmentAnswer = async (req, res) => {
+    try {
+        const { studentid, assessmentdetailid } = req.headers;
+        const reply = await studentService.getStudentAssessmentAnswer({ studentId: studentid, assessmentDetailId: assessmentdetailid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -322,5 +342,6 @@ module.exports = {
     getSummarizedStudentStandardsForTeacher,
     getSummarizedStudentForTeacher,
     getStudentNameEmailForTeacher,
-    assignMarksToStudentAnswer
+    assignMarksToStudentAnswer,
+    getStudentAssessmentAnswer
 };

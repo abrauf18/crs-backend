@@ -1612,6 +1612,40 @@ const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) 
     }
 }
 
+const getStudentAssessmentAnswer = async ({studentId, assessmentDetailId}) => {
+    try {
+        const student = await User.findByPk(studentId);
+        if (!student) {
+            return { code: 404, message: 'Student not found'};
+        }
+
+        const assessmentAnswer = await AssessmentResourcesDetail.findOne({
+            where: {
+                id: assessmentDetailId,
+                include: [{
+                    model: AssessmentAnswer,
+                    as: 'assessmentAnswers',
+                    required: true
+                }]
+            }
+        })
+
+        if (!assessmentAnswer) {
+            return { code: 404, message: 'Students answer to this assessment not found'};
+        }
+
+        return {
+            code: 200,
+            data: {
+                assessmentAnswer
+            }
+        };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the saved videos');
+        return { code: 500 };
+    }
+}
 
 module.exports = {
     getStudentCurrentStandards,
@@ -1628,5 +1662,6 @@ module.exports = {
     getSummarizedStudentStandardsForTeacher,
     getSummarizedStudentForTeacher,
     getStudentNameEmailForTeacher,
-    assignMarksToStudentAnswer
+    assignMarksToStudentAnswer,
+    getStudentAssessmentAnswer
 };
