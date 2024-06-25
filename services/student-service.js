@@ -1622,12 +1622,12 @@ const getStudentAssessmentAnswer = async ({studentId, assessmentDetailId}) => {
         const assessmentAnswer = await AssessmentResourcesDetail.findOne({
             where: {
                 id: assessmentDetailId,
-                include: [{
-                    model: AssessmentAnswer,
-                    as: 'assessmentAnswers',
-                    required: true
-                }]
-            }
+            },
+            include: [{
+                model: AssessmentAnswer,
+                as: 'assessmentAnswers',
+                required: true
+            }]
         })
 
         if (!assessmentAnswer) {
