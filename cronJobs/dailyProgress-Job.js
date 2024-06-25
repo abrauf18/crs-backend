@@ -1,9 +1,9 @@
 const cron = require('node-cron');
 const { Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { CLASSROOM_STATUS } = require('../utils/enumTypes');
+const { CLASSROOM_STATUS } = require('../utils/enumTypes.js');
 // @ts-ignore
-const { User, ClassroomStudent, Classroom, ClassroomCourses, Standard, DailyUpload, Resource, Video, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require('../models');
+const { User, ClassroomStudent, Classroom, ClassroomCourses, Standard, DailyUpload, Resource, Video, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require('../models/index.js');
 
 const getDailyProgressOfStudent = async ({ studentId }) => {
     try {
