@@ -127,4 +127,12 @@ router.post(
     studentController.assignMarksToStudentAnswer
 )
 
+router.get(
+    "/getStudentAssessmentAnswer",
+    studentValidation.getStudentAssessmentAnswer,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getStudentAssessmentAnswer
+)
+
 module.exports = router;

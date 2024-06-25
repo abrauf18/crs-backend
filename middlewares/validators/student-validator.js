@@ -153,6 +153,14 @@ const assignMarksToStudentAnswer = createSchemaMiddleware(
     })
 );
 
+const getStudentAssessmentAnswer = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        assessmentdetailid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -168,5 +176,6 @@ module.exports = {
     getSummarizedStudentStandardsForTeacher,
     getSummarizedStudentForTeacher,
     getStudentNameEmailForTeacher,
-    assignMarksToStudentAnswer
+    assignMarksToStudentAnswer,
+    getStudentAssessmentAnswer
 };
