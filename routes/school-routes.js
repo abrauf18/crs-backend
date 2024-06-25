@@ -12,4 +12,9 @@ router.post(
     schoolController.createSchool
 )
 
+router.post(
+    "/get-school-dashboard", 
+    schoolController.schoolDashboard
+)
+
 module.exports = router;
