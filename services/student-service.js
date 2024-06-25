@@ -1580,7 +1580,7 @@ const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) 
                 const assessmentAnswer = await AssessmentAnswer.findOne({
                     where: {
                         userId: studentId, 
-                        assessmentId: assessment.id
+                        assessmentResourcesDetailId: assessment.id
                     }
                 });
 
