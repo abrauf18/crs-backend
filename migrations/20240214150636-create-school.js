@@ -13,25 +13,6 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING
       },
-      numOfTeachers: {
-        allowNull: false,
-        defaultValue: 0,
-        type: Sequelize.INTEGER
-      },
-      numOfStudents: {
-        allowNull: false,
-        defaultValue: 0,
-        type: Sequelize.INTEGER
-      },
-      courses: {
-        allowNull: false,
-        defaultValue: [],
-        type: Sequelize.ARRAY((Sequelize.STRING))
-      },
-      createdBy: {
-        allowNull: false,
-        type: Sequelize.UUID
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
