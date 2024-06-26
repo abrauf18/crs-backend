@@ -1,4 +1,4 @@
-const { Sequelize, Op } = require("sequelize");
+const { Sequelize, Op, fn, col } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, Resource, DailyUpload, Video, VideoTracking, Question } = require("../models/index.js");
@@ -30,6 +30,22 @@ const getAdminDashboardSummaries = async () => {
     try {
         const users = await User.findAll({});
 
+        const userCountData = await User.findAll({
+            attributes: [
+              [fn("date_trunc", "year", col("createdAt")), "year"],
+              [fn("date_trunc", "month", col("createdAt")), "month"],
+              [fn("count", "*"), "count"],
+            ],
+            group: ["year", "month"],
+            raw: true,
+        });
+
+        const formattedResults = userCountData.map(row => ({
+            year: new Date(row.year).getFullYear(),
+            month: new Date(row.month).getMonth() + 1, // Months are 0-indexed in JavaScript
+            count: parseInt(row.count, 10)
+        }));
+
         const videos = await Resource.findAll({
             where: { type: RESOURCE_TYPES.VIDEO },
         });
@@ -39,6 +55,7 @@ const getAdminDashboardSummaries = async () => {
         });
 
         const result = {
+            usersJoining: formattedResults,
             usersCount: users.length,
             videosCount: videos.length,
             resourcesCount: resources.length
