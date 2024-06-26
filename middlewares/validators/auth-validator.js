@@ -39,6 +39,11 @@ const signupSchema = createSchemaMiddleware(
         password: Joi.string().required(),
         email: Joi.string().email().required(),
         role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
+        schoolId: Joi.when('role', {
+            is: Joi.string().valid('student', 'teacher'),
+            then: Joi.string().required(),
+            otherwise: Joi.string().optional()
+        }),
     })
 );
 const loginSchema = createSchemaMiddleware(
