@@ -17,7 +17,43 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
         const totalClassrooms = classrooms.length;
         const totalStudents = classrooms.reduce((total, classroom) => total + classroom.classroomStudents.length, 0);
 
-        return { code: 200, data: { totalClassrooms, totalStudents } };
+        const studentCounts = await ClassroomStudent.findAll({
+            attributes: [
+              [fn("date_trunc", "year", col("createdAt")), "year"],
+              [fn("date_trunc", "month", col("createdAt")), "month"],
+              [fn("count", "*"), "count"],
+            ],
+            where: {
+              classroomId: classrooms.map(classroom => classroom.id)
+            },
+            group: ["year", "month"],
+            order: [
+              [fn("date_trunc", "year", col("createdAt")), "ASC"],
+              [fn("date_trunc", "month", col("createdAt")), "ASC"]
+            ],
+            raw: true,
+        });
+      
+          // Transform the data into the desired format
+        const formattedResults = studentCounts.map(row => ({
+            year: new Date(row.year).getFullYear(),
+            month: new Date(row.month).getMonth() + 1, // Months are 0-indexed in JavaScript
+            count: parseInt(row.count, 10)
+        }));
+      
+          // Calculate cumulative count
+        let cumulativeCount = 0;
+        const cumulativeResults = formattedResults.map(row => {
+            cumulativeCount += row.count;
+            return {
+              year: row.year,
+              month: row.month,
+              count: cumulativeCount
+            };
+        });
+      
+        
+        return { code: 200, data: { totalClassrooms, totalStudents, studentsJoining: cumulativeResults } };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
