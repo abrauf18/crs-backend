@@ -86,14 +86,6 @@ const getAllSchools = async () => {
     try {
         const schools = await School.findAll({
             attributes: ['id', 'name'],
-            include: [{
-                model: User,
-                where: {
-                    role: 'school',
-                    attributes: ['id', ]
-                },
-                required: true
-            }]
         })
 
         return { code: 200, data: schools };
