@@ -2,11 +2,10 @@ const Joi = require('joi');
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
 const {logger} = require("../../Logs/logger");
 
-const createSchemaMiddleware = (schema) => async (req, res, next) => {
+const createSchemaMiddleware = (schema, target = 'body') => async (req, res, next) => {
     try {
-        const { error } = schema.validate(req.body);
+        const { error } = schema.validate(req[target]);
         if (error) {
-            logger.error(error.details[0].message);
             return handleErrorResponse(res, 400, error.details[0].message);
         }
         next();
@@ -30,6 +29,13 @@ const updateSchoolAndUserProfile = createSchemaMiddleware(
     })
 );
 
+const getAllSchools = createSchemaMiddleware(
+    Joi.object({
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     updateSchoolAndUserProfile,
+    getAllSchools
 };
