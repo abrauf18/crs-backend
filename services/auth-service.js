@@ -126,13 +126,11 @@ const createUser = async ({ name, password, email, role }) => {
             return { code: 403 };
         }
 
-        const hashedPassword = bcrypt.hashSync(password, 10);
-
         const user = await User.create({
             name,
             email,
             role,
-            password: hashedPassword,
+            password:
         });
 
         if (user) {
