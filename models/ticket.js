@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Ticket.hasMany(models.User, {
+      Ticket.belongsTo(models.User, {
         foreignKey: "submitted_by",
       });
     }

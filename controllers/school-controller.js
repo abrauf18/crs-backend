@@ -34,7 +34,7 @@ const createSchool = async (req, res) => {
         email: email,
         password: password,
         school_id: school.id,
-        role: "admin",
+        role: "school",
       },
       { transaction }
     );
@@ -78,6 +78,7 @@ const schoolDashboard = async (req, res) => {
         school_id: schoolId,
         role: "teacher",
       },
+      limit: 4,
     });
 
     const getSchoolTickets = await Model.Ticket.findAll({
@@ -88,22 +89,18 @@ const schoolDashboard = async (req, res) => {
         "message",
         "status",
         "submitted_by",
-        [Sequelize.col('createdAt'), 'Date'],
+        [Sequelize.col("Ticket.createdAt"), "Date"],
       ],
-      // include: [
-      //   {
-      //     model: Model.User,
-          
-      //     where: {
-      //       school_id: schoolId,
-      //       role: "admin",
-      //     },
-      //   },
-      // ],
-      where: {
-        submitted_by: schoolId,
-        
-      },
+      include: [
+        {
+          model: Model.User,
+
+          where: {
+            school_id: schoolId,
+            role: "admin",
+          },
+        },
+      ],
     });
 
     const response = {
@@ -124,7 +121,109 @@ const schoolDashboard = async (req, res) => {
   }
 };
 
+const createTicket = async (req, res) => {
+  try {
+    const { schoolId, complaintType, message } = req.body;
+
+    if(!schoolId || !complaintType || !message){
+      return successResponse(res, 400, "Missing required Fields");
+    }
+
+    const ticket = await Model.Ticket.create({
+      complaint_type: complaintType,
+      message,
+      submitted_by: schoolId,
+      status: "active",
+    });
+
+    return successResponse(res, 200, "Ticket created successfully", ticket);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+const updateTicket = async (req, res) => {
+  try {
+    
+    const { complaintType, message, status ,ticketId} = req.body;
+
+    if(!ticketId){
+      return successResponse(res, 400, "Missing required Fields");
+    }
+
+
+    const ticket = await Model.Ticket.findByPk(ticketId);
+
+    if (!ticket) {
+      return failureResponse(res, 404, "Ticket not found");
+    }
+
+    ticket.complaint_type = complaintType || ticket.complaint_type;
+    ticket.message = message || ticket.message;
+    ticket.status = status || ticket.status;
+
+    await ticket.save();
+
+    return successResponse(res, 200, "Ticket updated successfully", ticket);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+const deleteTicket = async (req, res) => {
+  try {
+    const { ticketId } = req.query;
+
+    if(!ticketId){
+      return successResponse(res, 400, "Missing required Fields");
+    }
+    const ticket = await Model.Ticket.findByPk(ticketId);
+
+    if (!ticket) {
+      return failureResponse(res, 404, "Ticket not found");
+    }
+
+    await ticket.destroy();
+
+    return successResponse(res, 200, "Ticket deleted successfully");
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+const getTicketById = async (req, res) => {
+  try {
+    const { ticketId } = req.query;
+
+    const ticket = await Model.Ticket.findOne({
+      where: {
+        id: ticketId,
+      },
+      include: [
+        {
+          model: Model.User,
+          attributes: ['name'],
+        },
+      ],
+    });
+
+    if (!ticket) {
+      return failureResponse(res, 404, "Ticket not found");
+    }
+
+    return successResponse(res, 200, "Ticket retrieved successfully", ticket);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+
+
 module.exports = {
   createSchool,
   schoolDashboard,
+  createTicket,
+  updateTicket,
+  deleteTicket,
+  getTicketById
 };
