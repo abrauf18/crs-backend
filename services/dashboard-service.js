@@ -1,4 +1,4 @@
-const { Sequelize, Op, fn, col } = require("sequelize");
+const { Sequelize, Op, fn, col, literal } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, Resource, DailyUpload, Video, VideoTracking, Question } = require("../models/index.js");
@@ -37,14 +37,30 @@ const getAdminDashboardSummaries = async () => {
               [fn("count", "*"), "count"],
             ],
             group: ["year", "month"],
+            order: [
+                [literal("date_trunc('year', \"createdAt\")"), "ASC"],
+                [literal("date_trunc('month', \"createdAt\")"), "ASC"]
+            ],
             raw: true,
         });
 
+        // Transform the data into the desired format
         const formattedResults = userCountData.map(row => ({
             year: new Date(row.year).getFullYear(),
             month: new Date(row.month).getMonth() + 1, // Months are 0-indexed in JavaScript
             count: parseInt(row.count, 10)
         }));
+    
+        // Calculate cumulative count
+        let cumulativeCount = 0;
+        const cumulativeResults = formattedResults.map(row => {
+            cumulativeCount += row.count;
+            return {
+                year: row.year,
+                month: row.month,
+                count: cumulativeCount
+            };
+        });
 
         const videos = await Resource.findAll({
             where: { type: RESOURCE_TYPES.VIDEO },
@@ -55,7 +71,7 @@ const getAdminDashboardSummaries = async () => {
         });
 
         const result = {
-            usersJoining: formattedResults,
+            usersJoining: cumulativeResults,
             usersCount: users.length,
             videosCount: videos.length,
             resourcesCount: resources.length
