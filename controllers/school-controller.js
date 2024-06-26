@@ -94,7 +94,6 @@ const schoolDashboard = async (req, res) => {
       include: [
         {
           model: Model.User,
-
           where: {
             school_id: schoolId,
             role: "admin",
@@ -244,7 +243,7 @@ const listTeacher = async (req, res) => {
 
     let { schoolId } = req.query;
 
-    let filterCriteria = {  };
+    let filterCriteria = {};
 
     if (schoolId) {
       filterCriteria.school_id = schoolId;
@@ -278,21 +277,22 @@ const listTeacher = async (req, res) => {
 
     const teachers = await Model.Classroom.findAll({
       attributes: [
-        [Sequelize.fn("COUNT", Sequelize.col("Classroom.id")), "classroomCount"]
+        [
+          Sequelize.fn("COUNT", Sequelize.col("Classroom.id")),
+          "classroomCount",
+        ],
       ],
       include: [
         {
           model: Model.User,
           attributes: ["id", "name", "email"],
           where: filterCriteria,
-        }
+        },
       ],
-      group: ['User.id'],
+      group: ["User.id"],
       limit: limit,
       offset: offset,
     });
-    
-    
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -316,6 +316,77 @@ const listTeacher = async (req, res) => {
   }
 };
 
+const getTeacher = async (req, res) => {
+  try {
+    let { teacherId } = req.query;
+
+    if (!teacherId) {
+      return successResponse(res, 400, "Missing Required Fields");
+    }
+
+    const teachers = await Model.Classroom.findAll({
+      include: [
+        {
+          model: Model.ClassroomCourses,
+          attributes: ["standardId"],
+          as: "classroomCourses",
+        },
+        {
+          model: Model.User,
+          attributes: ["id", "name", "email", "image"],
+          where: {
+            id: teacherId,
+          },
+        },
+      ],
+    });
+
+    return successResponse(res, 200, "Teachers fetched successfully", teachers);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+const deleteTeacher = async (req, res) => {
+  try {
+    let { teacherId } = req.query;
+
+    if (!teacherId) {
+      return successResponse(res, 400, "Missing Required Fields");
+    }
+
+    const deletedCount = await Model.User.destroy({
+      where: {
+        id: teacherId,
+      },
+    });
+
+    if (deletedCount === 0) {
+      return successResponse(res, 404, "Teacher not found");
+    }
+
+    return successResponse(res, 200, "Teacher deleted successfully", {
+      deletedCount,
+    });
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+const inviteTeacher = async (req, res) => {
+  try {
+    let { teacherId } = req.query;
+
+    if (!teacherId) {
+      return successResponse(res, 400, "Missing Required Fields");
+    }
+
+    return successResponse(res, 200, "Email has been send  successfully");
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
 module.exports = {
   createSchool,
   schoolDashboard,
@@ -325,4 +396,7 @@ module.exports = {
   getTicketById,
   listTickets,
   listTeacher,
+  getTeacher,
+  deleteTeacher,
+  inviteTeacher,
 };
