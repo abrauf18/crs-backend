@@ -94,8 +94,6 @@ const createInvitedUser = async ({ name, email, password, token }) => {
         const result = jwt.verifyAccessToken(token);
 
         if (result.success) {
-            const hashedPassword = bcrypt.hashSync(password, 10);
-
             const user = await User.create({
                 name,
                 email,
@@ -103,7 +101,7 @@ const createInvitedUser = async ({ name, email, password, token }) => {
                 role: result.decoded.role,
                 // @ts-ignore
                 school_id: result.decoded.schoolId,
-                password: hashedPassword,
+                password,
             });
 
             if (user) {
@@ -159,9 +157,13 @@ const authenticateUser = async ({ email, password }) => {
             return { code: 404 };
         }
 
-        if (!bcrypt.compareSync(password, user.password)) {
-            return { code: 409 };
+        const result = await user.comparePassword(password)
+        if(result.error==true){
+            return { code: 409 }
         }
+        // if (!bcrypt.compareSync(password, user.password)) {
+        //     return { code: 409 };
+        // }
 
         return { code: 200, data: user };
     } catch (error) {
