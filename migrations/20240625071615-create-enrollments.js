@@ -2,12 +2,22 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('DailyUploads', {
+    await queryInterface.createTable('Enrollments', {
       id: {
         allowNull: false,
         primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
         type: Sequelize.UUID,
+      },
+      studentId: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        references: {
+          model: 'Users',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
       },
       standardId: {
         allowNull: false,
@@ -19,25 +29,15 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      resourceId: {
+      obtainedWeightage: {
         allowNull: false,
-        type: Sequelize.UUID,
-        references: {
-          model: 'Resources',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-      },
-      accessDate: {
-        allowNull: false,
-        defaultValue: Sequelize.NOW,
-        type: Sequelize.DATEONLY
-      },
-      weightage:{
-        allowNull: false,
-        type: Sequelize.INTEGER,
         defaultValue: 0,
+        type: Sequelize.DECIMAL
+      },
+      totalWeightage: {
+        allowNull: false,
+        defaultValue: 0,
+        type: Sequelize.INTEGER
       },
       createdAt: {
         allowNull: false,
@@ -50,6 +50,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('DailyUploads');
+    await queryInterface.dropTable('Enrollments');
   }
 };

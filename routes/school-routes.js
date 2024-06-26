@@ -7,19 +7,9 @@ const sharedValidator = require("../middlewares/validators/shared/index");
 const roleBasedAccess = require("../middlewares/rbac/index");
 
 const router = express.Router();
-router.get(
-    "/getSchoolProfile", 
-    sharedValidator.verifyHeaderAccessToken, 
-    roleBasedAccess.setUser, 
-    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]), 
-    schoolController.getSchoolProfile
-)
 router.post(
-    "/updateSchoolAndUserProfile", 
-    schoolValidation.updateSchoolAndUserProfile, 
-    roleBasedAccess.setUser, 
-    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]), 
-    schoolController.updateSchoolAndUserProfile
+    "/create-school", 
+    schoolController.createSchool
 )
 router.get(
     "/getAllSchools", 
@@ -28,5 +18,15 @@ router.get(
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]), 
     schoolController.getAllSchools
 )
+
+router.get(
+    "/get-school-dashboard", 
+    schoolController.schoolDashboard
+)
+
+router.post('/create-ticket', schoolController.createTicket);
+router.put('/update-ticket', schoolController.updateTicket);
+router.delete('/delete-ticket', schoolController.deleteTicket);
+router.get('/get-ticket', schoolController.getTicketById);
 
 module.exports = router;
