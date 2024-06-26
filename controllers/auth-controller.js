@@ -102,6 +102,7 @@ const login = async (req, res) => {
         name: reply.data.name,
         email: reply.data.email,
         role: reply.data.role,
+        schoolId: reply.data.school_id || '',
         accessToken: accessToken,
       };
 
