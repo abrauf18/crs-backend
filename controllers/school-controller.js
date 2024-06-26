@@ -217,7 +217,27 @@ const getTicketById = async (req, res) => {
   }
 };
 
+const getTickets = async (req, res) => {
+  try {
+    const { schoolId } = req.query;
 
+    const tickets = await Model.Ticket.findAll({
+      where: {
+        submitted_by: schoolId,
+      },
+      include: [
+        {
+          model: Model.User,
+          attributes: ['name'],
+        },
+      ],
+    });
+
+    return successResponse(res, 200, "Tickets retrieved successfully", tickets);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
 
 module.exports = {
   createSchool,
@@ -225,5 +245,6 @@ module.exports = {
   createTicket,
   updateTicket,
   deleteTicket,
-  getTicketById
+  getTicketById,
+  getTickets
 };
