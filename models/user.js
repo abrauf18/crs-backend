@@ -69,46 +69,46 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-//   // @ts-ignore
-//   User.beforeUpdate(async (user, options) => {
-//     // @ts-ignore
-//     if (user.changed("password")) {
-//       try {
-//         // @ts-ignore
-//         const hashedPassword = await bcrypt.hash(user.password, 10);
-//         user.setDataValue("password", hashedPassword);
-//       } catch (error) {
-//         throw new Error("Error updating password");
-//       }
-//     }
-//   });
+  // @ts-ignore
+  User.beforeUpdate(async (user, options) => {
+    // @ts-ignore
+    if (user.changed("password")) {
+      try {
+        // @ts-ignore
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        user.setDataValue("password", hashedPassword);
+      } catch (error) {
+        throw new Error("Error updating password");
+      }
+    }
+  });
 
-//   // @ts-ignore
-//   User.beforeCreate(async (user, options) => {
-//     try {
-//       // @ts-ignore
-//       const hashedPassword = await bcrypt.hash(user.password, 10);
-//       user.setDataValue("password", hashedPassword);
-//     } catch (error) {
-//       throw new Error("Error creating user");
-//     }
-//   });
+  // @ts-ignore
+  User.beforeCreate(async (user, options) => {
+    try {
+      // @ts-ignore
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      user.setDataValue("password", hashedPassword);
+    } catch (error) {
+      throw new Error("Error creating user");
+    }
+  });
 
-//   // function to compare encrypted password
-//   User.prototype.comparePassword = async function (userPassword) {
-//     try {
-//       // @ts-ignore
-//       if (!this.password) {
-//         return { error: true, message: "Password not set" };
-//       }
-//       // @ts-ignore
-//       const result = await bcrypt.compare(userPassword, this.password);
-//       return { error: false, result };
-//     } catch (error) {
-//       console.error("Error comparing passwords:", error);
-//       return { error: true, message: "Error comparing passwords" };
-//     }
-//   };
+  // function to compare encrypted password
+  User.prototype.comparePassword = async function (userPassword) {
+    try {
+      // @ts-ignore
+      if (!this.password) {
+        return { error: true, message: "Password not set" };
+      }
+      // @ts-ignore
+      const result = await bcrypt.compare(userPassword, this.password);
+      return { error: false, result };
+    } catch (error) {
+      console.error("Error comparing passwords:", error);
+      return { error: true, message: "Error comparing passwords" };
+    }
+  };
 
   return User;
 };
