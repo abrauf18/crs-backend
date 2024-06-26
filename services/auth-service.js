@@ -123,7 +123,7 @@ const createInvitedUser = async ({ name, email, password, token }) => {
     }
 };
 
-const createUser = async ({ name, password, email, role }) => {
+const createUser = async ({ name, password, email, role, schoolId }) => {
     try {
         const isEmailRegisterd = await User.findOne({ where: { email } });
 
@@ -136,6 +136,7 @@ const createUser = async ({ name, password, email, role }) => {
             email,
             role,
             password,
+            school_id: schoolId,
         });
 
         if (user) {

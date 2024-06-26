@@ -59,9 +59,9 @@ const emailBasedSignup = async (req, res) => {
 
 const signup = async (req, res) => {
   try {
-    const { name, password, email, role } = req.body
+    const { name, password, email, role, schoolId } = req.body
 
-    const reply = await authService.createUser({ name, password, email, role });
+    const reply = await authService.createUser({ name, password, email, role, schoolId });
 
     if (reply.code == 200) {
       const user = {
@@ -69,6 +69,7 @@ const signup = async (req, res) => {
         name: reply.data.name,
         email: reply.data.email,
         role: reply.data.role,
+        schoolId: reply.data.role
       };
 
       return handleSuccessResponse(res, 200, user);
