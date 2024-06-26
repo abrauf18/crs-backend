@@ -17,17 +17,11 @@ const studentRouter = require("./routes/student-routes");
 const assessmentAnswerRouter = require("./routes/assessmentAnswer-routes");
 const { logger, morganMiddleware } = require('./Logs/logger');
 const cors = require('cors');
-const db = require("./models");
+
+const bodyParser = require("body-parser");
+
 dotenv.config();
 
-db.sequelize
-  .authenticate()
-  .then(() => {
-    logger.info("Connected to the database from sequelize");
-  })
-  .catch((error) => {
-    console.error("Error connecting to the database from sequelize:", error);
-  });
 
 const app = express();
 
@@ -36,7 +30,12 @@ app.use(morganMiddleware);
 
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
-app.use(express.json());
+
+// Parse requests of content-type - application/json
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+
 app.use(cookieParser());
 
 app.use("/auth", authRouter);
@@ -52,22 +51,10 @@ app.use("/videoQuestionAnswer", videoQuestionAnswerRouter);
 app.use("/student", studentRouter);
 app.use("/assessmentAnswer", assessmentAnswerRouter);
 
-app.get("/", (req, res) => {
-  res.send("Hello, World! PIPELINE Working");
-});
-
 const port = process.env.PORT || 3000;
 
-db.sequelize
-  .sync()
-  .then(() => {
-    logger.info("Succesfully initialized DB");
-  })
-  .catch((error) => {
-    logger.error(error?.message || 'An error occurred, but no error message was provided');
-    logger.error("Error while connecting to the database from DB.sequelize");
-  });
 
 app.listen(port, () => {
-  logger.info(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
+  // logger.info(`Server is running on port ${port}`);
 });
