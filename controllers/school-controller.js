@@ -244,57 +244,56 @@ const listTeacher = async (req, res) => {
 
     let { schoolId } = req.query;
 
-    let filterCriteria = {};
+    let filterCriteria = {  };
 
-    const offset = (page - 1) * limit;
-    //Total data in database count
-    const totalRecords = await Model.User.count({
-      where: {
-        role: "teacher",
-      },
-    });
-
-    //Total count with filterations
-    const totalCount = await Model.User.count({ where: filterCriteria });
-
-    //Apply Filter on limit
-    if (limit === -1) {
-      limit = totalRecords;
+    if (schoolId) {
+      filterCriteria.school_id = schoolId;
     }
 
+    const offset = (page - 1) * limit;
+
+    // Total data in database count
+    const totalRecords = await Model.User.count({
+      where: { role: "teacher" },
+    });
+
+    // Apply search filter
     if (req.query.search) {
       const searchCriteria = {
         [Op.iLike]: `%${req.query.search}%`,
       };
       filterCriteria = {
-        [Op.or]: [
-          { name: searchCriteria },
-          { category_name: searchCriteria },
-          { id: parseInt(req.query.search) || null }, // Search by ID if provided
-        ],
+        ...filterCriteria,
+        [Op.or]: [{ name: searchCriteria }, { email: searchCriteria }],
       };
     }
 
-    const teachers = await Model.User.findAll({
+    // Total count with filtrations
+    const totalCount = await Model.User.count({ where: filterCriteria });
+
+    // Apply Filter on limit
+    if (limit === -1) {
+      limit = totalRecords;
+    }
+
+    const teachers = await Model.Classroom.findAll({
       attributes: [
-        "id",
-        "name",
-        "email",
-        [Sequelize.fn("COUNT", Sequelize.col("Classrooms.id")), "classroomCount"],
+        [Sequelize.fn("COUNT", Sequelize.col("Classroom.id")), "classroomCount"]
       ],
       include: [
         {
-          model: Model.Classroom,
-          attributes: [], 
-        },
+          model: Model.User,
+          attributes: ["id", "name", "email"],
+          where: filterCriteria,
+        }
       ],
-      where:{},
-      group: ["User.id"],
+      group: ['User.id'],
       limit: limit,
       offset: offset,
-      order: [['name', 'ASC']],
     });
     
+    
+
     const totalPages = Math.ceil(totalCount / limit);
 
     const pagination = {
@@ -308,16 +307,10 @@ const listTeacher = async (req, res) => {
     };
 
     const response = {
-      product: teachers,
+      teachers,
       pagination,
     };
-    return successResponse(
-      res,
-      "success",
-      200,
-      "Product fetch successfully",
-      response
-    );
+    return successResponse(res, 200, "Teachers fetched successfully", response);
   } catch (error) {
     return failureResponse(res, 500, error.message);
   }
@@ -331,4 +324,5 @@ module.exports = {
   deleteTicket,
   getTicketById,
   listTickets,
+  listTeacher,
 };
