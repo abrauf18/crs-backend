@@ -6,6 +6,11 @@ const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createStandard = async ({ name, description, dailyUploads }) => {
     try {
+        const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
+        if (totalWeightage !== 100) {
+            return { code: 400, message: `The sum of weightages is ${totalWeightage}, it must be 100` };
+        }
+
         const dates = dailyUploads.map(upload => new Date(upload.accessDate));
         const minDate = new Date(Math.min.apply(null, dates));
         const maxDate = new Date(Math.max.apply(null, dates));
@@ -50,16 +55,12 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             return { code: 404 };
         }
 
-        if (name) {
-            await standard.update( {name} );
-        }
-
-        if (description) {
-            await standard.update( {description} );
-        }
-
         let newDailyUploads = [];
         if (dailyUploads) {
+            const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
+            if (totalWeightage !== 100) {
+                return { code: 400, message: `The sum of weightages is ${totalWeightage}, it must be 100` };
+            }
             // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
             //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
             // }));
@@ -97,6 +98,14 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             await standard.update( {courseLength} );
 
             // await standard.setDailyUploads(newDailyUploads);
+        }
+
+        if (name) {
+            await standard.update( {name} );
+        }
+
+        if (description) {
+            await standard.update( {description} );
         }
 
         const updatedStandard = {
