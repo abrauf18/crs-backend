@@ -18,7 +18,12 @@ const emailBasedInvite = createSchemaMiddleware(
         email: Joi.string().email().required(),
         role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
         name: Joi.string().required(),
-        accessToken: Joi.string().required()
+        schoolId: Joi.when('role', {
+            is: Joi.string().valid('student', 'teacher'),
+            then: Joi.string().required(),
+            otherwise: Joi.string().optional()
+        }),
+        accessToken: Joi.string().required(),
     })
 );
 const emailBasedSignup = createSchemaMiddleware(

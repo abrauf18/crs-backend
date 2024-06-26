@@ -5,10 +5,11 @@ const jwt = require("../utils/jwt.js");
 const {logger} = require("../Logs/logger.js");
 const sendEmail = require("../utils/email.js");
 const ROLES = require("../models/roles/index.js");
+// @ts-ignore
 const { User, School, Invite, OTP_code, Invite_token } = require("../models/index.js");
 const { genericSignupInvitation, teacherInvitation, verficationOTP } = require("./helper/templates/index.js");
 
-const inviteUser = async ({ name, email, role, user }) => {
+const inviteUser = async ({ name, email, role, user, schoolId }) => {
     try {
 
         if ((user.role == ROLES.SCHOOL && (role == ROLES.ADMIN || role == ROLES.SCHOOL))
@@ -16,7 +17,12 @@ const inviteUser = async ({ name, email, role, user }) => {
             return { code: 403 };
         }
 
-        const token = jwt.generateAccessToken({ name, email, role });
+        const tokenPayload = { name, email, role };
+        if (schoolId) {
+            tokenPayload.schoolId = schoolId;
+        }
+
+        const token = jwt.generateAccessToken(tokenPayload);
 
         if (!token) {
             return { code: 500 };
@@ -93,7 +99,10 @@ const createInvitedUser = async ({ name, email, password, token }) => {
             const user = await User.create({
                 name,
                 email,
+                // @ts-ignore
                 role: result.decoded.role,
+                // @ts-ignore
+                school_id: result.decoded.schoolId,
                 password: hashedPassword,
             });
 
@@ -343,6 +352,7 @@ const verifyOTP = async ({ userId, OTP }) => {
         if (forgotRequest) {
             const currentDate = new Date();
             const createdAt = forgotRequest.createdAt;
+            // @ts-ignore
             const timeDifference = currentDate - createdAt;
             const minutesDifference = timeDifference / (1000 * 60);
             const isWithinLast5Minutes = minutesDifference <= 5;
