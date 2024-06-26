@@ -139,7 +139,7 @@ const createUser = async ({ name, password, email, role }) => {
             name,
             email,
             role,
-            password:
+            password,
         });
 
         if (user) {
