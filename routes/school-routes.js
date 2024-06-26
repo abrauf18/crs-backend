@@ -28,5 +28,7 @@ router.post('/create-ticket', schoolController.createTicket);
 router.put('/update-ticket', schoolController.updateTicket);
 router.delete('/delete-ticket', schoolController.deleteTicket);
 router.get('/get-ticket', schoolController.getTicketById);
+router.get('/list-ticket', schoolController.listTickets);
+
 
 module.exports = router;
