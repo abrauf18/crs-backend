@@ -6,9 +6,9 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const emailBasedInvite = async (req, res) => {
   try {
-    const { name, email, role } = req.body
+    const { name, email, role, schoolId } = req.body
 
-    const reply = await authService.inviteUser({ name, email, role, user: req.user });
+    const reply = await authService.inviteUser({ name, email, role, schoolId, user: req.user });
 
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
@@ -17,7 +17,7 @@ const emailBasedInvite = async (req, res) => {
       return handleErrorResponse(res, 403, "You are unauthorized to invite this entity");
     }
     else if (reply.code == 409) {
-      return handleErrorResponse(res, 403, "This user currently has a valid invitation, try again later");
+      return handleErrorResponse(res, 409, "This user currently has a valid invitation, try again later");
     }
     else {
       return handleInternalServerError(res);
