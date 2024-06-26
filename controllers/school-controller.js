@@ -1,7 +1,7 @@
 const Model = require("../models");
 const { logger } = require("../Logs/logger.js");
 const { successResponse, failureResponse } = require("../utils/response.js");
-const { Op, Sequelize } = require("sequelize");
+const { Op, Sequelize, where } = require("sequelize");
 const school = require("../models/school");
 
 const createSchool = async (req, res) => {
@@ -125,7 +125,7 @@ const createTicket = async (req, res) => {
   try {
     const { schoolId, complaintType, message } = req.body;
 
-    if(!schoolId || !complaintType || !message){
+    if (!schoolId || !complaintType || !message) {
       return successResponse(res, 400, "Missing required Fields");
     }
 
@@ -144,13 +144,11 @@ const createTicket = async (req, res) => {
 
 const updateTicket = async (req, res) => {
   try {
-    
-    const { complaintType, message, status ,ticketId} = req.body;
+    const { complaintType, message, status, ticketId } = req.body;
 
-    if(!ticketId){
+    if (!ticketId) {
       return successResponse(res, 400, "Missing required Fields");
     }
-
 
     const ticket = await Model.Ticket.findByPk(ticketId);
 
@@ -174,7 +172,7 @@ const deleteTicket = async (req, res) => {
   try {
     const { ticketId } = req.query;
 
-    if(!ticketId){
+    if (!ticketId) {
       return successResponse(res, 400, "Missing required Fields");
     }
     const ticket = await Model.Ticket.findByPk(ticketId);
@@ -202,7 +200,7 @@ const getTicketById = async (req, res) => {
       include: [
         {
           model: Model.User,
-          attributes: ['name'],
+          attributes: ["name"],
         },
       ],
     });
@@ -217,7 +215,7 @@ const getTicketById = async (req, res) => {
   }
 };
 
-const getTickets = async (req, res) => {
+const listTickets = async (req, res) => {
   try {
     const { schoolId } = req.query;
 
@@ -228,12 +226,98 @@ const getTickets = async (req, res) => {
       include: [
         {
           model: Model.User,
-          attributes: ['name'],
+          attributes: ["name"],
         },
       ],
     });
 
     return successResponse(res, 200, "Tickets retrieved successfully", tickets);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+const listTeacher = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+
+    let { schoolId } = req.query;
+
+    let filterCriteria = {};
+
+    const offset = (page - 1) * limit;
+    //Total data in database count
+    const totalRecords = await Model.User.count({
+      where: {
+        role: "teacher",
+      },
+    });
+
+    //Total count with filterations
+    const totalCount = await Model.User.count({ where: filterCriteria });
+
+    //Apply Filter on limit
+    if (limit === -1) {
+      limit = totalRecords;
+    }
+
+    if (req.query.search) {
+      const searchCriteria = {
+        [Op.iLike]: `%${req.query.search}%`,
+      };
+      filterCriteria = {
+        [Op.or]: [
+          { name: searchCriteria },
+          { category_name: searchCriteria },
+          { id: parseInt(req.query.search) || null }, // Search by ID if provided
+        ],
+      };
+    }
+
+    const teachers = await Model.User.findAll({
+      attributes: [
+        "id",
+        "name",
+        "email",
+        [Sequelize.fn("COUNT", Sequelize.col("Classrooms.id")), "classroomCount"],
+      ],
+      include: [
+        {
+          model: Model.Classroom,
+          attributes: [], 
+        },
+      ],
+      where:{},
+      group: ["User.id"],
+      limit: limit,
+      offset: offset,
+      order: [['name', 'ASC']],
+    });
+    
+    const totalPages = Math.ceil(totalCount / limit);
+
+    const pagination = {
+      totalRecords,
+      currentPage: page,
+      limit: limit,
+      totalCount: totalCount,
+      totalPages: totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+
+    const response = {
+      product: teachers,
+      pagination,
+    };
+    return successResponse(
+      res,
+      "success",
+      200,
+      "Product fetch successfully",
+      response
+    );
   } catch (error) {
     return failureResponse(res, 500, error.message);
   }
@@ -246,5 +330,5 @@ module.exports = {
   updateTicket,
   deleteTicket,
   getTicketById,
-  getTickets
+  listTickets,
 };
