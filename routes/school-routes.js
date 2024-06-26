@@ -12,7 +12,7 @@ router.post(
     schoolController.createSchool
 )
 
-router.post(
+router.get(
     "/get-school-dashboard", 
     schoolController.schoolDashboard
 )

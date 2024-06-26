@@ -1,7 +1,7 @@
 const Model = require("../models");
 const { logger } = require("../Logs/logger.js");
 const { successResponse, failureResponse } = require("../utils/response.js");
-const { where } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const school = require("../models/school");
 
 const createSchool = async (req, res) => {
@@ -50,15 +50,19 @@ const createSchool = async (req, res) => {
 
 const schoolDashboard = async (req, res) => {
   try {
-    const { schoolId } = req.body;
+    const { schoolId } = req.query;
 
-    const totalStudent = await Model.User.findOne({
+    if (!schoolId) {
+      return successResponse(res, 400, "Missing Required Fields");
+    }
+
+    const totalStudentCount = await Model.User.count({
       where: {
         school_id: schoolId,
       },
     });
 
-    const totalClassroom = await Model.Classroom.findOne({
+    const totalClassroomCount = await Model.Classroom.count({
       include: [
         {
           model: Model.User,
@@ -69,9 +73,44 @@ const schoolDashboard = async (req, res) => {
       ],
     });
 
+    const getSchoolTeacher = await Model.User.findAll({
+      where: {
+        school_id: schoolId,
+        role: "teacher",
+      },
+    });
+
+    const getSchoolTickets = await Model.Ticket.findAll({
+      attributes: [
+        "id",
+        // [Sequelize.literal('"User"."name"'), "name"],
+        "complaint_type",
+        "message",
+        "status",
+        "submitted_by",
+        [Sequelize.col('createdAt'), 'Date'],
+      ],
+      // include: [
+      //   {
+      //     model: Model.User,
+          
+      //     where: {
+      //       school_id: schoolId,
+      //       role: "admin",
+      //     },
+      //   },
+      // ],
+      where: {
+        submitted_by: schoolId,
+        
+      },
+    });
+
     const response = {
-      totalStudent: totalStudent,
-      totalClassroom: totalClassroom,
+      totalStudent: totalStudentCount,
+      totalClassroom: totalClassroomCount,
+      getSchoolTeacher: getSchoolTeacher,
+      getSchoolTickets: getSchoolTickets,
     };
 
     return successResponse(
