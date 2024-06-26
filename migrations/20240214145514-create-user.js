@@ -21,9 +21,19 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING,
       },
+      image: {
+        type: Sequelize.STRING,
+        defaultValue:
+          "https://crs-data-storage-bucket.s3.ap-southeast-2.amazonaws.com/ProfilePictures/defaultImage.JPG",
+        allowNull: false,
+      },
       role: {
         allowNull: false,
         type: Sequelize.ENUM("admin", "teacher", "student", "school"),
+      },
+      school_id: {
+        allowNull: true,
+        type: Sequelize.UUID,
       },
       createdAt: {
         allowNull: false,
