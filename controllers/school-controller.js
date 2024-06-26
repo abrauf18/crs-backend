@@ -44,7 +44,25 @@ const updateSchoolAndUserProfile = async (req, res) => {
   }
 };
 
+const getAllSchools = async (req, res) => {
+  try {
+    const reply = await schoolService.getAllSchools();
+
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  }
+  catch (error) {
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
+    return handleInternalServerError(res);
+  }
+};
+
 module.exports = {
   getSchoolProfile,
   updateSchoolAndUserProfile,
+  getAllSchools,
 };

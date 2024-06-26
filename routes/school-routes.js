@@ -21,5 +21,12 @@ router.post(
     roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]), 
     schoolController.updateSchoolAndUserProfile
 )
+router.get(
+    "/getAllSchools", 
+    schoolValidation.getAllSchools, 
+    roleBasedAccess.setUser, 
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]), 
+    schoolController.getAllSchools
+)
 
 module.exports = router;
