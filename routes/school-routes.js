@@ -24,4 +24,6 @@ router.get('/get-ticket', schoolController.getTicketById);
 router.get('/list-ticket', schoolController.listTickets);
 
 
+router.get('/list-teacher', schoolController.listTeacher);
+
 module.exports = router;
