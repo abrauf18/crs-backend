@@ -1,6 +1,4 @@
-const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
-
 const jwt = require("../utils/jwt.js");
 const {logger} = require("../Logs/logger.js");
 const sendEmail = require("../utils/email.js");
@@ -381,7 +379,7 @@ const resetPassword = async ({ userId, newPassword }) => {
             return { code: 404 }
         }
 
-        user.password = await bcrypt.hash(newPassword, 10);
+        user.password = newPassword;
         await user.save();
 
         return { code: 200 }
