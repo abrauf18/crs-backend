@@ -1101,7 +1101,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                 totalWeightage: parseFloat(totalWeightage.toFixed(1)),
                 obtainedWeightage: parseFloat(obtainedWeightage.toFixed(1))
             };
-        })?.filter(entry => entry.totalWeightage > 0);
+        })
 
         // Calculate average total weightage
         const totalTotalWeightage = transformedData?.reduce((total, entry) => {
@@ -1287,7 +1287,7 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
                 totalWeightage: parseFloat(totalWeightage.toFixed(1)),
                 obtainedWeightage: parseFloat(obtainedWeightage.toFixed(1))
             };
-        })?.filter(entry => entry.totalWeightage > 0);
+        })
 
         // Calculate average total weightage
         const totalTotalWeightage = transformedData?.reduce((total, entry) => {
@@ -1460,7 +1460,7 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                 totalWeightage: parseFloat(totalWeightage.toFixed(1)),
                 obtainedWeightage: parseFloat(obtainedWeightage.toFixed(1)),
             };
-        })?.filter(entry => entry.totalWeightage > 0);
+        })
 
         // Calculate average total weightage
         const totalTotalWeightage = transformedData?.reduce((total, entry) => {
