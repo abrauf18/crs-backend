@@ -1,7 +1,7 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User } = require("../models/index.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 const createClassroom = async ({ name, teacherId }) => {
@@ -254,51 +254,219 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
 
 const getClassroomStudents = async ({ classroomId, page, limit }) => {
     try {
-        page = parseInt(page, 10);
-        limit = parseInt(limit, 10);
-
-        if (isNaN(page) || page < 1) {
-            page = 1;
-        }
-
-        if (isNaN(limit) || limit < 1) {
-            limit = 10; 
-        }
-        const offset = (page - 1) * limit;
-
-        const classroom = await Classroom.findOne({
-            where: { 
-                id: classroomId,
-            },
-            attributes: ['name', 'status'],
-            raw: true
+        const classroom = await Classroom.findByPk(classroomId, {
+            attributes: ['id', 'name', 'teacherId'],
+            include: [
+                {
+                    model: ClassroomCourses,
+                    as: 'classroomCourses',
+                    attributes: ['id'],
+                    include: [{
+                        model: Standard,
+                        as: 'standard',
+                        attributes: ['id', 'name'],
+                        include: [{ 
+                            model: DailyUpload, 
+                            as: 'dailyUploads',
+                            attributes: ['id', 'accessDate', 'weightage'],
+                            where: {
+                                weightage: {
+                                    [Op.gt]: 0
+                                }
+                            },
+                            required: true,
+                            separate: true,
+                            include: [{
+                                model: Resource,
+                                as: 'resource',
+                                attributes: ['id', 'name', 'type', 'topic', 'url'],
+                                include: [
+                                    {
+                                        model: Video,
+                                        as: 'video',
+                                        attributes: ['id'],
+                                        include: [{
+                                            separate: true,
+                                            model: Question,
+                                            as: 'questions',
+                                            required: false,
+                                            attributes: ['id', 'totalMarks'],
+                                        }]
+                                    },
+                                    {
+                                        model: AssessmentResourcesDetail,
+                                        as: 'AssessmentResourcesDetail',
+                                        attributes: ['id', 'totalMarks', 'deadline']
+                                    }
+                                ]
+                            }]
+                        }]
+                    }]
+                },
+                {
+                    model: ClassroomStudent,
+                    as: 'classroomStudents',
+                    attributes: ['id', 'classroomId', 'studentId'],
+                    include: [{
+                        model: User,
+                        as: 'student',
+                        attributes: ['id', 'name', 'email', 'image'],
+                        include: [
+                            {
+                                model: AssessmentAnswer,
+                                attributes: ['id', 'userId', 'standardId', 'obtainedMarks'],
+                                separate: true,
+                                required: false,
+                                include: [{
+                                    model: AssessmentResourcesDetail,
+                                    as: 'assessmentResourcesDetail',
+                                    attributes: ['id', 'totalMarks', 'deadline', 'resourceId'],
+                                    include: [{
+                                        model: Resource,
+                                        as: 'resource',
+                                        attributes: ['id', 'name', 'type', 'topic', 'url'],
+                                        include:[{
+                                            model: DailyUpload,
+                                            as: 'DailyUpload',
+                                            attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
+                                        }]
+                                    }]
+                                }]
+                            },
+                            {
+                                model: VideoQuestionAnswer,
+                                attributes: ['id', 'userId', 'obtainedMarks'],
+                                separate: true,
+                                required: false,
+                                include: [{
+                                    model: Question,
+                                    as: 'question',
+                                    attributes: ['id', 'totalMarks'],
+                                    include: [
+                                        {
+                                            model: Video,
+                                            as: 'video',
+                                            attributes: ['id', 'resourceId'],
+                                            include: [{
+                                                model: Resource,
+                                                as: 'resource',
+                                                attributes: ['id', 'name', 'type', 'topic', 'url'],
+                                                include:[{
+                                                    model: DailyUpload,
+                                                    as: 'DailyUpload',
+                                                    attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
+                                                }]
+                                            }]
+                                        }
+                                    ]
+                                }]
+                            }
+                        ]
+                    }]
+                }
+            ]
         });
 
         if (!classroom) {
-            return { code: 404, message: 'Classroom not found'};
-        }
-        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
-            return { code: 404, message: 'Classroom is not active any more' };
+            return { code: 404, message: 'Classroom not found' };
         }
 
-        const classroomStudents = await ClassroomStudent.findAndCountAll({
-            where: { classroomId: classroomId },
-            offset: offset,
-            limit: limit,
-            attributes: ['id'],
-            include: [{
-                model: User,
-                as: 'student',
-                attributes: ['id', 'name', 'email', 'image'],
-            }]
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let totalWeightageSum = 0;
+        const standardsMap = new Map();
+        const users = [];
+
+        classroom.classroomCourses?.forEach(course => {
+            const standard = course.standard;
+            if (standard) {
+                if (!standardsMap.has(standard.id)) {
+                    standardsMap.set(standard.id, {
+                        standardId: standard.id,
+                        standardName: standard.name,
+                        totalWeightage: 0,
+                        usersWeightage: []
+                    });
+                }
+
+                const standardEntry = standardsMap.get(standard.id);
+
+                if (standard.dailyUploads && standard.dailyUploads.length > 0) {
+                    standardEntry.totalWeightage += standard.dailyUploads
+                        .filter(upload => new Date(upload.accessDate) < today)
+                        .reduce((acc, upload) => acc + upload.weightage, 0);
+                }
+                totalWeightageSum += standardEntry.totalWeightage;
+            }
         });
 
-        const students = classroomStudents.rows.map((classroomStudent, index) => {
-            const { id, student } = classroomStudent.toJSON();
-            return { id, index: offset + index + 1, name: student.name, email: student.email, image: student.image, performance: 100, grade: classroom.name, gradeId: classroomId };
+        const numberOfStandards = standardsMap.size;
+        const currentTotalWeightage = totalWeightageSum / numberOfStandards;
+
+        classroom.classroomStudents?.forEach(student => {
+            const studentData = {
+                id: student.student.id,
+                name: student.student.name,
+                email: student.student.email,
+                image: student.student.image,
+                standardsWeightage: []
+            };
+
+            classroom.classroomCourses?.forEach(course => {
+                const standard = course.standard;
+                if (standard) {
+                    const standardEntry = standardsMap.get(standard.id);
+                    let obtainedWeightage = 0;
+
+                    student.student.VideoQuestionAnswers?.forEach(answer => {
+                        const videoQuestion = answer.question;
+                        if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
+                            const dailyUpload = videoQuestion.video.resource.DailyUpload;
+                            if (new Date(dailyUpload.accessDate) < today) {
+                                obtainedWeightage += (answer.obtainedMarks / videoQuestion.totalMarks) * dailyUpload.weightage;
+                            }
+                        }
+                    });
+
+                    student.student.AssessmentAnswers?.forEach(answer => {
+                        const assessmentResource = answer.assessmentResourcesDetail;
+                        if (assessmentResource.resource.DailyUpload) {
+                            const dailyUpload = assessmentResource.resource.DailyUpload;
+                            if (new Date(dailyUpload.accessDate) < today) {
+                                obtainedWeightage += (answer.obtainedMarks / assessmentResource.totalMarks) * dailyUpload.weightage;
+                            }
+                        }
+                    });
+
+                    studentData.standardsWeightage.push({
+                        standardId: standard.id,
+                        standardName: standard.name,
+                        obtainedWeightage,
+                        totalWeightage: standardEntry.totalWeightage
+                    });
+                }
+            });
+
+            const totalStandards = studentData.standardsWeightage.length;
+            const totalObtainedWeightage = studentData.standardsWeightage.reduce((acc, sw) => acc + sw.obtainedWeightage, 0);
+            const totalWeightage = studentData.standardsWeightage.reduce((acc, sw) => acc + sw.totalWeightage, 0);
+
+            studentData.currentObtainedWeightage = totalObtainedWeightage / totalStandards;
+            studentData.totalWeightage = totalWeightage / totalStandards;
+
+            users.push(studentData);
         });
 
-        return { code: 200, data: { className: classroom.name,  totalPages: Math.ceil(classroomStudents.count / limit), students }};
+        const response = {
+            id: classroom.id,
+            name: classroom.name,
+            teacherId: classroom.teacherId,
+            currentTotalWeightage,
+            users
+        };
+
+        return { code: 200, data: response };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
