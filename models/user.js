@@ -19,6 +19,8 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Ticket, {
         foreignKey: "submitted_by",
       });
+      User.hasMany(models.AssessmentAnswer, { foreignKey: 'userId' })
+      User.hasMany(models.VideoQuestionAnswer, { foreignKey: 'userId' })
     }
   }
 
