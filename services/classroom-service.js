@@ -254,6 +254,18 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
 
 const getClassroomStudents = async ({ classroomId, page, limit }) => {
     try {
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        if (isNaN(page) || page < 1) {
+            page = 1;
+        }
+
+        if (isNaN(limit) || limit < 1) {
+            limit = 10; 
+        }
+        const offset = (page - 1) * limit;
+
         const classroom = await Classroom.findByPk(classroomId, {
             attributes: ['id', 'name', 'teacherId'],
             include: [
@@ -307,6 +319,9 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                     model: ClassroomStudent,
                     as: 'classroomStudents',
                     attributes: ['id', 'classroomId', 'studentId'],
+                    offset: offset,
+                    limit: limit,
+                    order: [['id', 'ASC']],
                     include: [{
                         model: User,
                         as: 'student',
@@ -463,6 +478,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             name: classroom.name,
             teacherId: classroom.teacherId,
             currentTotalWeightage,
+            totalPages: Math.ceil(users.length / limit),
             users
         };
 
