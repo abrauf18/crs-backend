@@ -157,13 +157,13 @@ const authenticateUser = async ({ email, password }) => {
             return { code: 404 };
         }
 
-        const result = await user.comparePassword(password)
-        if(result.error==true){
-            return { code: 409 }
-        }
-        // if (!bcrypt.compareSync(password, user.password)) {
-        //     return { code: 409 };
+        // const result = await user.comparePassword(password)
+        // if(result.error==true){
+        //     return { code: 409 }
         // }
+        if (!bcrypt.compareSync(password, user.password)) {
+            return { code: 409 };
+        }
 
         return { code: 200, data: user };
     } catch (error) {
