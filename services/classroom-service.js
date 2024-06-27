@@ -425,6 +425,8 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                 name: student.student.name,
                 email: student.student.email,
                 image: student.student.image,
+                grade: classroom.name,
+                gradeId: classroom.id,
                 standardsWeightage: []
             };
 
@@ -473,13 +475,20 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             users.push(studentData);
         });
 
+        const students = users.map(user => ({
+            id: user.id,
+            name: user.name,
+            image: user.image,
+            email: user.email,
+            grade: user.grade,
+            performance: user.currentObtainedWeightage,
+            gradeId: user.gradeId
+        }));
+
         const response = {
-            id: classroom.id,
-            name: classroom.name,
-            teacherId: classroom.teacherId,
-            currentTotalWeightage,
+            className: classroom.name,
             totalPages: Math.ceil(users.length / limit),
-            users
+            students
         };
 
         return { code: 200, data: response };
