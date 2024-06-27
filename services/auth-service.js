@@ -1,6 +1,7 @@
+const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
 const jwt = require("../utils/jwt.js");
-const {logger} = require("../Logs/logger.js");
+const { logger } = require("../Logs/logger.js");
 const sendEmail = require("../utils/email.js");
 const ROLES = require("../models/roles/index.js");
 // @ts-ignore
@@ -155,13 +156,13 @@ const authenticateUser = async ({ email, password }) => {
             return { code: 404 };
         }
 
-        const result = await user.comparePassword(password)
-        if (result.error === true){
-            return { code: 409 }
-        }
-        // if (!bcrypt.compareSync(password, user.password)) {
-        //     return { code: 409 };
+        // const result = await user.comparePassword(password)
+        // if (result.error === true){
+        //     return { code: 409 }
         // }
+        if (!bcrypt.compareSync(password, user.password)) {
+            return { code: 409 };
+        }
 
         return { code: 200, data: user };
     } catch (error) {
