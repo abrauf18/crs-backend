@@ -161,6 +161,13 @@ const getStudentAssessmentAnswer = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const getAllSummarizedStudentAndStandardsForTeacher = createSchemaMiddleware(
+    Joi.object({
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -177,5 +184,6 @@ module.exports = {
     getSummarizedStudentForTeacher,
     getStudentNameEmailForTeacher,
     assignMarksToStudentAnswer,
-    getStudentAssessmentAnswer
+    getStudentAssessmentAnswer,
+    getAllSummarizedStudentAndStandardsForTeacher
 };
