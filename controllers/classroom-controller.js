@@ -137,7 +137,7 @@ const deleteClassCourse = async (req, res) => {
 
 const getClassroomStudents = async (req, res) => {
     try {
-        const { classroomid, page, limit } = req.headers;
+        const { classroomid, page=1, limit=10 } = req.headers;
         const reply = await classroomService.getClassroomStudents({ classroomId: classroomid, page, limit });
 
         if (reply.code == 200) {
