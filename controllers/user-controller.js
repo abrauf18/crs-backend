@@ -1,6 +1,6 @@
 const userService = require("../services/user-service.js");
 const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
-const {logger} = require("../Logs/logger.js");
+const { logger } = require("../Logs/logger.js");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -44,9 +44,9 @@ const updateUserProfile = async (req, res) => {
 
 const getAllUsersProfile = async (req, res) => {
   try {
-    const {page, limit, orderBy, sortBy, keyword, role} = req.query;
+    const { page, limit, orderBy, sortBy, keyword, role } = req.query;
 
-    const reply = await userService.getAllUsersProfile({user: req.user, page, limit, orderBy, sortBy, keyword, role});
+    const reply = await userService.getAllUsersProfile({ user: req.user, page, limit, orderBy, sortBy, keyword, role });
 
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
@@ -88,7 +88,7 @@ const deleteAnotherUsersProfile = async (req, res) => {
     const { userid } = req.headers;
 
     const reply = await userService.deleteAnotherUsersProfile({ userId: userid });
-    
+
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
     }
@@ -105,10 +105,28 @@ const deleteAnotherUsersProfile = async (req, res) => {
   }
 };
 
+const getAllTeachers = async (req, res) => {
+  try {
+    const reply = await userService.getAllTeachers({
+      user: req.user
+    });
+    if (reply.code == 200) {
+      return handleSuccessResponse(res, 200, reply.data);
+    }
+    else {
+      return handleInternalServerError(res);
+    }
+  } catch (error) {
+    logger.error(error?.message || 'An error occurred, but no error message was provided');
+    return handleInternalServerError(res);
+  }
+}
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
   getAllUsersProfile,
   updateAnotherUsersProfile,
   deleteAnotherUsersProfile,
+  getAllTeachers,
 };

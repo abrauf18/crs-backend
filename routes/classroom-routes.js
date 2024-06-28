@@ -10,7 +10,7 @@ router.post(
     "/createClassroom",
     classroomValidation.createClassroom,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     classroomController.createClassroom
 );
 
