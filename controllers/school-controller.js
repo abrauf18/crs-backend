@@ -387,6 +387,54 @@ const inviteTeacher = async (req, res) => {
   }
 };
 
+const getSchoolCourses = async (req, res) => {
+  try {
+    let { schoolId } = req.query;
+
+    const course = await Model.Classroom.findAll({
+      include:[{
+        model:Model.ClassroomCourses,
+        include:[{
+          model:Model.Standard
+        }]
+      }],
+      where: {
+        schoolId: schoolId,
+      },
+    });
+
+    return successResponse(res, 200, "Email has been send  successfully");
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+
+const getcourse = async (req, res) => {
+  try {
+    let { schoolId } = req.query;
+
+    const course = await Model.Classroom.findAll({
+      include:[{
+        model:Model.ClassroomCourses,
+        include:[{
+          model:Model.Standard
+        }]
+      }],
+      where: {
+        schoolId: schoolId,
+      },
+    });
+
+    return successResponse(res, 200, "Email has been send  successfully");
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+
+
+
 module.exports = {
   createSchool,
   schoolDashboard,
@@ -399,4 +447,6 @@ module.exports = {
   getTeacher,
   deleteTeacher,
   inviteTeacher,
+  getSchoolCourses,
+  getcourse
 };
