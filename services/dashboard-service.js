@@ -53,7 +53,7 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
         });
       
         
-        return { code: 200, data: { totalClassrooms, totalStudents, studentsJoining: cumulativeResults } };
+        return { code: 200, data: { totalClassrooms, totalStudents, usersJoining: cumulativeResults } };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
