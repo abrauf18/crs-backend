@@ -4,14 +4,14 @@ const { logger } = require("../Logs/logger.js");
 const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
-const createClassroom = async ({ name, teacherId }) => {
+const createClassroom = async ({ name, teacherId, schoolId }) => {
     try {
         const existingClassroom = await Classroom.findOne({ where: { name } });
         if (existingClassroom) {
             return { code: 409 };
         }
 
-        const classroom = await Classroom.create({ name, teacherId });
+        const classroom = await Classroom.create({ name, teacherId, schoolId });
         if (!classroom) {
             return { code: 500 };
         }
