@@ -749,12 +749,18 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
         });
 
         if (!activeClassroom) {
-            return { code: 404, message: 'Active classroom not found' };
+            return {
+                code: 200,
+                data: {
+                    totalPages: 0,
+                    standards: []
+                }
+            };
         }
 
-        const standardIds = activeClassroom.classroom.classroomCourses.map(course => course.standardId);
+        const standardIds = activeClassroom.classroom?.classroomCourses?.map(course => course.standardId);
 
-        const standards = await Standard.findAll({
+        const standards = await Standard?.findAll({
             where: { id: standardIds },
             attributes: ['id', 'name'],
             order: [[orderBy, sortBy]],
