@@ -1,7 +1,7 @@
 const { Sequelize, Op, fn, col, literal } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Classroom, Standard, ClassroomCourses, ClassroomStudent, User, Resource, DailyUpload, Video, VideoTracking, Question, videoquestionanswer, AssessmentResourcesDetail, AssessmentAnswer } = require("../models/index.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 const getTeacherDashboardSummaries = async ({ teacherId }) => {
@@ -291,6 +291,11 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             attributes: [ "id" ],
             include: [ 
                 {
+                    model: DailyProgress,
+                    attributes: ["id", "classroomStudentId", "obtainedWeightage", "totalWeightage", "date"],
+                    required: false
+                },
+                {
                     model: Classroom,
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE },
@@ -331,7 +336,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                                                 attributes: ['id', 'totalMarks'],
                                                 include: [{
                                                     separate: true,
-                                                    model: videoquestionanswer,
+                                                    model: VideoQuestionAnswer,
                                                     as: 'answers',
                                                     where: { userId: studentId },
                                                     required: false,
