@@ -18,6 +18,7 @@ const createSchemaMiddleware = (schema, target = 'body') => async (req, res, nex
 const createClassroom = async (req, res, next) => {
     try {
         const schema = Joi.object({
+            schoolId: Joi.string().guid().required(),
             teacherId: Joi.string().guid().required(),
             name: Joi.string().required(),
             accessToken: Joi.string().required()

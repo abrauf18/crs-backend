@@ -3,8 +3,8 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createClassroom = async (req, res) => {
     try {
-        const { name, teacherId } = req.body;
-        const reply = await classroomService.createClassroom({ name, teacherId });
+        const { name, teacherId, schoolId } = req.body;
+        const reply = await classroomService.createClassroom({ name, teacherId, schoolId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
