@@ -403,7 +403,7 @@ const getSchoolCourses = async (req, res) => {
       },
     });
 
-    return successResponse(res, 200, "Email has been send  successfully");
+    return successResponse(res, 200, "Email has been send  successfully",course );
   } catch (error) {
     return failureResponse(res, 500, error.message);
   }
