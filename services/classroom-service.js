@@ -475,8 +475,9 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             users.push(studentData);
         });
 
-        const students = users.map(user => ({
+        const students = users.map((user, index) => ({
             id: user.id,
+            index: offset + index + 1,
             name: user.name,
             image: user.image,
             email: user.email,
