@@ -191,9 +191,21 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             }]
         });
 
+        if (!classroomStudent) {
+            const result = {
+                studentName: existingStudent.name,
+                standardsCount: 0,
+                classroomName: null,
+                standardsData: null,
+                videosData: null,
+            };
+    
+            return { code: 200, data: result };
+        }
+
         // Then, when you need the classroom courses, you can load them
         const classroomCourses = await ClassroomCourses.findAll({
-            where: { classroomId: classroomStudent.classroom.id },
+            where: { classroomId: classroomStudent?.classroom.id },
             include: [{
                 model: Standard,
                 as: 'standard'
@@ -204,10 +216,10 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
         const standardsCount = classroomCourses?.length;
 
         // Classroom name
-        const classroomName = classroomStudent.classroom.name;
+        const classroomName = classroomStudent?.classroom.name;
 
         // For each standard, get its name and count of video and non-video resources
-        const standardsData = await Promise.all(classroomCourses.slice(0, Math.min(3, classroomCourses.length)).map(async (course) => {
+        const standardsData = await Promise.all(classroomCourses?.slice(0, Math.min(3, classroomCourses.length)).map(async (course) => {
             const dailyUploads = await DailyUpload.findAll({
                 where: { standardId: course.standard.id },
                 include: [{
@@ -216,7 +228,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 }]
             });
 
-            const videoResourcesCount = dailyUploads.filter(upload => upload.resource.type === 'video')?.length;
+            const videoResourcesCount = dailyUploads?.filter(upload => upload.resource.type === 'video')?.length || 0;
             const nonVideoResourcesCount = dailyUploads?.length - videoResourcesCount;
 
             return {
@@ -229,7 +241,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
 
         // Fetch all daily uploads for the classroom student
         const allDailyVideoUploads = await DailyUpload.findAll({
-            where: { standardId: classroomCourses.map(course => course.standard.id) },
+            where: { standardId: classroomCourses?.map(course => course.standard.id) },
             include: [{
                 model: Resource,
                 as: 'resource',
