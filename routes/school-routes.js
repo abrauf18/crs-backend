@@ -8,19 +8,19 @@ const roleBasedAccess = require("../middlewares/rbac/index");
 
 const router = express.Router();
 router.post(
-    "/create-school", 
+    "/create-school",
     schoolController.createSchool
 )
 router.get(
-    "/getAllSchools", 
-    schoolValidation.getAllSchools, 
-    roleBasedAccess.setUser, 
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]), 
+    "/getAllSchools",
+    schoolValidation.getAllSchools,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
     schoolController.getAllSchools
 )
 
 router.get(
-    "/get-school-dashboard", 
+    "/get-school-dashboard",
     schoolController.schoolDashboard
 )
 
