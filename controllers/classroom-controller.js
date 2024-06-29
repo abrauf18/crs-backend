@@ -158,13 +158,17 @@ const getClassroomStudents = async (req, res) => {
 const addStudentToClassroom = async (req, res) => {
     try {
         const { classroomId, email } = req.body;
-        const reply = await classroomService.addStudentToClassroom({ classroomId, email });
+        const { schoolId } = req.user.schoolId;
+        const reply = await classroomService.addStudentToClassroom({ classroomId, email, schoolId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
         else if (reply.code == 400) {
             return handleErrorResponse(res, 400, reply.message);
+        }
+        else if (reply.code == 403) {
+            return handleErrorResponse(res, 403, reply.message);
         }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Classroom not found');
