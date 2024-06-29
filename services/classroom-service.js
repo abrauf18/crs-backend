@@ -7,7 +7,12 @@ const ROLES = require("../models/roles/index.js");
 
 const createClassroom = async ({ name, teacherId, schoolId }) => {
     try {
-        const existingClassroom = await Classroom.findOne({ where: { name } });
+        const existingClassroom = await Classroom.findOne({ 
+            where: { 
+                name,
+                schoolId,
+            } 
+        });
         if (existingClassroom) {
             return { code: 409 };
         }
