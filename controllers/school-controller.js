@@ -3,7 +3,7 @@ const { logger } = require("../Logs/logger.js");
 const { successResponse, failureResponse } = require("../utils/response.js");
 const { CLASSROOM_STATUS, RESOURCE_TYPES } = require("../utils/enumTypes.js");
 const jwt = require("../utils/jwt.js");
-const { Sequelize, Op, fn, col, literal } = require("sequelize");
+const { Sequelize, Op, fn, col, literal, where } = require("sequelize");
 const school = require("../models/school");
 // @ts-ignore
 const { Invite_token } = require("../models/index.js");
@@ -414,6 +414,44 @@ const schoolDashboard = async (req, res) => {
     const schoolObtainedWeightage =
       totalClasses > 0 ? totalSchoolObtainedWeightage / totalClasses : 0;
 
+
+      const users = await Model.User.findAll({});
+
+    const userCountData = await Model.User.findAll({
+      attributes: [
+        [fn("date_trunc", "year", col("createdAt")), "year"],
+        [fn("date_trunc", "month", col("createdAt")), "month"],
+        [fn("count", "*"), "count"],
+      ],
+      group: ["year", "month"],
+      order: [
+        [literal("date_trunc('year', \"createdAt\")"), "ASC"],
+        [literal("date_trunc('month', \"createdAt\")"), "ASC"],
+      ],
+      where:{
+        school_id:schoolId
+      },
+      raw: true,
+    });
+
+    // Transform the data into the desired format
+    const formattedResults = userCountData.map((row) => ({
+      year: new Date(row.year).getFullYear(),
+      month: new Date(row.month).getMonth() + 1, // Months are 0-indexed in JavaScript
+      count: parseInt(row.count, 10),
+    }));
+
+    // Calculate cumulative count
+    let cumulativeCount = 0;
+    const cumulativeResults = formattedResults.map((row) => {
+      cumulativeCount += row.count;
+      return {
+        year: row.year,
+        month: row.month,
+        count: cumulativeCount,
+      };
+    });
+
     const response = {
       totalStudent: totalStudentCount,
       totalClassroom: totalClassroomCount,
@@ -422,6 +460,9 @@ const schoolDashboard = async (req, res) => {
       overAllPerformance: classroomsData,
       totalWeightage: schoolTotalWeightage,
       obtainedWeightage: schoolObtainedWeightage,
+      usersJoining: cumulativeResults,
+      usersCount: users.length,
+   
     };
 
     return successResponse(
@@ -951,67 +992,6 @@ const getResourceResult = async (req, res) => {
   }
 };
 
-const getAdminDashboardSummaries = async () => {
-  try {
-    const users = await Model.User.findAll({});
-
-    const userCountData = await Model.User.findAll({
-      attributes: [
-        [fn("date_trunc", "year", col("createdAt")), "year"],
-        [fn("date_trunc", "month", col("createdAt")), "month"],
-        [fn("count", "*"), "count"],
-      ],
-      group: ["year", "month"],
-      order: [
-        [literal("date_trunc('year', \"createdAt\")"), "ASC"],
-        [literal("date_trunc('month', \"createdAt\")"), "ASC"],
-      ],
-      raw: true,
-    });
-
-    // Transform the data into the desired format
-    const formattedResults = userCountData.map((row) => ({
-      year: new Date(row.year).getFullYear(),
-      month: new Date(row.month).getMonth() + 1, // Months are 0-indexed in JavaScript
-      count: parseInt(row.count, 10),
-    }));
-
-    // Calculate cumulative count
-    let cumulativeCount = 0;
-    const cumulativeResults = formattedResults.map((row) => {
-      cumulativeCount += row.count;
-      return {
-        year: row.year,
-        month: row.month,
-        count: cumulativeCount,
-      };
-    });
-
-    const videos = await Model.Resource.findAll({
-      where: { type: RESOURCE_TYPES.VIDEO },
-    });
-
-    const resources = await Model.Resource.findAll({
-      where: { type: { [Op.not]: RESOURCE_TYPES.VIDEO } },
-    });
-
-    const result = {
-      usersJoining: cumulativeResults,
-      usersCount: users.length,
-      videosCount: videos.length,
-      resourcesCount: resources.length,
-    };
-
-    return { code: 200, data: result };
-  } catch (error) {
-    console.log("\n\n\n\n", error);
-    logger.error(
-      error?.message ||
-        "An error occurred while getting overview of users and resources for admin dahsboard"
-    );
-    return { code: 500 };
-  }
-};
 
 module.exports = {
   createSchool,
