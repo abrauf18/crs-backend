@@ -137,7 +137,7 @@ const deleteClassCourse = async (req, res) => {
 
 const getClassroomStudents = async (req, res) => {
     try {
-        const { classroomid, page=1, limit=10 } = req.headers;
+        const { classroomid, page = 1, limit = 10 } = req.headers;
         const reply = await classroomService.getClassroomStudents({ classroomId: classroomid, page, limit });
 
         if (reply.code == 200) {
@@ -158,7 +158,7 @@ const getClassroomStudents = async (req, res) => {
 const addStudentToClassroom = async (req, res) => {
     try {
         const { classroomId, email } = req.body;
-        const { schoolId } = req.user.schoolId;
+        const { schoolId } = req.user;
         const reply = await classroomService.addStudentToClassroom({ classroomId, email, schoolId });
 
         if (reply.code == 200) {
@@ -240,7 +240,7 @@ const updateTeacherClassrooms = async (req, res) => {
     try {
         const { schoolId, teacherId, classroomIds } = req.body;
         const reply = await classroomService.updateTeacherClassrooms({ schoolId, teacherId, classroomIds });
-  
+
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
@@ -257,8 +257,8 @@ const updateTeacherClassrooms = async (req, res) => {
     catch (error) {
         return handleInternalServerError(res);
     }
-  }
-  
+}
+
 
 module.exports = {
     createClassroom,
