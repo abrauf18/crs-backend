@@ -7,11 +7,11 @@ const ROLES = require("../models/roles/index.js");
 
 const createClassroom = async ({ name, teacherId, schoolId }) => {
     try {
-        const existingClassroom = await Classroom.findOne({ 
-            where: { 
+        const existingClassroom = await Classroom.findOne({
+            where: {
                 name,
                 schoolId,
-            } 
+            }
         });
         if (existingClassroom) {
             return { code: 409 };
@@ -44,11 +44,11 @@ const getClassroom = async ({ classroomId }) => {
 
 const getAllClassroomsOfTeacher = async ({ teacherId }) => {
     try {
-        const classrooms = await Classroom.findAll({ 
-            where: { 
+        const classrooms = await Classroom.findAll({
+            where: {
                 teacherId: teacherId,
                 status: CLASSROOM_STATUS.ACTIVE
-            } 
+            }
         });
         const options = classrooms?.map(classroom => {
             return { label: classroom.id, value: classroom.name };
@@ -73,19 +73,19 @@ const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
             return { code: 400, message: "Duplicate classrooms are not allowed." };
         }
 
-        const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({ 
+        const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({
             where: { id },
             raw: true
         })));
-        
+
         const notFoundIds = classroomIds.filter((id, index) => !classrooms[index]);
         if (notFoundIds.length > 0) {
             return { code: 404, message: `Classrooms not found: ${notFoundIds.join(', ')}` };
         }
 
         const inactiveNames = classrooms
-                                .filter(classroom => classroom && classroom.status === CLASSROOM_STATUS.INACTIVE)
-                                .map(classroom => classroom.name);
+            .filter(classroom => classroom && classroom.status === CLASSROOM_STATUS.INACTIVE)
+            .map(classroom => classroom.name);
         if (inactiveNames.length > 0) {
             return { code: 404, message: `Inactive classrooms: ${inactiveNames.join(', ')}` };
         }
@@ -123,7 +123,7 @@ const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
 const getSummarizedClassroomsOfTeacher = async ({ teacherId }) => {
     try {
         const classrooms = await Classroom.findAll({
-            where: { 
+            where: {
                 teacherId: teacherId,
                 status: CLASSROOM_STATUS.ACTIVE
             },
@@ -158,9 +158,9 @@ const getClassesAndCourses = async ({ teacherId }) => {
             include: [{
                 model: Classroom,
                 as: 'classroom',
-                where: { 
+                where: {
                     teacherId: teacherId,
-                    status: CLASSROOM_STATUS.ACTIVE 
+                    status: CLASSROOM_STATUS.ACTIVE
                 },
                 attributes: ['name']
             },
@@ -268,7 +268,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         }
 
         if (isNaN(limit) || limit < 1) {
-            limit = 10; 
+            limit = 10;
         }
         const offset = (page - 1) * limit;
 
@@ -283,8 +283,8 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                         model: Standard,
                         as: 'standard',
                         attributes: ['id', 'name'],
-                        include: [{ 
-                            model: DailyUpload, 
+                        include: [{
+                            model: DailyUpload,
                             as: 'dailyUploads',
                             attributes: ['id', 'accessDate', 'weightage'],
                             where: {
@@ -346,7 +346,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                                         model: Resource,
                                         as: 'resource',
                                         attributes: ['id', 'name', 'type', 'topic', 'url'],
-                                        include:[{
+                                        include: [{
                                             model: DailyUpload,
                                             as: 'DailyUpload',
                                             attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
@@ -372,7 +372,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                                                 model: Resource,
                                                 as: 'resource',
                                                 attributes: ['id', 'name', 'type', 'topic', 'url'],
-                                                include:[{
+                                                include: [{
                                                     model: DailyUpload,
                                                     as: 'DailyUpload',
                                                     attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
@@ -507,7 +507,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
     }
 }
 
-const addStudentToClassroom = async ({ classroomId, email }) => {
+const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
     try {
         const classroom = await Classroom.findOne({ where: { id: classroomId } });
         if (!classroom) {
@@ -524,8 +524,11 @@ const addStudentToClassroom = async ({ classroomId, email }) => {
         if (student.role !== ROLES.STUDENT) {
             return { code: 400, message: 'Only Students are allowed to be added to a classroom' };
         }
-        
-        const existingClassroomStudent = await ClassroomStudent.findOne({ 
+        if (student.school_id !== schoolId) {
+            return { code: 403, message: 'Student does not exist in this school' };
+        }
+
+        const existingClassroomStudent = await ClassroomStudent.findOne({
             where: { studentId: student.id },
             include: [
                 {
@@ -603,17 +606,17 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
                 await t.rollback();
                 return { code: 409, message: 'Conflict: Classroom student already exists' };
             }
-            const classroomStudent = await ClassroomStudent.findOne({ 
-                where: { 
-                    studentId 
-                }, 
+            const classroomStudent = await ClassroomStudent.findOne({
+                where: {
+                    studentId
+                },
                 include: [{
                     model: Classroom,
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE },
                     required: true
                 }],
-                transaction: t 
+                transaction: t
             });
             if (classroomStudent) {
                 console.log('\n\n\n\n ', classroomStudent, classroomId)
@@ -650,8 +653,8 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
         // Commit the transaction
         await t.commit();
 
-        return { 
-            code: 200, 
+        return {
+            code: 200,
             data: {
                 id: studentId,
                 ...updatedInfo
@@ -666,9 +669,9 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
     }
 }
 
-const updateTeacherClassrooms = async ({schoolId, teacherId, classroomIds}) => {
+const updateTeacherClassrooms = async ({ schoolId, teacherId, classroomIds }) => {
     try {
-        const teacher = await User.findOne({ where: { id: teacherId, school_id: schoolId }});
+        const teacher = await User.findOne({ where: { id: teacherId, school_id: schoolId } });
         if (!teacher) {
             return { code: 404, message: 'Teacher not found' };
         }
