@@ -5,8 +5,6 @@ const { Op, Sequelize, where } = require("sequelize");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const school = require("../models/school");
 
-
-
 const createSchool = async (req, res) => {
   const transaction = await Model.sequelize.transaction();
   try {
@@ -725,13 +723,13 @@ const getResourceDetail = async (req, res) => {
     let resourceInclude = [];
     const resourceFilter = {};
 
-     // Ensure 'search' is an array if provided
-     if (search) {
-      if (typeof search === 'string') {
+    // Ensure 'search' is an array if provided
+    if (search) {
+      if (typeof search === "string") {
         search = [search];
       }
       // Wrap each search term with wildcards for partial matching
-      const searchTerms = search.map(term => `%${term}%`);
+      const searchTerms = search.map((term) => `%${term}%`);
       resourceFilter.name = { [Op.iLike]: { [Op.any]: searchTerms } };
     }
 
@@ -793,8 +791,108 @@ const getResourceDetail = async (req, res) => {
   }
 };
 
+const getResourceResult = async (req, res) => {
+  try {
+    let { resourceId, schoolId } = req.query;
+
+    const courseDetail = await Model.Resource.findAll({
+      // attributes: ["id"],
+      include: [
+        {
+          model: Model.Video,
+          as: "video",
+          include: [
+            {
+              model: Model.Question,
+              as: "questions",
+              include: [
+                {
+                  model: Model.VideoQuestionAnswer,
+                  as: "answers",
+                  include: [
+                    {
+                      model: Model.User,
+                      as: "user",
+                      where: {
+                        school_id: schoolId,
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: Model.AssessmentResourcesDetail,
+          as: "AssessmentResourcesDetail",
+          attributes:["id","totalMarks"],
+          include: [
+            {
+              model: Model.AssessmentAnswer,
+              as: "assessmentAnswers",
+              attributes:["id","obtainedMarks","answerURL"],
+              include: [
+                {
+                  model: Model.User,
+                  as: "user",
+                  attributes:["id","name","email", "image"],
+                  where: {
+                    school_id: schoolId,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      where: {
+        id: resourceId,
+      },
+    });
 
 
+    const result = courseDetail.map(resource => {
+      let totalObtainedMarks = 0;
+      let totalPossibleMarks = 0;
+      let totalVideoAnswers = 0;
+      let totalAssessmentAnswers = 0;
+
+      if (resource.video) {
+        resource.video.questions.forEach(question => {
+          question.answers.forEach(answer => {
+            const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+            totalObtainedMarks += obtainedMarks;
+            totalVideoAnswers += 1;
+          });
+        });
+      }
+
+      if (resource.AssessmentResourcesDetail) {
+        resource.AssessmentResourcesDetail.assessmentAnswers.forEach(answer => {
+          const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+          totalObtainedMarks += obtainedMarks;
+          totalAssessmentAnswers += 1;
+          totalPossibleMarks += resource.AssessmentResourcesDetail.totalMarks;
+        });
+      }
+
+      const totalAnswers = totalVideoAnswers + totalAssessmentAnswers;
+      const averageObtainedMarks = totalAnswers > 0 ? totalObtainedMarks / totalAnswers : 0;
+      const averagePercentage = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * 100 : 0;
+
+      return {
+        ...resource.toJSON(),
+        averageObtainedMarks,
+        averagePercentage
+      };
+    });
+
+    return successResponse(res, 200, "Data fetched successfully", result);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
 
 module.exports = {
   createSchool,
@@ -810,5 +908,5 @@ module.exports = {
   inviteTeacher,
   getSchoolCourses,
   getResourceDetail,
-
+  getResourceResult,
 };
