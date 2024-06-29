@@ -103,7 +103,7 @@ const removeStudentFromClassroom = createSchemaMiddleware(
 
 const updateClassroomStudent = createSchemaMiddleware(
     Joi.object({
-        classroomStudentId: Joi.string().guid().required(),
+        studentId: Joi.string().guid().required(),
         name: Joi.string().optional(),
         email: Joi.string().email().optional(),
         classroomId: Joi.string().guid().optional(),
