@@ -8,7 +8,8 @@ const school = require("../models/school");
 // @ts-ignore
 const { Invite_token } = require("../models/index.js");
 const schoolService = require("../services/school-service.js");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
+const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js");
+const ROLES = require("../models/roles");
 
 
 
@@ -47,7 +48,7 @@ const createSchool = async (req, res) => {
 
       if (existingUser) {
         await transaction.rollback();
-        return successResponse(res, 200, "User already exists");
+        return handleErrorResponse(res, 200, "User already exists");
       }
 
 
@@ -86,12 +87,13 @@ const schoolDashboard = async (req, res) => {
     const { schoolId } = req.query;
 
     if (!schoolId) {
-      return successResponse(res, 400, "Missing Required Fields");
+      return failureResponse(res, 400, "Missing Required Fields");
     }
 
     const totalStudentCount = await Model.User.count({
       where: {
         school_id: schoolId,
+        role: ROLES.STUDENT,
       },
     });
 

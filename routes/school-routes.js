@@ -22,6 +22,8 @@ router.get(
 
 router.get(
     "/get-school-dashboard",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]),
     schoolController.schoolDashboard
 )
 
