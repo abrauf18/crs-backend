@@ -9,6 +9,9 @@ const getUserProfile = async (req, res) => {
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
     }
+    else if (reply.code == 404) {
+      return handleErrorResponse(res, 404, reply.message);
+    }
     else {
       return handleInternalServerError(res);
     }
@@ -22,15 +25,18 @@ const getUserProfile = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
   try {
-    const { image, name, email, password } = req.body
+    const { image, name, email, password, schoolName } = req.body
 
-    const reply = await userService.updateUserProfile({ user: req.user, image, name, email, password });
+    const reply = await userService.updateUserProfile({ user: req.user, image, name, email, password, schoolName });
 
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
     }
-    if (reply.code == 409) {
-      return handleErrorResponse(res, 409, "User with this email already exists, pleasy try another one");
+    else if (reply.code == 404) {
+      return handleErrorResponse(res, 404, reply.message);
+    }
+    else if (reply.code == 409) {
+      return handleErrorResponse(res, 409, reply.message);
     }
     else {
       return handleInternalServerError(res);

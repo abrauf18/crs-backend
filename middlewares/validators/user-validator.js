@@ -21,6 +21,7 @@ const updateUserProfile = createSchemaMiddleware(
         name: Joi.string().required(),
         image: Joi.string().required(),
         password: Joi.string().allow('', "").required(),
+        schoolName: Joi.string().optional(),
         accessToken: Joi.string().required()
     })
 );
