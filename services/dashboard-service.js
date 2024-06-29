@@ -318,8 +318,8 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                 totalClassrooms, 
                 totalStudents, 
                 usersJoining: cumulativeResults,
-                avgTotalWeightage,
-                avgObtainedWeightage,
+                avgTotalWeightage: parseFloat(avgTotalWeightage.toFixed(1)),
+                avgObtainedWeightage: parseFloat(avgObtainedWeightage.toFixed(1)),
                 students: transformedData.flatMap(classItem => classItem.studentsData).filter(student => student !== undefined),
                 // standardAndCourses: transformedSummarizedStandards
             } 
