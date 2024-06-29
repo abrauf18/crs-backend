@@ -420,6 +420,44 @@ const updateClassroomStudent = async ({ classroomStudentId, name, email, classro
     }
 }
 
+const updateTeacherClassrooms = async ({schoolId, teacherId, classroomIds}) => {
+    try {
+        const teacher = await User.findOne({ where: { id: teacherId, school_id: schoolId }});
+        if (!teacher) {
+            return { code: 404, message: 'Teacher not found' };
+        }
+
+        const classrooms = await Classroom.findAll({ where: { id: classroomIds, schoolId: schoolId } });
+        const foundClassroomIds = classrooms?.map(classroom => classroom.id);
+        const notFoundClassroomIds = classroomIds?.filter(id => !foundClassroomIds.includes(id));
+
+        if (notFoundClassroomIds.length > 0) {
+            const notFoundClassrooms = classrooms?.filter(classroom => notFoundClassroomIds.includes(classroom.id));
+            const notFoundClassroomNames = notFoundClassrooms.map(classroom => classroom.name);
+            return { code: 404, message: `${notFoundClassroomNames.length > 1 ? 'These classrooms are' : 'This classroom is'} not found: `, notFoundClassroomNames };
+        }
+
+        const classroomsWithDifferentTeacher = classrooms.filter(classroom => classroom.teacherId && classroom.teacherId !== teacherId);
+        if (classroomsWithDifferentTeacher.length > 0) {
+            const classroomsWithDifferentTeacherNames = classroomsWithDifferentTeacher.map(classroom => classroom.name);
+            return { code: 409, message: `${classroomsWithDifferentTeacher.length > 1 ? 'These classrooms' : 'This classroom'} already has a different teacher assigned: `, classroomsWithDifferentTeacherNames };
+        }
+
+        //classes from which to remove teacher 
+        const teacherClassrooms = await Classroom.findAll({ where: { teacherId: teacherId, schoolId: schoolId } });
+        const classroomsToRemoveTeacher = teacherClassrooms.filter(classroom => !classroomIds.includes(classroom.id));
+        await Promise.all(classroomsToRemoveTeacher.map(classroom => classroom.update({ teacherId: null })));
+
+        //classes in which to add teacher
+        const updatedClassrooms = await Promise.all(classrooms.map(classroom => classroom.update({ teacherId })));
+        return { code: 200, data: updatedClassrooms };
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while updating teacher classroom');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -431,5 +469,6 @@ module.exports = {
     getClassroomStudents,
     addStudentToClassroom,
     removeStudentFromClassroom,
-    updateClassroomStudent
+    updateClassroomStudent,
+    updateTeacherClassrooms
 };
