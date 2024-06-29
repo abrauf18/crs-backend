@@ -1492,6 +1492,7 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                     email: email, 
                     image: image, 
                     classroomName: classroomName,
+                    classroomStudentId: result.id,
                     averageTotalWeightage: parseFloat(averageTotalWeightage.toFixed(1)),
                     averageObtainedWeightage: parseFloat(averageObtainedWeightage.toFixed(1)),
                 },
