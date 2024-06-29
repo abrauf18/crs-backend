@@ -582,7 +582,7 @@ const listTeacher = async (req, res) => {
 
     if (schoolId) {
       filterCriteria.school_id = schoolId;
-      filterCriteria.ole = "teacher";
+      filterCriteria.role = ROLES.TEACHER;
 
       console.log(filterCriteria)
     }
