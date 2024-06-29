@@ -634,14 +634,12 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
         // Extract updated information if updates were made
         const updatedInfo = {};
         if (updatedStudent) {
-            const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
-            updatedInfo.name = updatedName;
-            updatedInfo.email = updatedEmail;
-            updatedInfo.image = updatedImage;
+            updatedInfo.name = updatedStudent.name;
+            updatedInfo.email = updatedStudent.email;
+            updatedInfo.image = updatedStudent.image;
         }
         if (updatedClassroomStudent) {
-            const updatedClassroomId = updatedClassroomStudent.classroomId;
-            updatedInfo.classroomId = updatedClassroomId;
+            updatedInfo.classroomId = updatedClassroomStudent.classroomId;
         }
 
         // Commit the transaction
