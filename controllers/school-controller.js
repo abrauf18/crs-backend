@@ -90,7 +90,7 @@ const schoolDashboard = async (req, res) => {
   try {
     const { schoolId, userId } = req.query;
 
-    if (!schoolId) {
+    if (!schoolId || !userId) {
       return failureResponse(res, 400, "Missing Required Fields");
     }
 
@@ -122,23 +122,15 @@ const schoolDashboard = async (req, res) => {
     });
 
     const getSchoolTickets = await Model.Ticket.findAll({
-      attributes: [
-        "id",
-        // [Sequelize.literal('"User"."name"'), "name"],
-        "complaint_type",
-        "message",
-        "status",
-        "submitted_by",
-        [Sequelize.col("Ticket.createdAt"), "Date"],
-      ],
+      where: {
+        submitted_by: userId,
+      },
       include: [
         {
           model: Model.User,
+          attributes: ["name"],
         },
       ],
-      where: {
-        school_id: userId,
-      },
     });
 
     const data = await Model.Classroom.findAll({
@@ -323,7 +315,7 @@ const schoolDashboard = async (req, res) => {
               if (
                 videoQuestion?.video?.resource?.DailyUpload?.accessDate &&
                 new Date(videoQuestion.video.resource.DailyUpload.accessDate) <
-                  new Date()
+                new Date()
               ) {
                 const obtainedWeightage =
                   (obtainedMarks / videoQuestion.totalMarks) *
@@ -343,7 +335,7 @@ const schoolDashboard = async (req, res) => {
               if (
                 assessmentResource?.resource?.DailyUpload?.accessDate &&
                 new Date(assessmentResource.resource.DailyUpload.accessDate) <
-                  new Date()
+                new Date()
               ) {
                 const obtainedWeightage =
                   (obtainedMarks / assessmentResource.totalMarks) *
@@ -415,7 +407,7 @@ const schoolDashboard = async (req, res) => {
       totalClasses > 0 ? totalSchoolObtainedWeightage / totalClasses : 0;
 
 
-      const users = await Model.User.findAll({});
+    const users = await Model.User.findAll({});
 
     const userCountData = await Model.User.findAll({
       attributes: [
@@ -428,8 +420,8 @@ const schoolDashboard = async (req, res) => {
         [literal("date_trunc('year', \"createdAt\")"), "ASC"],
         [literal("date_trunc('month', \"createdAt\")"), "ASC"],
       ],
-      where:{
-        school_id:schoolId
+      where: {
+        school_id: schoolId
       },
       raw: true,
     });
@@ -462,7 +454,7 @@ const schoolDashboard = async (req, res) => {
       obtainedWeightage: schoolObtainedWeightage,
       usersJoining: cumulativeResults,
       usersCount: users.length,
-   
+
     };
 
     return successResponse(
