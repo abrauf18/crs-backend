@@ -10,7 +10,7 @@ const genericSignupInvitation = ( name, role, token ) => {
                 <p>Please follow the instructions below to complete your registration:</p>
                 
                 <ol>
-                    <li>Click on the following link to set up your account: http://localhost:3000/signup?token=${token}</li>
+                    <li>Click on the following link to set up your account: ${process.env.BACKEND_URL}/${role === ROLES.SCHOOL ? 'school-signup' : 'signup'}?token=${token}</li>
                     <li>Create the password and use those credentials to login to your account.</li>
                     <li>Explore the features and resources available on CRS.</li>
                 </ol>
