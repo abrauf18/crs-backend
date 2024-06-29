@@ -54,12 +54,11 @@ const updateUserProfile = async ({ user, image, name, email, password, schoolNam
                     id: user.school_id,
                 },
                 attributes: ["id", "name"],
-                raw: true
             })
             if (!school) {
                 return { code: 404, message: "School not Found" };
             }
-            const existingSchool = School.findOne({
+            const existingSchool = await School.findOne({
                 where: {
                     name: schoolName
                 }
