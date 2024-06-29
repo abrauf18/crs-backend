@@ -89,7 +89,7 @@ const getClassroomStudents = createSchemaMiddleware(
 const addStudentToClassroom = createSchemaMiddleware(
     Joi.object({
         classroomId: Joi.string().guid().required(),
-        studentId: Joi.string().guid().required(),
+        email: Joi.string().email().required(),
         accessToken: Joi.string().required()
     })
 );
