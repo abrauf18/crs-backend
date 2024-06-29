@@ -3,55 +3,83 @@ const { logger } = require("../Logs/logger.js");
 const { successResponse, failureResponse } = require("../utils/response.js");
 const { Op, Sequelize, where } = require("sequelize");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
+const jwt = require("../utils/jwt.js");
 const school = require("../models/school");
+// @ts-ignore
+const { Invite_token } = require("../models/index.js");
 const schoolService = require("../services/school-service.js");
 const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js")
 
 
 
 const createSchool = async (req, res) => {
-  const transaction = await Model.sequelize.transaction();
-  try {
-    const { name, email, password, schoolName } = req.body;
+  const token = req.params.token;
 
-    const existingUser = await Model.User.findOne({
-      where: {
-        email: email,
-      },
-      transaction,
+  try {
+    const existingToken = await Invite_token.findOne({
+      where: { token },
     });
 
-    if (existingUser) {
-      await transaction.rollback();
-      return successResponse(res, 200, "User already exists");
+    if (!existingToken) {
+      return handleErrorResponse(res, 400, "Access denied, your token is invalid");
     }
 
-    const school = await Model.School.create(
-      {
-        name: schoolName,
-      },
-      { transaction }
-    );
+    const result = jwt.verifyAccessToken(token);
 
-    const user = await Model.User.create(
-      {
-        name: name,
-        email: email,
-        password: password,
-        school_id: school.id,
-        role: "school",
-      },
-      { transaction }
-    );
+    if (!result.success) {
+      if (result.error === "Token expired") {
+        await existingToken.destroy();
+        return handleErrorResponse(res, 403, "Token expired");
+      } else {
+        return handleErrorResponse(res, 500, "Token verification failed");
+      }
+    }
 
-    await transaction.commit();
+    const transaction = await Model.sequelize.transaction();
 
-    return successResponse(res, 200, "User and School created successfully");
+    try {
+      const { name, email, password, schoolName } = req.body;
+
+      const existingUser = await Model.User.findOne({
+        where: { email },
+        transaction,
+      });
+
+      if (existingUser) {
+        await transaction.rollback();
+        return successResponse(res, 200, "User already exists");
+      }
+
+
+      const school = await Model.School.create(
+        { name: schoolName },
+        { transaction }
+      );
+
+      const user = await Model.User.create(
+        {
+          name,
+          email,
+          password: password,
+          school_id: school.id,
+          role: "school",
+        },
+        { transaction }
+      );
+
+      await transaction.commit();
+      await existingToken.destroy();
+
+      return successResponse(res, 200, "User and School created successfully");
+    } catch (error) {
+      await transaction.rollback();
+      return failureResponse(res, 500, error.message);
+    }
   } catch (error) {
-    await transaction.rollback();
     return failureResponse(res, 500, error.message);
   }
 };
+
 
 const schoolDashboard = async (req, res) => {
   try {
@@ -290,7 +318,7 @@ const schoolDashboard = async (req, res) => {
               if (
                 videoQuestion?.video?.resource?.DailyUpload?.accessDate &&
                 new Date(videoQuestion.video.resource.DailyUpload.accessDate) <
-                  new Date()
+                new Date()
               ) {
                 const obtainedWeightage =
                   (obtainedMarks / videoQuestion.totalMarks) *
@@ -310,7 +338,7 @@ const schoolDashboard = async (req, res) => {
               if (
                 assessmentResource?.resource?.DailyUpload?.accessDate &&
                 new Date(assessmentResource.resource.DailyUpload.accessDate) <
-                  new Date()
+                new Date()
               ) {
                 const obtainedWeightage =
                   (obtainedMarks / assessmentResource.totalMarks) *
@@ -742,8 +770,8 @@ const getResourceDetail = async (req, res) => {
     let resourceInclude = [];
     const resourceFilter = {};
 
-     // Ensure 'search' is an array if provided
-     if (search) {
+    // Ensure 'search' is an array if provided
+    if (search) {
       if (typeof search === 'string') {
         search = [search];
       }

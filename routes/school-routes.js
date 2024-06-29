@@ -8,7 +8,8 @@ const roleBasedAccess = require("../middlewares/rbac/index");
 
 const router = express.Router();
 router.post(
-    "/create-school",
+    "/create-school/:token",
+    schoolValidation.createSchool,
     schoolController.createSchool
 )
 router.get(
