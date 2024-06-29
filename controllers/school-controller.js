@@ -438,16 +438,16 @@ const schoolDashboard = async (req, res) => {
 
 const createTicket = async (req, res) => {
   try {
-    const { schoolId, complaintType, message } = req.body;
+    const { userId, complaintType, message } = req.body;
 
-    if (!schoolId || !complaintType || !message) {
+    if (!userId || !complaintType || !message) {
       return successResponse(res, 400, "Missing required Fields");
     }
 
     const ticket = await Model.Ticket.create({
       complaint_type: complaintType,
       message,
-      submitted_by: schoolId,
+      submitted_by: userId,
       status: "active",
     });
 
@@ -529,6 +529,34 @@ const getTicketById = async (req, res) => {
     return failureResponse(res, 500, error.message);
   }
 };
+
+const listTickets = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    const tickets = await Model.Ticket.findAll({
+      where: {
+        submitted_by: userId,
+      },
+      include: [
+        {
+          model: Model.User,
+          attributes: ["name"],
+        },
+      ],
+    });
+
+    console.log(tickets)
+
+    return successResponse(res, 200, "Tickets retrieved successfully", tickets);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
+
+
+
+
 const getAllSchools = async (req, res) => {
   try {
     const reply = await schoolService.getAllSchools();
@@ -545,34 +573,13 @@ const getAllSchools = async (req, res) => {
     return handleInternalServerError(res);
   }
 };
-const listTickets = async (req, res) => {
-  try {
-    const { schoolId } = req.query;
-
-    const tickets = await Model.Ticket.findAll({
-      where: {
-        submitted_by: schoolId,
-      },
-      include: [
-        {
-          model: Model.User,
-          attributes: ["name"],
-        },
-      ],
-    });
-
-    return successResponse(res, 200, "Tickets retrieved successfully", tickets);
-  } catch (error) {
-    return failureResponse(res, 500, error.message);
-  }
-};
 
 const listTeacher = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 10;
 
-    let { schoolId } = req.query;
+    let { userId } = req.query;
 
     if(!schoolId){
       return successResponse(res, 200, "Missing required Failed");
