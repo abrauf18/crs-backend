@@ -616,16 +616,16 @@ const listTeacher = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 10;
 
-    let { userId } = req.query;
+    let { schoolId } = req.query;
 
-    if (!userId) {
+    if (!schoolId) {
       return successResponse(res, 200, "Missing required Failed");
     }
 
     let filterCriteria = {};
 
-    if (userId) {
-      filterCriteria.school_id = userId;
+    if (schoolId) {
+      filterCriteria.school_id = schoolId;
       filterCriteria.role = ROLES.TEACHER;
 
       console.log(filterCriteria);
