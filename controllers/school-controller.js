@@ -8,10 +8,12 @@ const school = require("../models/school");
 // @ts-ignore
 const { Invite_token } = require("../models/index.js");
 const schoolService = require("../services/school-service.js");
-const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } = require("../utils/response-handlers.js");
+const {
+  handleInternalServerError,
+  handleSuccessResponse,
+  handleErrorResponse,
+} = require("../utils/response-handlers.js");
 const ROLES = require("../models/roles");
-
-
 
 const createSchool = async (req, res) => {
   const token = req.params.token;
@@ -22,7 +24,11 @@ const createSchool = async (req, res) => {
     });
 
     if (!existingToken) {
-      return handleErrorResponse(res, 400, "Access denied, your token is invalid");
+      return handleErrorResponse(
+        res,
+        400,
+        "Access denied, your token is invalid"
+      );
     }
 
     const result = jwt.verifyAccessToken(token);
@@ -50,7 +56,6 @@ const createSchool = async (req, res) => {
         await transaction.rollback();
         return handleErrorResponse(res, 200, "User already exists");
       }
-
 
       const school = await Model.School.create(
         { name: schoolName },
@@ -80,7 +85,6 @@ const createSchool = async (req, res) => {
     return failureResponse(res, 500, error.message);
   }
 };
-
 
 const schoolDashboard = async (req, res) => {
   try {
@@ -320,7 +324,7 @@ const schoolDashboard = async (req, res) => {
               if (
                 videoQuestion?.video?.resource?.DailyUpload?.accessDate &&
                 new Date(videoQuestion.video.resource.DailyUpload.accessDate) <
-                new Date()
+                  new Date()
               ) {
                 const obtainedWeightage =
                   (obtainedMarks / videoQuestion.totalMarks) *
@@ -340,7 +344,7 @@ const schoolDashboard = async (req, res) => {
               if (
                 assessmentResource?.resource?.DailyUpload?.accessDate &&
                 new Date(assessmentResource.resource.DailyUpload.accessDate) <
-                new Date()
+                  new Date()
               ) {
                 const obtainedWeightage =
                   (obtainedMarks / assessmentResource.totalMarks) *
@@ -531,13 +535,13 @@ const getAllSchools = async (req, res) => {
 
     if (reply.code == 200) {
       return handleSuccessResponse(res, 200, reply.data);
-    }
-    else {
+    } else {
       return handleInternalServerError(res);
     }
-  }
-  catch (error) {
-    logger.error(error?.message || 'An error occurred, but no error message was provided');
+  } catch (error) {
+    logger.error(
+      error?.message || "An error occurred, but no error message was provided"
+    );
     return handleInternalServerError(res);
   }
 };
@@ -570,18 +574,20 @@ const listTeacher = async (req, res) => {
 
     let { schoolId } = req.query;
 
+    if(!schoolId){
+      return successResponse(res, 200, "Missing required Failed");
+    }
+
     let filterCriteria = {};
 
     if (schoolId) {
       filterCriteria.school_id = schoolId;
+      filterCriteria.ole = "teacher";
+
+      console.log(filterCriteria)
     }
 
     const offset = (page - 1) * limit;
-
-    // Total data in database count
-    const totalRecords = await Model.User.count({
-      where: { role: "teacher" },
-    });
 
     // Apply search filter
     if (req.query.search) {
@@ -596,11 +602,6 @@ const listTeacher = async (req, res) => {
 
     // Total count with filtrations
     const totalCount = await Model.User.count({ where: filterCriteria });
-
-    // Apply Filter on limit
-    if (limit === -1) {
-      limit = totalRecords;
-    }
 
     const teachers = await Model.Classroom.findAll({
       attributes: [
@@ -624,7 +625,6 @@ const listTeacher = async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
 
     const pagination = {
-      totalRecords,
       currentPage: page,
       limit: limit,
       totalCount: totalCount,
@@ -875,17 +875,17 @@ const getResourceResult = async (req, res) => {
         {
           model: Model.AssessmentResourcesDetail,
           as: "AssessmentResourcesDetail",
-          attributes:["id","totalMarks"],
+          attributes: ["id", "totalMarks"],
           include: [
             {
               model: Model.AssessmentAnswer,
               as: "assessmentAnswers",
-              attributes:["id","obtainedMarks","answerURL"],
+              attributes: ["id", "obtainedMarks", "answerURL"],
               include: [
                 {
                   model: Model.User,
                   as: "user",
-                  attributes:["id","name","email", "image"],
+                  attributes: ["id", "name", "email", "image"],
                   where: {
                     school_id: schoolId,
                   },
@@ -900,16 +900,15 @@ const getResourceResult = async (req, res) => {
       },
     });
 
-
-    const result = courseDetail.map(resource => {
+    const result = courseDetail.map((resource) => {
       let totalObtainedMarks = 0;
       let totalPossibleMarks = 0;
       let totalVideoAnswers = 0;
       let totalAssessmentAnswers = 0;
 
       if (resource.video) {
-        resource.video.questions.forEach(question => {
-          question.answers.forEach(answer => {
+        resource.video.questions.forEach((question) => {
+          question.answers.forEach((answer) => {
             const obtainedMarks = Math.max(answer.obtainedMarks, 0);
             totalObtainedMarks += obtainedMarks;
             totalVideoAnswers += 1;
@@ -918,22 +917,28 @@ const getResourceResult = async (req, res) => {
       }
 
       if (resource.AssessmentResourcesDetail) {
-        resource.AssessmentResourcesDetail.assessmentAnswers.forEach(answer => {
-          const obtainedMarks = Math.max(answer.obtainedMarks, 0);
-          totalObtainedMarks += obtainedMarks;
-          totalAssessmentAnswers += 1;
-          totalPossibleMarks += resource.AssessmentResourcesDetail.totalMarks;
-        });
+        resource.AssessmentResourcesDetail.assessmentAnswers.forEach(
+          (answer) => {
+            const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+            totalObtainedMarks += obtainedMarks;
+            totalAssessmentAnswers += 1;
+            totalPossibleMarks += resource.AssessmentResourcesDetail.totalMarks;
+          }
+        );
       }
 
       const totalAnswers = totalVideoAnswers + totalAssessmentAnswers;
-      const averageObtainedMarks = totalAnswers > 0 ? totalObtainedMarks / totalAnswers : 0;
-      const averagePercentage = totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * 100 : 0;
+      const averageObtainedMarks =
+        totalAnswers > 0 ? totalObtainedMarks / totalAnswers : 0;
+      const averagePercentage =
+        totalPossibleMarks > 0
+          ? (totalObtainedMarks / totalPossibleMarks) * 100
+          : 0;
 
       return {
         ...resource.toJSON(),
         averageObtainedMarks,
-        averagePercentage
+        averagePercentage,
       };
     });
 
