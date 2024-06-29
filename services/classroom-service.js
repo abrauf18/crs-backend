@@ -598,7 +598,22 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
                 await t.rollback();
                 return { code: 409, message: 'Conflict: Classroom student already exists' };
             }
-            updatedClassroomStudent = await existingClassroomStudent.update({ classroomId: classroomId }, { transaction: t });
+            const classroomStudent = await ClassroomStudent.findOne({ 
+                where: { 
+                    classroomId, 
+                    studentId 
+                }, 
+                include: [{
+                    model: Classroom,
+                    as: 'classroom',
+                    where: { status: CLASSROOM_STATUS.ACTIVE },
+                    required: true
+                }],
+                transaction: t 
+            });
+            if (classroomStudent) {
+                updatedClassroomStudent = await classroomStudent.update({ classroomId: classroomId }, { transaction: t });
+            }
         }
 
         if (email) {
@@ -616,8 +631,18 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
             updatedStudent = await student.update(updateData, { transaction: t });
         }
 
-        const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
-        const { classroomId: updatedClassroomId } = updatedClassroomStudent.toJSON();
+        // Extract updated information if updates were made
+        const updatedInfo = {};
+        if (updatedStudent) {
+            const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
+            updatedInfo.name = updatedName;
+            updatedInfo.email = updatedEmail;
+            updatedInfo.image = updatedImage;
+        }
+        if (updatedClassroomStudent) {
+            const updatedClassroomId = updatedClassroomStudent.classroomId;
+            updatedInfo.classroomId = updatedClassroomId;
+        }
 
         // Commit the transaction
         await t.commit();
@@ -625,8 +650,8 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
         return { 
             code: 200, 
             data: {
-                id: studentId, name: updatedName, email: updatedEmail, image: updatedImage,
-                classroomId: updatedClassroomId
+                id: studentId,
+                ...updatedInfo
             }
         };
     } catch (error) {
