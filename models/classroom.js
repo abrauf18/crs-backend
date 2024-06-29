@@ -42,6 +42,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
       allowNull: false,
     },
+    schoolId: {
+      type: DataTypes.UUID,
+      defaultValue:'',
+      allowNull: false,
+    },
     status: {
       type: DataTypes.ENUM(
         CLASSROOM_STATUS.ACTIVE, 
