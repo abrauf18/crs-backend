@@ -600,7 +600,6 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
             }
             const classroomStudent = await ClassroomStudent.findOne({ 
                 where: { 
-                    classroomId, 
                     studentId 
                 }, 
                 include: [{
@@ -612,6 +611,7 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
                 transaction: t 
             });
             if (classroomStudent) {
+                console.log('\n\n\n\n ', classroomStudent, classroomId)
                 updatedClassroomStudent = await classroomStudent.update({ classroomId: classroomId }, { transaction: t });
             }
         }
