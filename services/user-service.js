@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("../utils/jwt");
 const { Op } = require("sequelize");
 // @ts-ignore
-const { User } = require("../models");
+const { User, School } = require("../models");
 const { logger } = require("../Logs/logger.js");
 const ROLES = require("../models/roles");
 
@@ -11,11 +11,26 @@ const ROLES = require("../models/roles");
 const getUserProfile = async ({ user }) => {
     try {
 
-        const userData = {
+        let userData = {
             name: user.name,
             email: user.email,
             image: user.image
         };
+
+        if (user.role === ROLES.SCHOOL) {
+            const school = await School.findOne({
+                where: {
+                    id: user.school_id,
+                },
+                attributes: ["id", "name"],
+                raw: true
+            })
+            if (!school) {
+                return { code: 404, message: "School not Found" };
+            }
+            userData.schoolId = school.id;
+            userData.schoolName = school.name;
+        }
 
         return { code: 200, data: userData };
 
@@ -25,12 +40,34 @@ const getUserProfile = async ({ user }) => {
     }
 };
 
-const updateUserProfile = async ({ user, image, name, email, password }) => {
+const updateUserProfile = async ({ user, image, name, email, password, schoolName }) => {
     try {
         const isEmailRegisterd = user.email != email ? await User.findOne({ where: { email } }) : null;
 
         if (isEmailRegisterd) {
-            return { code: 409 };
+            return { code: 409, message: "User with this email already exists, pleasy try another one" };
+        }
+
+        if (user.role === ROLES.SCHOOL) {
+            const school = await School.findOne({
+                where: {
+                    id: user.school_id,
+                },
+                attributes: ["id", "name"],
+                raw: true
+            })
+            if (!school) {
+                return { code: 404, message: "School not Found" };
+            }
+            const existingSchool = School.findOne({
+                where: {
+                    name: schoolName
+                }
+            })
+            if (existingSchool) {
+                return { code: 409, message: "School with name already exists" };
+            }
+            await school.update({name: schoolName})
         }
 
         if (password != "") {
