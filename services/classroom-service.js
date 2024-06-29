@@ -3,6 +3,7 @@ const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
+const ROLES = require("../models/roles/index.js");
 
 const createClassroom = async ({ name, teacherId, schoolId }) => {
     try {
@@ -514,6 +515,9 @@ const addStudentToClassroom = async ({ classroomId, email }) => {
         const student = await User.findOne({ where: { email: email } });
         if (!student) {
             return { code: 405 };
+        }
+        if (student.role !== ROLES.STUDENT) {
+            return { code: 400, message: 'Only Students are allowed to be added to a classroom' };
         }
         
         const existingClassroomStudent = await ClassroomStudent.findOne({ 
