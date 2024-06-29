@@ -63,7 +63,7 @@ const updateUserProfile = async ({ user, image, name, email, password, schoolNam
                     name: schoolName
                 }
             })
-            if (existingSchool) {
+            if (existingSchool && existingSchool.id !== school.id) {
                 return { code: 409, message: "School with name already exists" };
             }
             await school.update({name: schoolName})
