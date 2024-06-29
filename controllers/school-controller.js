@@ -5,6 +5,8 @@ const { Op, Sequelize, where } = require("sequelize");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const school = require("../models/school");
 
+
+
 const createSchool = async (req, res) => {
   const transaction = await Model.sequelize.transaction();
   try {
@@ -808,4 +810,5 @@ module.exports = {
   inviteTeacher,
   getSchoolCourses,
   getResourceDetail,
+
 };
