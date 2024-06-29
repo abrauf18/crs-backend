@@ -612,7 +612,7 @@ const listTeacher = async (req, res) => {
       include: [
         {
           model: Model.User,
-          attributes: ["id", "name", "email"],
+          attributes: ["id", "name", "email", "image"],
           where: filterCriteria,
         },
       ],
@@ -858,5 +858,4 @@ module.exports = {
   inviteTeacher,
   getSchoolCourses,
   getResourceDetail,
-
 };
