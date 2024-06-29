@@ -180,6 +180,7 @@ const addStudentToClassroom = async (req, res) => {
         }
     }
     catch (error) {
+        console.log('\n\n\n\n', error)
         return handleInternalServerError(res);
     }
 }

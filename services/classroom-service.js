@@ -566,51 +566,77 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
 }
 
 const updateClassroomStudent = async ({ classroomStudentId, name, email, classroomId, image }) => {
-    try {
-        const isEmailRegisterd = await User.findOne({ where: { email } });
-        if (isEmailRegisterd) {
-            return { code: 400 };
-        }
+    const t = await sequelize.transaction();
 
-        const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId } });
+    try {
+        const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId }, transaction: t });
         if (!classroomStudent) {
+            await t.rollback();
             return { code: 404, message: 'Relation between student and class not found' };
         }
-    
-        const student = await User.findOne({ where: { id: classroomStudent.studentId } });
+
+        const student = await User.findOne({ where: { id: classroomStudent.studentId }, transaction: t });
         if (!student) {
+            await t.rollback();
             return { code: 404, message: 'Student not found' };
         }
 
-        const classroom = await Classroom.findOne({ where: { id: classroomId } });
-        if (!classroom) {
-            return { code: 404, message: 'Classroom not found' };
-        }
-        if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
-            return { code: 404, message: 'Classroom is not active any more' };
+        let updatedClassroomStudent = {};
+        let updatedStudent = {};
+        let updateData = {};
+
+        if (classroomId) {
+            const classroom = await Classroom.findOne({ where: { id: classroomId }, transaction: t });
+            if (!classroom) {
+                await t.rollback();
+                return { code: 404, message: 'Classroom not found' };
+            }
+            if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+                await t.rollback();
+                return { code: 404, message: 'Classroom is not active anymore' };
+            }
+            const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId: classroomStudent.studentId }, transaction: t });
+            if (existingClassroomStudent) {
+                await t.rollback();
+                return { code: 409, message: 'Conflict: Classroom student already exists' };
+            }
+            updatedClassroomStudent = await classroomStudent.update({ classroomId: classroomId }, { transaction: t });
         }
 
-        const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId: classroomStudent.studentId } });
-        if (existingClassroomStudent) {
-            return { code: 409 };
+        if (email) {
+            const isEmailRegistered = await User.findOne({ where: { email }, transaction: t });
+            if (isEmailRegistered) {
+                await t.rollback();
+                return { code: 409, message: 'Conflict: Email already registered' };
+            }
+            updateData.email = email;
+        }
+        if (name) updateData.name = name;
+        if (image) updateData.image = image;
+
+        if (Object.keys(updateData).length > 0) {
+            updatedStudent = await student.update(updateData, { transaction: t });
         }
 
-        const updatedClassroomStudent = await classroomStudent.update({classroomId: classroomId});
-
-        const updatedStudent = await student.update({ name, email, image });
         const { name: updatedName, email: updatedEmail, image: updatedImage } = updatedStudent.toJSON();
         const { classroomId: updatedClassroomId } = updatedClassroomStudent.toJSON();
+
+        // Commit the transaction
+        await t.commit();
 
         return { 
             code: 200, 
             data: {
                 id: classroomStudent.studentId, name: updatedName, email: updatedEmail, image: updatedImage,
                 classroomId: updatedClassroomId
-            }};
+            }
+        };
     } catch (error) {
+        // Rollback the transaction if any error occurs
+        await t.rollback();
         console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while updating classroom student');
-        return { code: 500 };
+        return { code: 500, message: error.message };
     }
 }
 
