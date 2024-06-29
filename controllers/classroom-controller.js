@@ -157,8 +157,8 @@ const getClassroomStudents = async (req, res) => {
 
 const addStudentToClassroom = async (req, res) => {
     try {
-        const { classroomId, studentId } = req.body;
-        const reply = await classroomService.addStudentToClassroom({ classroomId, studentId });
+        const { classroomId, email } = req.body;
+        const reply = await classroomService.addStudentToClassroom({ classroomId, email });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);

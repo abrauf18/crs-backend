@@ -501,7 +501,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
     }
 }
 
-const addStudentToClassroom = async ({ classroomId, studentId }) => {
+const addStudentToClassroom = async ({ classroomId, email }) => {
     try {
         const classroom = await Classroom.findOne({ where: { id: classroomId } });
         if (!classroom) {
@@ -511,13 +511,13 @@ const addStudentToClassroom = async ({ classroomId, studentId }) => {
             return { code: 400, message: 'Classroom is not active any more' };
         }
 
-        const student = await User.findOne({ where: { id: studentId } });
+        const student = await User.findOne({ where: { email: email } });
         if (!student) {
             return { code: 405 };
         }
         
         const existingClassroomStudent = await ClassroomStudent.findOne({ 
-            where: { studentId },
+            where: { studentId: student.id },
             include: [
                 {
                     model: Classroom,
@@ -530,7 +530,7 @@ const addStudentToClassroom = async ({ classroomId, studentId }) => {
             return { code: 409, message: `Student is already enrolled in ${existingClassroomStudent.classroom.name}` };
         }
 
-        const classroomStudent = await ClassroomStudent.create({ classroomId, studentId });
+        const classroomStudent = await ClassroomStudent.create({ classroomId: classroomId, studentId: student.id });
 
         return { code: 200, data: classroomStudent };
     } catch (error) {
