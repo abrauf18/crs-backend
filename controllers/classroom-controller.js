@@ -207,8 +207,8 @@ const removeStudentFromClassroom = async (req, res) => {
 
 const updateClassroomStudent = async (req, res) => {
     try {
-        const { classroomStudentId, name, email, classroomId, image } = req.body;
-        const reply = await classroomService.updateClassroomStudent({ classroomStudentId, name, email, classroomId, image });
+        const { studentId, name, email, classroomId, image } = req.body;
+        const reply = await classroomService.updateClassroomStudent({ studentId, name, email, classroomId, image });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);

@@ -565,17 +565,11 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
     }
 }
 
-const updateClassroomStudent = async ({ classroomStudentId, name, email, classroomId, image }) => {
+const updateClassroomStudent = async ({ studentId, name, email, classroomId, image }) => {
     const t = await sequelize.transaction();
 
     try {
-        const classroomStudent = await ClassroomStudent.findOne({ where: { id: classroomStudentId }, transaction: t });
-        if (!classroomStudent) {
-            await t.rollback();
-            return { code: 404, message: 'Relation between student and class not found' };
-        }
-
-        const student = await User.findOne({ where: { id: classroomStudent.studentId }, transaction: t });
+        const student = await User.findOne({ where: { id: studentId }, transaction: t });
         if (!student) {
             await t.rollback();
             return { code: 404, message: 'Student not found' };
@@ -595,12 +589,12 @@ const updateClassroomStudent = async ({ classroomStudentId, name, email, classro
                 await t.rollback();
                 return { code: 404, message: 'Classroom is not active anymore' };
             }
-            const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId: classroomStudent.studentId }, transaction: t });
+            const existingClassroomStudent = await ClassroomStudent.findOne({ where: { classroomId, studentId }, transaction: t });
             if (existingClassroomStudent) {
                 await t.rollback();
                 return { code: 409, message: 'Conflict: Classroom student already exists' };
             }
-            updatedClassroomStudent = await classroomStudent.update({ classroomId: classroomId }, { transaction: t });
+            updatedClassroomStudent = await existingClassroomStudent.update({ classroomId: classroomId }, { transaction: t });
         }
 
         if (email) {
@@ -627,7 +621,7 @@ const updateClassroomStudent = async ({ classroomStudentId, name, email, classro
         return { 
             code: 200, 
             data: {
-                id: classroomStudent.studentId, name: updatedName, email: updatedEmail, image: updatedImage,
+                id: studentId, name: updatedName, email: updatedEmail, image: updatedImage,
                 classroomId: updatedClassroomId
             }
         };
