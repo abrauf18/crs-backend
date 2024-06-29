@@ -507,7 +507,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
     }
 }
 
-const addStudentToClassroom = async ({ classroomId, email }) => {
+const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
     try {
         const classroom = await Classroom.findOne({ where: { id: classroomId } });
         if (!classroom) {
@@ -523,6 +523,9 @@ const addStudentToClassroom = async ({ classroomId, email }) => {
         }
         if (student.role !== ROLES.STUDENT) {
             return { code: 400, message: 'Only Students are allowed to be added to a classroom' };
+        }
+        if (student.school_id === schoolId) {
+            return { code: 403, message: 'Student does not exist in this school' };
         }
         
         const existingClassroomStudent = await ClassroomStudent.findOne({ 
