@@ -93,7 +93,7 @@ router.put(
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     classroomController.updateClassroomStudent
 )
-router.post(
+router.put(
     "/updateTeacherClassrooms",
     classroomValidation.updateTeacherClassrooms,
     roleBasedAccess.setUser,
