@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     teacherId: {
       type: DataTypes.UUID,
       defaultValue:'',
-      allowNull: false,
+      allowNull: true,
     },
     schoolId: {
       type: DataTypes.UUID,
