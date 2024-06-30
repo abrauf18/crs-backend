@@ -633,21 +633,41 @@ const listTeacher = async (req, res) => {
     // Total count with filtrations
     const totalCount = await Model.User.count({ where: filterCriteria });
 
-    const teachers = await Model.Classroom.findAll({
-      attributes: [
-        [
-          Sequelize.fn("COUNT", Sequelize.col("Classroom.id")),
-          "classroomCount",
-        ],
-      ],
+    // const teachers = await Model.Classroom.findAll({
+    //   attributes: [
+    //     [
+    //       Sequelize.fn("COUNT", Sequelize.col("Classroom.id")),
+    //       "classroomCount",
+    //     ],
+    //   ],
+    //   include: [
+    //     {
+    //       model: Model.User,
+    //       attributes: ["id", "name", "email", "image"],
+    //       where: filterCriteria,
+    //     },
+    //   ],
+    //   group: ["User.id"],
+    //   limit: limit,
+    //   offset: offset,
+    // });
+
+    const teachers = await Model.User.findAll({
+      attributes: ["id", "name", "email", "image"],
+      where: filterCriteria,
       include: [
         {
-          model: Model.User,
-          attributes: ["id", "name", "email", "image"],
-          where: filterCriteria,
+          model: Model.Classroom,
+          attributes: [
+            [
+              Sequelize.fn("COUNT", Sequelize.col("Classroom.id")),
+              "classroomCount",
+            ],
+          ],
+          // group: ["Classroom.teacherId"],
         },
       ],
-      group: ["User.id"],
+      group: ["User.id", "Classroom.id"],
       limit: limit,
       offset: offset,
     });
