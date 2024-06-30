@@ -102,14 +102,9 @@ const schoolDashboard = async (req, res) => {
     });
 
     const totalClassroomCount = await Model.Classroom.count({
-      include: [
-        {
-          model: Model.User,
-          where: {
-            school_id: schoolId,
-          },
-        },
-      ],
+      where: {
+        schoolId: schoolId,
+      },
     });
 
     const getSchoolTeacher = await Model.User.findAll({
