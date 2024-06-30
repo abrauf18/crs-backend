@@ -28,6 +28,13 @@ router.get(
     schoolController.schoolDashboard
 )
 
+router.delete(
+    "/delete-teacher",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]),
+    schoolController.deleteTeacher
+)
+
 router.post('/create-ticket', schoolController.createTicket);
 router.put('/update-ticket', schoolController.updateTicket);
 router.delete('/delete-ticket', schoolController.deleteTicket);
@@ -36,26 +43,26 @@ router.get('/list-ticket', schoolController.listTickets);
 
 
 router.get(
-    '/list-teacher', 
+    '/list-teacher',
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.listTeacher
 );
 router.get('/get-teacher', schoolController.getTeacher);
 router.get(
-    '/get-courses', 
+    '/get-courses',
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.getSchoolCourses
 );
 router.get(
-    '/get-courses-content', 
+    '/get-courses-content',
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.getResourceDetail
 );
 router.get(
-    '/get-resource-result', 
+    '/get-resource-result',
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.getResourceResult

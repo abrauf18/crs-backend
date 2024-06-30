@@ -708,7 +708,7 @@ const getTeacher = async (req, res) => {
       classrooms = await Model.Classroom.findAll({
         where: {
           schoolId: teachers[0].User.school_id,
-          status: CLASSROOM_STATUS.ACTIVE, 
+          status: CLASSROOM_STATUS.ACTIVE,
         }
       });
     }
