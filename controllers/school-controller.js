@@ -14,6 +14,7 @@ const {
   handleErrorResponse,
 } = require("../utils/response-handlers.js");
 const ROLES = require("../models/roles");
+const { required } = require("joi");
 
 const createSchool = async (req, res) => {
   const token = req.params.token;
@@ -645,48 +646,40 @@ const listTeacher = async (req, res) => {
     //       model: Model.User,
     //       attributes: ["id", "name", "email", "image"],
     //       where: filterCriteria,
+    //       required: true
     //     },
     //   ],
+    //   required: true,
     //   group: ["User.id"],
     //   limit: limit,
     //   offset: offset,
     // });
 
+    // First, get the teachers
     const teachers = await Model.User.findAll({
       attributes: ["id", "name", "email", "image"],
       where: filterCriteria,
-      include: [
-        {
-          model: Model.Classroom,
-          attributes: [
-            [
-              Sequelize.fn("COUNT", Sequelize.col("Classroom.id")),
-              "classroomCount",
-            ],
-          ],
-          // group: ["Classroom.teacherId"],
-        },
-      ],
-      group: ["User.id", "Classroom.id"],
       limit: limit,
       offset: offset,
     });
 
-    const transformedTeachers = teachers.map(teacher => {
-      const classroomCount = teacher.Classrooms && teacher.Classrooms.length > 0
-        ? parseInt(teacher.Classrooms[0].dataValues.classroomCount, 10)
-        : 0;
-    
-      return {
-        classroomCount: classroomCount,
-        User: {
-          id: teacher.id,
-          name: teacher.name,
-          email: teacher.email,
-          image: teacher.image
-        }
-      };
-    });
+    // Then, for each teacher, get the count of classrooms
+    for (let teacher of teachers) {
+      const classroomCount = await Model.Classroom.count({
+        where: { teacherId: teacher.id },
+      });
+      teacher.dataValues.classroomCount = classroomCount; // Add the count to the teacher object
+    }
+
+    const transformedData = teachers?.map(user => ({
+      classroomCount: user.dataValues.classroomCount.toString(),
+      User: {
+        id: user.dataValues.id,
+        name: user.dataValues.name,
+        email: user.dataValues.email,
+        image: user.dataValues.image
+      }
+    }));
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -700,7 +693,7 @@ const listTeacher = async (req, res) => {
     };
 
     const response = {
-      teachers: transformedTeachers,
+      teachers: transformedData || [],
       pagination,
     };
     return successResponse(res, 200, "Teachers fetched successfully", response);
@@ -712,7 +705,7 @@ const listTeacher = async (req, res) => {
 const getTeacher = async (req, res) => {
   try {
     let { teacherId } = req.query;
-
+    const { school_id } = req.user;
     if (!teacherId) {
       return successResponse(res, 400, "Missing Required Fields");
     }
@@ -735,14 +728,12 @@ const getTeacher = async (req, res) => {
     });
 
     let classrooms = []
-    if (teachers.length > 0) {
-      classrooms = await Model.Classroom.findAll({
-        where: {
-          schoolId: teachers[0].User.school_id,
-          status: CLASSROOM_STATUS.ACTIVE,
-        }
-      });
-    }
+    classrooms = await Model.Classroom.findAll({
+      where: {
+        schoolId: school_id,
+        status: CLASSROOM_STATUS.ACTIVE,
+      }
+    });
 
     const response = {
       teachers,
