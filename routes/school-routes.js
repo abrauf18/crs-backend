@@ -48,7 +48,11 @@ router.get(
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.listTeacher
 );
-router.get('/get-teacher', schoolController.getTeacher);
+router.get('/get-teacher',
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]),
+    schoolController.getTeacher
+);
 router.get(
     '/get-courses',
     roleBasedAccess.setUser,
