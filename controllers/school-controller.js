@@ -850,12 +850,10 @@ const getResourceDetail = async (req, res) => {
         {
           model: Model.Video,
           as: "video",
-          required: true,
         },
         {
           model: Model.AssessmentResourcesDetail,
           as: "AssessmentResourcesDetail",
-          required: true,
         }
       );
     }
