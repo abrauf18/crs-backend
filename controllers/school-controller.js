@@ -672,6 +672,22 @@ const listTeacher = async (req, res) => {
       offset: offset,
     });
 
+    const transformedTeachers = teachers.map(teacher => {
+      const classroomCount = teacher.Classrooms && teacher.Classrooms.length > 0
+        ? parseInt(teacher.Classrooms[0].dataValues.classroomCount, 10)
+        : 0;
+    
+      return {
+        classroomCount: classroomCount,
+        User: {
+          id: teacher.id,
+          name: teacher.name,
+          email: teacher.email,
+          image: teacher.image
+        }
+      };
+    });
+
     const totalPages = Math.ceil(totalCount / limit);
 
     const pagination = {
@@ -684,7 +700,7 @@ const listTeacher = async (req, res) => {
     };
 
     const response = {
-      teachers,
+      teachers: transformedTeachers,
       pagination,
     };
     return successResponse(res, 200, "Teachers fetched successfully", response);
