@@ -697,7 +697,7 @@ const getTeacher = async (req, res) => {
         },
         {
           model: Model.User,
-          attributes: ["id", "name", "email", "image"],
+          attributes: ["id", "name", "email", "image", "school_id"],
           where: {
             id: teacherId,
           },
@@ -705,7 +705,21 @@ const getTeacher = async (req, res) => {
       ],
     });
 
-    return successResponse(res, 200, "Teachers fetched successfully", teachers);
+    let classrooms = []
+    if (teachers.length > 0) {
+      classrooms = await Model.Classroom.findAll({
+        where: {
+          schoolId: teachers[0].User.school_id
+        }
+      });
+    }
+
+    const response = {
+      teachers,
+      classrooms
+    }
+
+    return successResponse(res, 200, "Teachers fetched successfully", response);
   } catch (error) {
     return failureResponse(res, 500, error.message);
   }
