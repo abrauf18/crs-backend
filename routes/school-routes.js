@@ -42,9 +42,24 @@ router.get(
     schoolController.listTeacher
 );
 router.get('/get-teacher', schoolController.getTeacher);
-router.get('/get-courses', schoolController.getSchoolCourses);
-router.get('/get-courses-content', schoolController.getResourceDetail);
-router.get('/get-resource-result', schoolController.getResourceResult);
+router.get(
+    '/get-courses', 
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    schoolController.getSchoolCourses
+);
+router.get(
+    '/get-courses-content', 
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    schoolController.getResourceDetail
+);
+router.get(
+    '/get-resource-result', 
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    schoolController.getResourceResult
+);
 router.post("/place-order", stripe.stripeRedirection);
 router.post("/webhook", stripe.stripeNotification);
 

@@ -395,6 +395,7 @@ const schoolDashboard = async (req, res) => {
 
     // Sum up total weightage and obtained weightage for all classes
     Object.values(classroomsData).forEach((classData) => {
+      console.log('\n\n\n\n ',classData)
       totalSchoolWeightage += classData.totalWeightage;
       totalSchoolObtainedWeightage += classData.obtainedWeightage;
       console.log(totalSchoolWeightage, totalSchoolObtainedWeightage);
@@ -405,7 +406,7 @@ const schoolDashboard = async (req, res) => {
       totalClasses > 0 ? totalSchoolWeightage / totalClasses : 0;
     const schoolObtainedWeightage =
       totalClasses > 0 ? totalSchoolObtainedWeightage / totalClasses : 0;
-
+    console.log('\n\n\n\n ', totalSchoolWeightage, totalSchoolObtainedWeightage, totalClasses);
 
     const users = await Model.User.findAll({});
 
@@ -450,8 +451,8 @@ const schoolDashboard = async (req, res) => {
       getSchoolTeacher: getSchoolTeacher,
       getSchoolTickets: getSchoolTickets,
       overAllPerformance: classroomsData,
-      totalWeightage: schoolTotalWeightage,
-      obtainedWeightage: schoolObtainedWeightage,
+      totalWeightage: schoolTotalWeightage.toFixed(1),
+      obtainedWeightage: schoolObtainedWeightage.toFixed(1),
       usersJoining: cumulativeResults,
       usersCount: users.length,
 
@@ -776,8 +777,8 @@ const getSchoolCourses = async (req, res) => {
 
     const standardsSet = new Map();
 
-    course.forEach((classItem) => {
-      classItem.classroomCourses.forEach((course) => {
+    course?.forEach((classItem) => {
+      classItem?.classroomCourses?.forEach((course) => {
         const standard = course.standard;
         if (standard && !standardsSet.has(standard.id)) {
           standardsSet.set(standard.id, standard);
