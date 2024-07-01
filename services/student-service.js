@@ -33,17 +33,17 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     return true;
 }
 
-async function checkStudentAndStandard({role, studentId, standardId}) {
+async function checkStudentAndStandard({ role, studentId, standardId }) {
     const student = await User.findByPk(studentId);
     if (!student) {
-        return { code: 404, message: 'Student not found'};
+        return { code: 404, message: 'Student not found' };
     }
 
     const standard = await Standard.findByPk(standardId);
     if (!standard) {
-        return { code: 404, message: 'Standard not found'};
+        return { code: 404, message: 'Standard not found' };
     }
-    
+
     const studentData = await ClassroomStudent.findOne({
         where: {
             studentId: studentId,
@@ -81,7 +81,7 @@ const getStudentCurrentStandards = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const currentClassroom = await Classroom.findOne({
@@ -92,15 +92,15 @@ const getStudentCurrentStandards = async ({ studentId }) => {
                     where: {
                         studentId: studentId,
                     },
-                }, 
+                },
                 {
                     model: ClassroomCourses,
                     as: 'classroomCourses',
                     include: [{
                         model: Standard,
                         as: 'standard',
-                        include: [{ 
-                            model: DailyUpload, 
+                        include: [{
+                            model: DailyUpload,
                             as: 'dailyUploads',
                             attributes: ['id'],
                             include: [{
@@ -121,7 +121,7 @@ const getStudentCurrentStandards = async ({ studentId }) => {
             const totalVideoUploads = course.standard.dailyUploads.reduce((count, upload) => {
                 return count + (upload.resource.type === 'video' ? 1 : 0);
             }, 0);
-        
+
             return {
                 id: course.standard.id,
                 courseLength: course.standard.courseLength,
@@ -142,8 +142,8 @@ const getStudentCurrentStandards = async ({ studentId }) => {
 
 const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
     try {
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
@@ -177,7 +177,7 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
             });
 
             if (!video) {
-                return { code: 404, message: 'Video not found'};
+                return { code: 404, message: 'Video not found' };
             }
 
             const transformedQuestions = video.questions.map(question => {
@@ -200,7 +200,7 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
                     video: { ...videoData, lastSeenTime: watchedVideo.last_seen_time, name: resource.name, videoUrl: resource.url, questions: transformedQuestions, topics }
                 }
             };
-            
+
         } else {
             const video = await Video.findOne({
                 where: { id: videoId },
@@ -215,11 +215,11 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
                 }],
                 group: ['Video.id', 'resource.id', 'questions.id'],
             });
-    
+
             if (!video) {
-                return { code: 404, message: 'Video not found'};
+                return { code: 404, message: 'Video not found' };
             }
-    
+
             const { resource, questions, topics, ...videoData } = video.get({ plain: true });
 
             return {
@@ -240,15 +240,15 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
-            return { code: 404, message: 'Video not found'};
+            return { code: 404, message: 'Video not found' };
         }
 
         if (compareTimes(last_seen_time, video.duration) > 0) {
             return { code: 400 };
         }
 
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
@@ -275,7 +275,7 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
             standardId: standardId
         });
 
-        return { code: 200, data: videotracking};
+        return { code: 200, data: videotracking };
     } catch (error) {
         console.log('\n\n\n\n', error)
         logger.error(error?.message || 'An error occurred while storing the video');
@@ -285,8 +285,8 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
 
 const getStudentStandard = async ({ role, standardId, studentId }) => {
     try {
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
@@ -309,7 +309,7 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
                                 as: 'videoTrackings',
                                 required: false,
                                 attributes: ['id', 'watchedCompletely'],
-                                where: { 
+                                where: {
                                     studentId: studentId,
                                     standardId: standardId
                                 }
@@ -374,11 +374,11 @@ const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardI
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
-            return { code: 404, message: 'Video not found'};
+            return { code: 404, message: 'Video not found' };
         }
 
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
@@ -402,8 +402,8 @@ const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardI
                 last_seen_time: last_seen_time,
                 watchedCompletely: watchedCompletely,
             });
-    
-            return { code: 200, data: newVideotracking};
+
+            return { code: 200, data: newVideotracking };
         }
 
         const updatedVideoTracking = await videoTracking.update({
@@ -423,11 +423,11 @@ const UpdateStudentVideoLastSeenTime = async ({ role, videoId, studentId, standa
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
-            return { code: 404, message: 'Video not found'};
+            return { code: 404, message: 'Video not found' };
         }
 
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
@@ -450,8 +450,8 @@ const UpdateStudentVideoLastSeenTime = async ({ role, videoId, studentId, standa
                 standardId: standardId,
                 last_seen_time: last_seen_time,
             });
-    
-            return { code: 200, data: newVideotracking};
+
+            return { code: 200, data: newVideotracking };
         }
 
         const updatedVideoTracking = await videoTracking.update({
@@ -470,11 +470,11 @@ const SaveOrRemoveVideo = async ({ role, videoId, studentId, standardId, save })
     try {
         const video = await Video.findByPk(videoId);
         if (!video) {
-            return { code: 404, message: 'Video not found'};
+            return { code: 404, message: 'Video not found' };
         }
 
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
@@ -504,7 +504,7 @@ const SaveOrRemoveVideo = async ({ role, videoId, studentId, standardId, save })
             saved: save,
         });
 
-        return { code: 200, data: videotracking};
+        return { code: 200, data: videotracking };
     } catch (error) {
         console.log('\n\n\n\n', error)
         logger.error(error?.message || 'An error occurred while storing the video');
@@ -516,7 +516,7 @@ const getSavedVideos = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         // const videoTrackingData = await VideoTracking.findAll({
@@ -592,7 +592,7 @@ const getSavedVideos = async ({ studentId }) => {
         //     }
         //     return grouped;
         // }, []);
-        
+
         // const sortedGroupedVideos = groupedVideos.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
 
         const data = await Video.sequelize.query(`SELECT  
@@ -626,10 +626,10 @@ const getSavedVideos = async ({ studentId }) => {
                                                 VT."saved" = true AND '${studentId}' = VT."studentId" AND C."status" = 'active'
                                             GROUP BY 
                                                 V."id", R."name", VT."last_seen_time", V."thumbnailURL", V."duration", DU."accessDate", VT."watchedCompletely", DU."standardId";`
-                                        );
+        );
 
         const transformedData = data[0].map(item => {
-            const {topics, ...other} = item;
+            const { topics, ...other } = item;
             const topicCount = Object.keys(topics).length;
             return { ...other, topicCount };
         });
@@ -644,7 +644,7 @@ const getSavedVideos = async ({ studentId }) => {
             }
             return grouped;
         }, []);
-        
+
         const sortedGroupedVideos = groupedVideos.sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
 
         return { code: 200, data: sortedGroupedVideos };
@@ -774,8 +774,8 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
                     model: Resource,
                     as: 'resource',
                     attributes: ['id', 'name', 'type', 'topic', 'url'],
-                    where: { 
-                        type: { [Op.ne]: 'video' } 
+                    where: {
+                        type: { [Op.ne]: 'video' }
                     },
                 }],
             }],
@@ -815,12 +815,12 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
 
 const getStudentProfileStandardResults = async ({ role, studentId, standardId }) => {
     try {
-        const checkActiveStandardResult = await checkStudentAndStandard({role, studentId, standardId});
-        if (checkActiveStandardResult.code !== 200){
+        const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
+        if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
         }
 
-       const standard = await Standard.findByPk(standardId, {
+        const standard = await Standard.findByPk(standardId, {
             attributes: ['id', 'name', 'description', 'courseLength'],
             include: [{
                 model: DailyUpload,
@@ -881,7 +881,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
         // Current date for comparison
         const today = new Date();
 
-        const result = await standard?.get({plain: true});
+        const result = await standard?.get({ plain: true });
 
         if (!result) {
             return {
@@ -905,7 +905,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             let yetToMarkWeightage = 0;
             let unAnsweredWeightage = 0;
 
-            
+
             // Calculate total obtained marks and total possible marks for the video
             if (dailyUpload.resource.video) {
                 let unmarkedQuestionsTotal = 0;
@@ -973,30 +973,30 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
             },
-            attributes: [ "id" ],
-            include: [ 
+            attributes: ["id"],
+            include: [
                 {
                     model: Classroom,
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE },
-                    attributes: [ "id", "name" ],
+                    attributes: ["id", "name"],
                     include: [{
                         model: ClassroomCourses,
                         as: 'classroomCourses',
-                        attributes: [ "id" ],
+                        attributes: ["id"],
                         include: [{
                             model: Standard,
                             as: 'standard',
-                            attributes: [ "id", "name" ],
-                            include: [{ 
-                                model: DailyUpload, 
+                            attributes: ["id", "name"],
+                            include: [{
+                                model: DailyUpload,
                                 as: 'dailyUploads',
                                 attributes: ['id', 'accessDate', 'weightage'],
                                 where: {
@@ -1056,7 +1056,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
         // Current date for comparison
         const today = new Date();
 
-        const result = await data?.get({plain: true});
+        const result = await data?.get({ plain: true });
 
         if (!result || !result.classroom || !result.classroom.classroomCourses) {
             return {
@@ -1069,16 +1069,16 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             const standard = course?.standard;
             let totalWeightage = 0;
             let obtainedWeightage = 0;
-    
+
             standard?.dailyUploads?.forEach(upload => {
                 let totalObtainedMarks = 0;
                 let totalPossibleMarks = 0;
                 const accessDate = new Date(upload.accessDate);
-    
+
                 // Only consider uploads with accessDate < today
                 if (accessDate < today) {
                     totalWeightage += upload.weightage;
-    
+
                     // Process resource's video questions
                     if (upload.resource.video) {
                         totalPossibleMarks = upload.resource.video?.questions?.reduce((total, question) => {
@@ -1090,7 +1090,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                             });
                         });
                     }
-    
+
                     // Process resource's assessment answers
                     if (upload.resource.AssessmentResourcesDetail) {
                         upload.resource.AssessmentResourcesDetail.assessmentAnswers.forEach(answer => {
@@ -1114,19 +1114,19 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             return total + entry.totalWeightage;
         }, 0);
         const averageTotalWeightage = transformedData?.length > 0 ? totalTotalWeightage / transformedData.length : 0;
-        
+
         // Calculate average obtained weightage
         const totalObtainedWeightage = transformedData?.reduce((total, entry) => {
             return total + entry.obtainedWeightage;
         }, 0);
         const averageObtainedWeightage = transformedData?.length > 0 ? totalObtainedWeightage / transformedData.length : 0;
-        
+
         const classroomName = result.classroom.name;
 
         // Find worst performing standard
         let bestPerformingStandard = null;
         let bestPerformingWeightage = -1;
-        
+
         transformedData?.forEach(entry => {
             if (entry.obtainedWeightage > bestPerformingWeightage) {
                 bestPerformingWeightage = entry.obtainedWeightage;
@@ -1159,30 +1159,30 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
             },
-            attributes: [ "id" ],
-            include: [ 
+            attributes: ["id"],
+            include: [
                 {
                     model: Classroom,
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE },
-                    attributes: [ "id", "name" ],
+                    attributes: ["id", "name"],
                     include: [{
                         model: ClassroomCourses,
                         as: 'classroomCourses',
-                        attributes: [ "id" ],
+                        attributes: ["id"],
                         include: [{
                             model: Standard,
                             as: 'standard',
-                            attributes: [ "id", "name" ],
-                            include: [{ 
-                                model: DailyUpload, 
+                            attributes: ["id", "name"],
+                            include: [{
+                                model: DailyUpload,
                                 as: 'dailyUploads',
                                 attributes: ['id', 'accessDate', 'weightage'],
                                 where: {
@@ -1242,7 +1242,7 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
         // Current date for comparison
         const today = new Date();
 
-        const result = await data?.get({plain: true});
+        const result = await data?.get({ plain: true });
 
         if (!result || !result.classroom || !result.classroom.classroomCourses) {
             return {
@@ -1255,16 +1255,16 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
             const standard = course?.standard;
             let totalWeightage = 0;
             let obtainedWeightage = 0;
-    
+
             standard?.dailyUploads?.forEach(upload => {
                 let totalObtainedMarks = 0;
                 let totalPossibleMarks = 0;
                 const accessDate = new Date(upload.accessDate);
-    
+
                 // Only consider uploads with accessDate < today
                 if (accessDate < today) {
                     totalWeightage += upload.weightage;
-    
+
                     // Process resource's video questions
                     if (upload.resource.video) {
                         totalPossibleMarks = upload.resource.video?.questions?.reduce((total, question) => {
@@ -1276,7 +1276,7 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
                             });
                         });
                     }
-    
+
                     // Process resource's assessment answers
                     if (upload.resource.AssessmentResourcesDetail) {
                         upload.resource.AssessmentResourcesDetail.assessmentAnswers.forEach(answer => {
@@ -1300,7 +1300,7 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
             return total + entry.totalWeightage;
         }, 0);
         const averageTotalWeightage = transformedData?.length > 0 ? totalTotalWeightage / transformedData.length : 0;
-        
+
         // Calculate average obtained weightage
         const totalObtainedWeightage = transformedData?.reduce((total, entry) => {
             return total + entry.obtainedWeightage;
@@ -1326,15 +1326,15 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
             },
-            attributes: [ "id" ],
-            include: [ 
+            attributes: ["id"],
+            include: [
                 {
                     model: DailyProgress,
                     attributes: ["id", "classroomStudentId", "obtainedWeightage", "totalWeightage", "date"],
@@ -1344,17 +1344,17 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                     model: Classroom,
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE },
-                    attributes: [ "id", "name" ],
+                    attributes: ["id", "name"],
                     include: [{
                         model: ClassroomCourses,
                         as: 'classroomCourses',
-                        attributes: [ "id" ],
+                        attributes: ["id"],
                         include: [{
                             model: Standard,
                             as: 'standard',
-                            attributes: [ "id", "name" ],
-                            include: [{ 
-                                model: DailyUpload, 
+                            attributes: ["id", "name"],
+                            include: [{
+                                model: DailyUpload,
                                 as: 'dailyUploads',
                                 attributes: ['id', 'accessDate', 'weightage'],
                                 where: {
@@ -1414,8 +1414,8 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
         // Current date for comparison
         const today = new Date();
 
-        const plainStudent = await student.get({plain: true});
-        const result = await data?.get({plain: true});
+        const plainStudent = await student.get({ plain: true });
+        const result = await data?.get({ plain: true });
 
         if (!result || !result.classroom || !result.classroom.classroomCourses) {
             return {
@@ -1428,16 +1428,16 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             const standard = course?.standard;
             let totalWeightage = 0;
             let obtainedWeightage = 0;
-    
+
             standard?.dailyUploads?.forEach(upload => {
                 let totalObtainedMarks = 0;
                 let totalPossibleMarks = 0;
                 const accessDate = new Date(upload.accessDate);
-    
+
                 // Only consider uploads with accessDate < today
                 if (accessDate < today) {
                     totalWeightage += upload.weightage;
-    
+
                     // Process resource's video questions
                     if (upload.resource.video) {
                         totalPossibleMarks = upload.resource.video?.questions?.reduce((total, question) => {
@@ -1449,7 +1449,7 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                             });
                         });
                     }
-    
+
                     // Process resource's assessment answers
                     if (upload.resource.AssessmentResourcesDetail) {
                         upload.resource.AssessmentResourcesDetail.assessmentAnswers.forEach(answer => {
@@ -1473,13 +1473,13 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             return total + entry.totalWeightage;
         }, 0);
         const averageTotalWeightage = transformedData?.length > 0 ? totalTotalWeightage / transformedData.length : 0;
-        
+
         // Calculate average obtained weightage
         const totalObtainedWeightage = transformedData?.reduce((total, entry) => {
             return total + entry.obtainedWeightage;
         }, 0);
         const averageObtainedWeightage = transformedData?.length > 0 ? totalObtainedWeightage / transformedData.length : 0;
-        
+
         const classroomName = result.classroom.name;
 
         const { name, email, image } = plainStudent;
@@ -1487,10 +1487,10 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
         return {
             code: 200,
             data: {
-                student: { 
-                    name: name, 
-                    email: email, 
-                    image: image, 
+                student: {
+                    name: name,
+                    email: email,
+                    image: image,
                     classroomName: classroomName,
                     classroomStudentId: result.id,
                     averageTotalWeightage: parseFloat(averageTotalWeightage.toFixed(1)),
@@ -1511,19 +1511,19 @@ const getStudentNameEmailForTeacher = async ({ studentId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
-        const plainStudent = await student.get({plain: true});
+        const plainStudent = await student.get({ plain: true });
 
         const { name, email } = plainStudent;
 
         return {
             code: 200,
             data: {
-                student: { 
-                    name: name, 
-                    email: email, 
+                student: {
+                    name: name,
+                    email: email,
                 }
             }
         };
@@ -1534,13 +1534,13 @@ const getStudentNameEmailForTeacher = async ({ studentId }) => {
     }
 }
 
-const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) => {
+const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }) => {
     const transaction = await sequelize.transaction();
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
             await transaction.rollback();
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const results = [];
@@ -1548,57 +1548,57 @@ const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) 
         if (targetType === 'videoQuestion') {
             for (const [targetId, marks] of Object.entries(idsAndMarks)) {
                 const videoQuestion = await Question.findByPk(targetId);
-                
+
                 if (!videoQuestion) {
                     await transaction.rollback();
-                    return { code: 404, message: `Video question with Id: ${targetId} not found`};
+                    return { code: 404, message: `Video question with Id: ${targetId} not found` };
                 }
 
                 const videoQuestionAnswer = await VideoQuestionAnswer.findOne({
                     where: {
-                        userId: studentId, 
+                        userId: studentId,
                         questionId: videoQuestion.id
                     }
                 });
 
                 if (!videoQuestionAnswer) {
                     await transaction.rollback();
-                    return { code: 404, message: `Answer of question with this statement: ${videoQuestion.statement} not found`};
+                    return { code: 404, message: `Answer of question with this statement: ${videoQuestion.statement} not found` };
                 }
 
                 if (marks > videoQuestion.totalMarks) {
                     await transaction.rollback();
-                    return { code: 400, message: `Obtained Marks of question with this statement: ${videoQuestion.statement} are exceeding Total Marks`};
+                    return { code: 400, message: `Obtained Marks of question with this statement: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
 
                 const updatedAnswer = await videoQuestionAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
                 results.push(updatedAnswer);
             }
-        } 
+        }
         else {
-            for (const [targetId, marks] of Object.entries(idsAndMarks)) {  
+            for (const [targetId, marks] of Object.entries(idsAndMarks)) {
                 const assessment = await AssessmentResourcesDetail.findByPk(targetId);
 
                 if (!assessment) {
                     await transaction.rollback();
-                    return { code: 404, message: `Assessment with Id: ${targetId} not found`};
+                    return { code: 404, message: `Assessment with Id: ${targetId} not found` };
                 }
 
                 const assessmentAnswer = await AssessmentAnswer.findOne({
                     where: {
-                        userId: studentId, 
+                        userId: studentId,
                         assessmentResourcesDetailId: assessment.id
                     }
                 });
 
                 if (!assessmentAnswer) {
                     await transaction.rollback();
-                    return { code: 404, message: 'Answer of this Assessment not found'};
+                    return { code: 404, message: 'Answer of this Assessment not found' };
                 }
 
                 if (marks > assessment.totalMarks) {
                     await transaction.rollback();
-                    return { code: 400, message: 'Obtained Marks are exceeding Total Marks'};
+                    return { code: 400, message: 'Obtained Marks are exceeding Total Marks' };
                 }
 
                 const updatedAnswer = await assessmentAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
@@ -1610,7 +1610,7 @@ const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) 
             code: 200,
             data: results
         };
-        
+
     } catch (error) {
         await transaction.rollback();
         console.log('\n\n\n\n', error)
@@ -1619,11 +1619,11 @@ const assignMarksToStudentAnswer = async ({targetType, studentId, idsAndMarks}) 
     }
 }
 
-const getStudentAssessmentAnswer = async ({studentId, assessmentDetailId}) => {
+const getStudentAssessmentAnswer = async ({ studentId, assessmentDetailId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
-            return { code: 404, message: 'Student not found'};
+            return { code: 404, message: 'Student not found' };
         }
 
         const assessmentAnswer = await AssessmentResourcesDetail.findOne({
@@ -1633,12 +1633,13 @@ const getStudentAssessmentAnswer = async ({studentId, assessmentDetailId}) => {
             include: [{
                 model: AssessmentAnswer,
                 as: 'assessmentAnswers',
+                where: { userId: student.id },
                 required: true
             }]
         })
 
         if (!assessmentAnswer) {
-            return { code: 404, message: 'Students answer to this assessment not found'};
+            return { code: 404, message: 'Students answer to this assessment not found' };
         }
 
         return {
@@ -1658,23 +1659,23 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
     try {
         const teacher = await User.findByPk(teacherId);
         if (!teacher) {
-            return { code: 404, message: 'Teacher not found'};
+            return { code: 404, message: 'Teacher not found' };
         }
 
         const data = await Classroom.findAll({
             where: { status: CLASSROOM_STATUS.ACTIVE, teacherId: teacherId },
-            attributes: [ "id", "name" ],
+            attributes: ["id", "name"],
             include: [
                 {
                     model: ClassroomCourses,
                     as: 'classroomCourses',
-                    attributes: [ "id" ],
+                    attributes: ["id"],
                     include: [{
                         model: Standard,
                         as: 'standard',
-                        attributes: [ 'id', 'name' ],
-                        include: [{ 
-                            model: DailyUpload, 
+                        attributes: ['id', 'name'],
+                        include: [{
+                            model: DailyUpload,
                             as: 'dailyUploads',
                             attributes: ['id', 'accessDate', 'weightage'],
                             where: {
@@ -1733,7 +1734,7 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                                         model: Resource,
                                         as: 'resource',
                                         attributes: ['id', 'name', 'type', 'topic', 'url'],
-                                        include:[{
+                                        include: [{
                                             model: DailyUpload,
                                             as: 'DailyUpload',
                                             attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
@@ -1753,13 +1754,13 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                                     include: [
                                         {
                                             model: Video,
-                                             as: 'video',
+                                            as: 'video',
                                             attributes: ['id', 'resourceId'],
                                             include: [{
                                                 model: Resource,
                                                 as: 'resource',
                                                 attributes: ['id', 'name', 'type', 'topic', 'url'],
-                                                include:[{
+                                                include: [{
                                                     model: DailyUpload,
                                                     as: 'DailyUpload',
                                                     attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
@@ -1779,125 +1780,175 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-    
         const transformedData = data?.map(classItem => {
             const standardsMap = new Map();
             const currentDate = new Date();
-          
+        
+            // Iterate over each course in the classroom to map standards
             classItem.classroomCourses?.forEach(course => {
-              const standard = course.standard;
-              if (standard) {
-                if (!standardsMap.has(standard.id)) {
-                  standardsMap.set(standard.id, {
-                    standardId: standard.id,
-                    standardName: standard.name,
-                    currentTotalWeightage: 0,
-                    usersWeightage: [],
-                    studentWeightageDistribution: {
-                      '0-25': 0,
-                      '25-50': 0,
-                      '50-75': 0,
-                      '75-100': 0
-                    }
-                  });
-                }
-          
-                const standardEntry = standardsMap.get(standard.id);
-          
-                if (standard.dailyUploads && standard.dailyUploads.length > 0) {
-                  standardEntry.currentTotalWeightage += standard.dailyUploads
-                    .filter(upload => new Date(upload.accessDate) < currentDate)
-                    .reduce((acc, upload) => acc + upload.weightage, 0);
-                }
-              }
-            });
-          
-            classItem.classroomStudents?.forEach(student => {
-              classItem.classroomCourses?.forEach(course => {
                 const standard = course.standard;
                 if (standard) {
-                  const standardEntry = standardsMap.get(standard.id);
-          
-                  // Ensure the student is present in the usersWeightage array
-                  let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
-                  if (!userEntry) {
-                    userEntry = {
-                      userId: student.student.id,
-                      userName: student.student.name,
-                      obtainedWeightage: 0
-                    };
-                    standardEntry.usersWeightage.push(userEntry);
-                  }
-          
-                  student.student.VideoQuestionAnswers?.forEach(answer => {
-                    const videoQuestion = answer.question;
-                    if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
-                      const dailyUpload = videoQuestion.video.resource.DailyUpload;
-                      if (new Date(dailyUpload.accessDate) < currentDate) {
-                        const obtainedWeightage = (answer.obtainedMarks / videoQuestion.totalMarks) * dailyUpload.weightage;
-                        userEntry.obtainedWeightage += obtainedWeightage;
-                      }
+                    // If the standard is not already in the map, add it
+                    if (!standardsMap.has(standard.id)) {
+                        standardsMap.set(standard.id, {
+                            standardId: standard.id,
+                            standardName: standard.name,
+                            currentTotalWeightage: 0,
+                            usersWeightage: [],
+                            studentWeightageDistribution: {
+                                '0-25': 0,
+                                '25-50': 0,
+                                '50-75': 0,
+                                '75-100': 0
+                            },
+                            averageObtainedWeightage: 0  // Default value set to 0
+                        });
                     }
-                  });
-          
-                  student.student.AssessmentAnswers?.forEach(answer => {
-                    const assessmentResource = answer.assessmentResourcesDetail;
-                    if (assessmentResource.resource.DailyUpload) {
-                      const dailyUpload = assessmentResource.resource.DailyUpload;
-                      if (new Date(dailyUpload.accessDate) < currentDate) {
-                        const obtainedWeightage = (answer.obtainedMarks / assessmentResource.totalMarks) * dailyUpload.weightage;
-                        userEntry.obtainedWeightage += obtainedWeightage;
-                      }
+        
+                    const standardEntry = standardsMap.get(standard.id);
+        
+                    // Calculate the total weightage for the standard based on daily uploads up to today
+                    if (standard.dailyUploads && standard.dailyUploads.length > 0) {
+                        standardEntry.currentTotalWeightage += standard.dailyUploads
+                            .filter(upload => new Date(upload.accessDate) <= currentDate)
+                            .reduce((acc, upload) => acc + upload.weightage, 0);
                     }
-                  });
                 }
-              });
             });
-          
-            // Calculate the average obtained weightage for each standard and student distribution
+        
+            // Iterate over each student in the classroom to calculate obtained weightage
+            classItem.classroomStudents?.forEach(student => {
+                classItem.classroomCourses?.forEach(course => {
+                    const standard = course.standard;
+                    if (standard) {
+                        const standardEntry = standardsMap.get(standard.id);
+        
+                        // Ensure the student is present in the usersWeightage array
+                        let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+                        if (!userEntry) {
+                            userEntry = {
+                                userId: student.student.id,
+                                userName: student.student.name,
+                                obtainedWeightage: 0,
+                                questionsDetails: []
+                            };
+                            standardEntry.usersWeightage.push(userEntry);
+                        }
+        
+                        // Track total marks and obtained marks for video questions
+                        const videoWeightages = new Map();
+                        student.student.VideoQuestionAnswers?.forEach(answer => {
+                            const videoQuestion = answer.question;
+                            if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
+                                const dailyUpload = videoQuestion.video.resource.DailyUpload;
+                                if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+                                    const videoId = videoQuestion.video.id;
+                                    if (!videoWeightages.has(videoId)) {
+                                        videoWeightages.set(videoId, {
+                                            totalMarks: 0,
+                                            obtainedMarks: 0,
+                                            weightage: dailyUpload.weightage
+                                        });
+                                    }
+                                    const questionTotalMarks = videoQuestion.totalMarks;
+                                    const questionObtainedMarks = Math.max(answer.obtainedMarks, 0);
+                                    videoWeightages.get(videoId).totalMarks += questionTotalMarks;
+                                    videoWeightages.get(videoId).obtainedMarks += questionObtainedMarks;
+        
+                                    userEntry.questionsDetails.push({
+                                        id: videoQuestion.id,
+                                        statement: videoQuestion.statement,
+                                        answer: answer.answer,
+                                        totalMarks: questionTotalMarks,
+                                        obtainedMarks: questionObtainedMarks
+                                    });
+                                }
+                            }
+                        });
+        
+                        // Calculate weightage for each video based on total marks and obtained marks of its questions
+                        videoWeightages.forEach((video, videoId) => {
+                            const weightage = video.weightage;
+                            const totalMarks = video.totalMarks;
+                            const obtainedMarks = video.obtainedMarks;
+                            const videoWeightage = (obtainedMarks / totalMarks) * weightage;
+                            userEntry.obtainedWeightage += videoWeightage;
+                        });
+        
+                        // Calculate obtained weightage from assessment answers
+                        student.student.AssessmentAnswers?.forEach(answer => {
+                            const assessmentResource = answer.assessmentResourcesDetail;
+                            if (assessmentResource.resource.DailyUpload) {
+                                const dailyUpload = assessmentResource.resource.DailyUpload;
+                                if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+                                    const weightage = dailyUpload.weightage;
+                                    const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+                                    const questionWeightage = (obtainedMarks / assessmentResource.totalMarks) * weightage;
+                                    userEntry.obtainedWeightage += questionWeightage;
+        
+                                    userEntry.questionsDetails.push({
+                                        id: assessmentResource.id,
+                                        statement: assessmentResource.statement,
+                                        answer: answer.answer,
+                                        totalMarks: assessmentResource.totalMarks,
+                                        obtainedMarks: obtainedMarks
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        
+            // Calculate the average obtained weightage and student distribution for each standard
             standardsMap?.forEach(standardEntry => {
-              const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
-              standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
-          
-              // Calculate student distribution for obtained weightage ranges
-              standardEntry.usersWeightage?.forEach(user => {
-                if (user.obtainedWeightage < 25) {
-                  standardEntry.studentWeightageDistribution['0-25']++;
-                } else if (user.obtainedWeightage < 50) {
-                  standardEntry.studentWeightageDistribution['25-50']++;
-                } else if (user.obtainedWeightage < 75) {
-                  standardEntry.studentWeightageDistribution['50-75']++;
-                } else {
-                  standardEntry.studentWeightageDistribution['75-100']++;
+                const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
+                standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
+        
+                // Check if averageObtainedWeightage is null and set it to 0
+                if (isNaN(standardEntry.averageObtainedWeightage)) {
+                    standardEntry.averageObtainedWeightage = 0;
                 }
-              });
+        
+                // Calculate student distribution for obtained weightage ranges
+                standardEntry.usersWeightage?.forEach(user => {
+                    if (user.obtainedWeightage < 25) {
+                        standardEntry.studentWeightageDistribution['0-25']++;
+                    } else if (user.obtainedWeightage < 50) {
+                        standardEntry.studentWeightageDistribution['25-50']++;
+                    } else if (user.obtainedWeightage < 75) {
+                        standardEntry.studentWeightageDistribution['50-75']++;
+                    } else {
+                        standardEntry.studentWeightageDistribution['75-100']++;
+                    }
+                });
             });
-          
+        
             // Calculate the total obtained score for each student and the overall average
             const studentsData = classItem.classroomStudents?.map(student => {
-              const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
-                const userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
-                return acc + (userEntry ? userEntry.obtainedWeightage : 0);
-              }, 0);
-              return {
-                userId: student.student.id,
-                userName: student.student.name,
-                userEmail: student.student.email,
-                image: student.student.image,
-                totalObtainedScore: totalObtainedScore / standardsMap.size,
+                const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
+                    const userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+                    return acc + (userEntry ? userEntry.obtainedWeightage : 0);
+                }, 0);
+                return {
+                    userId: student.student.id,
+                    userName: student.student.name,
+                    userEmail: student.student.email,
+                    image: student.student.image,
+                    totalObtainedScore: totalObtainedScore / standardsMap.size,
+                    classId: classItem.id,
+                    className: classItem.name,
+                };
+            });
+        
+            return {
                 classId: classItem.id,
                 className: classItem.name,
-              };
-            });
-          
-            return {
-              classId: classItem.id,
-              className: classItem.name,
-              standardList: Array.from(standardsMap.values()),
-              studentsData
+                standardList: Array.from(standardsMap.values()),
+                studentsData
             };
-          });
-        
+        });        
+
         return {
             code: 200,
             data: transformedData
