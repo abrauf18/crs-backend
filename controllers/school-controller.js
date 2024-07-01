@@ -304,22 +304,24 @@ const schoolDashboard = async (req, res) => {
             // Sum obtained weightage and obtained marks for VideoQuestionAnswers
             studentVideoAnswers.forEach((answer) => {
               const videoQuestion = answer.question;
-              let obtainedMarks = answer.obtainedMarks;
-              if (obtainedMarks < 0) {
-                obtainedMarks = 0; // Consider obtained marks as 0 if less than 0
+              const video = videoQuestion?.video;
+              const dailyUpload = video?.resource?.DailyUpload;
+
+              if (dailyUpload && new Date(dailyUpload.accessDate) < new Date()) {
+                  const videoQuestions = video.questions;
+                  const totalVideoObtainedMarks = videoQuestions.reduce(
+                      (acc, q) => acc + (q.VideoQuestionAnswer?.obtainedMarks === -1 ? 0 : q.VideoQuestionAnswer?.obtainedMarks || 0),
+                      0
+                  );
+                  const totalVideoMarks = videoQuestions.reduce(
+                      (acc, q) => acc + q.totalMarks,
+                      0
+                  );
+                  const obtainedWeightage = (totalVideoObtainedMarks / totalVideoMarks) * dailyUpload.weightage;
+                  obtainedWeightageSum += obtainedWeightage;
+                  totalObtainedMarks += totalVideoObtainedMarks; // Add to total obtained marks
               }
-              if (
-                videoQuestion?.video?.resource?.DailyUpload?.accessDate &&
-                new Date(videoQuestion.video.resource.DailyUpload.accessDate) <
-                new Date()
-              ) {
-                const obtainedWeightage =
-                  (obtainedMarks / videoQuestion.totalMarks) *
-                  videoQuestion.video.resource.DailyUpload.weightage;
-                obtainedWeightageSum += obtainedWeightage;
-                totalObtainedMarks += obtainedMarks; // Add to total obtained marks
-              }
-            });
+          });
 
             // Sum obtained weightage and obtained marks for AssessmentAnswers
             studentAssessmentAnswers.forEach((answer) => {
