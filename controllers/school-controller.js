@@ -956,6 +956,132 @@ const getResourceDetail = async (req, res) => {
   }
 };
 
+// const getResourceResult = async (req, res) => {
+//   try {
+//     let { resourceId, schoolId } = req.query;
+
+//     const courseDetail = await Model.Resource.findAll({
+//       // attributes: ["id"],
+//       include: [
+//         {
+//           model: Model.Video,
+//           as: "video",
+//           include: [
+//             {
+//               model: Model.Question,
+//               as: "questions",
+//               include: [
+//                 {
+//                   model: Model.VideoQuestionAnswer,
+//                   as: "answers",
+//                   include: [
+//                     {
+//                       model: Model.User,
+//                       as: "user",
+//                       where: {
+//                         school_id: schoolId,
+//                       },
+//                     },
+//                   ],
+//                 },
+//               ],
+//             },
+//           ],
+//         },
+//         {
+//           model: Model.AssessmentResourcesDetail,
+//           as: "AssessmentResourcesDetail",
+//           attributes: ["id", "totalMarks"],
+//           include: [
+//             {
+//               model: Model.AssessmentAnswer,
+//               as: "assessmentAnswers",
+//               attributes: ["id", "obtainedMarks", "answerURL"],
+//               include: [
+//                 {
+//                   model: Model.User,
+//                   as: "user",
+//                   attributes: ["id", "name", "email", "image"],
+//                   where: {
+//                     school_id: schoolId,
+//                   },
+//                 },
+//               ],
+//             },
+//           ],
+//         },
+//       ],
+//       where: {
+//         id: resourceId,
+//       },
+//     });
+
+//     const result = courseDetail.map((resource) => {
+//       let totalObtainedMarks = 0;
+//       let totalPossibleMarks = 0;
+//       let totalVideoAnswers = 0;
+//       let totalAssessmentAnswers = 0;
+//       let totalMarks = 0;
+//       let averageVideoQuestionsMarks = 0;
+//       let obtainedMarks = 0;
+//       let averageObtainedMarks = 0;
+
+
+//       if (resource.video) {
+//         resource.video.questions.forEach((question, index) => {
+//           totalMarks += question.totalMarks;
+//           question.answers.forEach((answer) => {
+//             obtainedMarks = Math.max(answer.obtainedMarks, 0);
+//             totalObtainedMarks += obtainedMarks;
+//             totalVideoAnswers += 1;
+//           });
+//           averageVideoQuestionsMarks += obtainedMarks / resource.video.questions[index].answers.length;
+//           console.log(averageVideoQuestionsMarks)
+//         });
+//       }
+
+//       console.log("\n\n\n", averageVideoQuestionsMarks, totalAssessmentAnswers)
+
+//       if (resource.AssessmentResourcesDetail) {
+//         resource.AssessmentResourcesDetail.assessmentAnswers.forEach(
+//           (answer) => {
+//             totalMarks += resource.AssessmentResourcesDetail.totalMarks;
+//             const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+//             totalObtainedMarks += obtainedMarks;
+//             totalAssessmentAnswers += 1;
+//             totalPossibleMarks += resource.AssessmentResourcesDetail.totalMarks;
+//           }
+//         );
+//       }
+
+
+
+//       if (totalAssessmentAnswers === 0) {
+//         averageObtainedMarks = averageVideoQuestionsMarks;
+//       } else {
+//         const totalAnswers = totalAssessmentAnswers;
+//         averageObtainedMarks =
+//           totalAnswers > 0 ? totalObtainedMarks / totalAnswers : 0;
+//       }
+//       // const averagePercentage =
+//       //   totalPossibleMarks > 0
+//       //     ? (totalObtainedMarks / totalPossibleMarks) * 100
+//       //     : 0;
+
+
+//       return {
+//         ...resource.toJSON(),
+//         averageObtainedMarks,
+//         totalMarks,
+//       };
+//     });
+
+//     return successResponse(res, 200, "Data fetched successfully", result);
+//   } catch (error) {
+//     return failureResponse(res, 500, error.message);
+//   }
+// };
+
 const getResourceResult = async (req, res) => {
   try {
     let { resourceId, schoolId } = req.query;
@@ -1019,47 +1145,42 @@ const getResourceResult = async (req, res) => {
     const result = courseDetail.map((resource) => {
       let totalObtainedMarks = 0;
       let totalPossibleMarks = 0;
-      let totalVideoAnswers = 0;
       let totalAssessmentAnswers = 0;
-      let totalMarks = 0;
+      let totalObtainedAverage = 0
 
       if (resource.video) {
         resource.video.questions.forEach((question) => {
-          totalMarks += question.totalMarks;
+
+          let totalObtainedMarksOfOneQuestion = 0;
+          let totalAnswersOfOneQuestion = 0;
+
           question.answers.forEach((answer) => {
             const obtainedMarks = Math.max(answer.obtainedMarks, 0);
-            totalObtainedMarks += obtainedMarks;
-            totalVideoAnswers += 1;
+            totalObtainedMarksOfOneQuestion += obtainedMarks;
+            totalAnswersOfOneQuestion += 1;
           });
+
+          totalPossibleMarks += question.totalMarks;
+          totalObtainedAverage += totalAnswersOfOneQuestion > 0 ? totalObtainedMarksOfOneQuestion / totalAnswersOfOneQuestion : 0;
         });
       }
 
       if (resource.AssessmentResourcesDetail) {
         resource.AssessmentResourcesDetail.assessmentAnswers.forEach(
           (answer) => {
-            totalMarks += resource.AssessmentResourcesDetail.totalMarks;
             const obtainedMarks = Math.max(answer.obtainedMarks, 0);
             totalObtainedMarks += obtainedMarks;
             totalAssessmentAnswers += 1;
-            totalPossibleMarks += resource.AssessmentResourcesDetail.totalMarks;
           }
         );
+        totalPossibleMarks = resource.AssessmentResourcesDetail.totalMarks;
+        totalObtainedAverage += totalAssessmentAnswers > 0 ? totalObtainedMarks / totalAssessmentAnswers : 0;
       }
-
-      const totalAnswers = totalVideoAnswers + totalAssessmentAnswers;
-      const averageObtainedMarks =
-        totalAnswers > 0 ? totalObtainedMarks / totalAnswers : 0;
-      const averagePercentage =
-        totalPossibleMarks > 0
-          ? (totalObtainedMarks / totalPossibleMarks) * 100
-          : 0;
-
 
       return {
         ...resource.toJSON(),
-        averageObtainedMarks,
-        totalMarks,
-        averagePercentage,
+        averageObtainedMarks: totalObtainedAverage,
+        totalMarks: totalPossibleMarks,
       };
     });
 
