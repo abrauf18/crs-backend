@@ -32,7 +32,7 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.changeColumn('Classrooms', 'teacherId', {
-      allowNull: false,
+      allowNull: true,
       type: Sequelize.UUID,
       references: {
         model: 'Users',
