@@ -775,7 +775,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                         {
                             model: VideoTracking,
                             as: 'videoTrackings',
-                            where: { saved: true },
+                            where: { saved: true, studentId: studentId },
                             required: true
                         },
                         {
