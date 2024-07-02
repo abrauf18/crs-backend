@@ -29,7 +29,7 @@ const app = express();
 app.use(morganMiddleware);
 
 app.use(cors({
-  origin: '*',
+  origin: ['http://localhost:3000', 'https://app.crsci.org'],
   credentials: true
 }));
 
