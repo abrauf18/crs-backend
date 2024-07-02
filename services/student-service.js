@@ -1563,12 +1563,12 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }
 
                 if (!videoQuestionAnswer) {
                     await transaction.rollback();
-                    return { code: 404, message: `Answer of question with this statement: ${videoQuestion.statement} not found` };
+                    return { code: 404, message: `Answer for: ${videoQuestion.statement} not found` };
                 }
 
                 if (marks > videoQuestion.totalMarks) {
                     await transaction.rollback();
-                    return { code: 400, message: `Obtained Marks of question with this statement: ${videoQuestion.statement} are exceeding Total Marks` };
+                    return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
 
                 const updatedAnswer = await videoQuestionAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
