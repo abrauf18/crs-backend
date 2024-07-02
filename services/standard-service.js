@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Standard, DailyUpload, Resource, Video } = require("../models/index.js");
+const { Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const createStandard = async ({ name, description, dailyUploads }) => {
@@ -19,8 +19,8 @@ const createStandard = async ({ name, description, dailyUploads }) => {
         const diffTime = Math.abs(maxDate - minDate);
         const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
 
-        const createdStandard = await Standard.create({name, description, courseLength});
-        
+        const createdStandard = await Standard.create({ name, description, courseLength });
+
         // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
         //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
         // }));
@@ -35,7 +35,7 @@ const createStandard = async ({ name, description, dailyUploads }) => {
         const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
             return DailyUpload.create({ ...upload, standardId: createdStandard.id });
         }));
-    
+
         const standard = {
             ...createdStandard.toJSON(),
             dailyUploads: createdDailyUploads.map(upload => upload.toJSON())
@@ -64,9 +64,9 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
             //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
             // }));
-    
+
             // const duplicates = existingResourceInStandards.filter(Boolean);
-    
+
             // if (duplicates.length > 0) {
             //     const duplicateResource = await Promise.all(duplicates.map(async resource => {
             //         const foundResource = await Resource.findByPk(resource.resourceId);
@@ -95,17 +95,17 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             // @ts-ignore
             const diffTime = Math.abs(maxDate - minDate);
             const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
-            await standard.update( {courseLength} );
+            await standard.update({ courseLength });
 
             // await standard.setDailyUploads(newDailyUploads);
         }
 
         if (name) {
-            await standard.update( {name} );
+            await standard.update({ name });
         }
 
         if (description) {
-            await standard.update( {description} );
+            await standard.update({ description });
         }
 
         const updatedStandard = {
@@ -136,9 +136,13 @@ const getStandard = async ({ standardId }) => {
                         model: Video,
                         as: 'video',
                         attributes: ['id']
+                    }, {
+                        model: AssessmentResourcesDetail,
+                        as: 'AssessmentResourcesDetail',
+                        attributes: ['id', 'totalMarks', 'deadline']
                     }]
                 }]
-            }]
+            },]
         });
 
         if (!standard) {
@@ -220,7 +224,7 @@ const getAllSummarizedStandards = async () => {
             ]
         });
 
-        return { code: 200, data: {standardsCount: totalStandards, allStandards: standards} };
+        return { code: 200, data: { standardsCount: totalStandards, allStandards: standards } };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
@@ -319,10 +323,10 @@ const getSummarizedStandard = async ({ standardId }) => {
 }
 
 module.exports = {
-  createStandard,
-  updateStandard,
-  getStandard,
-  getAllSummarizedStandards,
-  deleteStandards,
-  getSummarizedStandard
+    createStandard,
+    updateStandard,
+    getStandard,
+    getAllSummarizedStandards,
+    deleteStandards,
+    getSummarizedStandard
 };

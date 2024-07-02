@@ -18,14 +18,14 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
         });
 
         if (type === RESOURCE_TYPES.VIDEO) {
-            
+
             const videoAttributes = await Video.create({
                 resourceId: resource.id,
                 thumbnailURL,
                 duration
             })
-    
-            return { code: 200, data: {resource, videoAttributes: {...videoAttributes.dataValues}} };
+
+            return { code: 200, data: { resource, videoAttributes: { ...videoAttributes.dataValues } } };
         }
         let resourceDetails = resource.get();
         if (isAssessmentResource(type)) {
@@ -35,12 +35,15 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
                 numberOfQuestions: 1,
                 deadline: deadline
             })
-            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions, deadline: assessmentAttributes.deadline};
+            resourceDetails = { ...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions, deadline: assessmentAttributes.deadline };
         }
 
-        return { code: 200, data: 
-            {resource: { ...resourceDetails }
-        }};
+        return {
+            code: 200, data:
+            {
+                resource: { ...resourceDetails }
+            }
+        };
 
     } catch (error) {
         console.log('\n\n\n', error)
@@ -49,7 +52,7 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
     }
 };
 
-const deleteResource = async ({resourceID}) => {
+const deleteResource = async ({ resourceID }) => {
     try {
         const resource = await Resource.findOne({
             where: { id: resourceID },
@@ -124,6 +127,7 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
                     ...resourceData,
                     videoId: video?.id,
                     totalMarks: AssessmentResourcesDetail?.totalMarks,
+                    deadline: AssessmentResourcesDetail?.deadline
                 };
             })
         }
@@ -161,7 +165,7 @@ const getResourcesCount = async ({ topic }) => {
         });
 
         // Get the total count of all resources for a specific topic
-        const totalCount = await Resource.count({ where: { topic: {[Op.iLike]: topic} } }); // Add the where clause
+        const totalCount = await Resource.count({ where: { topic: { [Op.iLike]: topic } } }); // Add the where clause
 
         const res = {
             slideshowCount: resourceCountsObject[RESOURCE_TYPES.SLIDESHOW],
@@ -180,7 +184,7 @@ const getResourcesCount = async ({ topic }) => {
     }
 };
 
-const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => {
+const updateResource = async ({ resourceId, name, type, topic, totalMarks, deadline }) => {
     try {
         const resource = await Resource.findOne({
             where: { id: resourceId },
@@ -199,7 +203,7 @@ const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => 
             if (!assessmentResourceDetail) {
                 return { code: 404, message: 'AssessmentResourcesDetail not found' };
             }
-            await assessmentResourceDetail.update({ totalMarks });
+            await assessmentResourceDetail.update({ totalMarks, deadline });
         }
 
         await resource.update({ name, type, topic });
@@ -211,7 +215,7 @@ const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => 
     }
 };
 
-const getResource = async ({resourceID}) => {
+const getResource = async ({ resourceID }) => {
     try {
         const resource = await Resource.findOne({
             where: { id: resourceID },
@@ -222,13 +226,13 @@ const getResource = async ({resourceID}) => {
         const simplifiedResource = resource.get();
         if (isAssessmentResource(resource.type)) {
             const assessmentResourcesDetail = await resource.getAssessmentResourcesDetail();
-            return { 
-                code: 200, 
+            return {
+                code: 200,
                 data: {
                     ...simplifiedResource,
                     totalMarks: assessmentResourcesDetail?.totalMarks || 0,
-                } 
-            };        
+                }
+            };
         }
         return { code: 200, data: resource };
     } catch (error) {
@@ -283,7 +287,7 @@ const getResourcesByName = async ({ resourceName, resourceType }) => {
                 },
             ],
         });
-        
+
         const transformedResources = resources.map(resource => {
             const { video, createdAt, updatedAt, ...resourceData } = resource.get();
             return {

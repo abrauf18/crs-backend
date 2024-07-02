@@ -149,7 +149,7 @@ const schoolDashboard = async (req, res) => {
                   attributes: ["id", "accessDate", "weightage"],
                   where: {
                     accessDate: {
-                      [Op.lt]: new Date(), // Only consider uploads with access date in the past
+                      [Op.lte]: new Date(), // Only consider uploads with access date in the past
                     },
                   },
                 },
@@ -199,7 +199,7 @@ const schoolDashboard = async (req, res) => {
                               ],
                               where: {
                                 accessDate: {
-                                  [Op.lt]: new Date(), // Only consider uploads with access date in the past
+                                  [Op.lte]: new Date(), // Only consider uploads with access date in the past
                                 },
                               },
                             },
@@ -247,7 +247,7 @@ const schoolDashboard = async (req, res) => {
                                   ],
                                   where: {
                                     accessDate: {
-                                      [Op.lt]: new Date(), // Only consider uploads with access date in the past
+                                      [Op.lte]: new Date(), // Only consider uploads with access date in the past
                                     },
                                   },
                                 },
@@ -268,7 +268,7 @@ const schoolDashboard = async (req, res) => {
 
     // Current date for comparison
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // today.setHours(0, 0, 0, 0);
 
     const transformedData = data?.map(classItem => {
       const standardsMap = new Map();

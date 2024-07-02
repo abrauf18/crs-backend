@@ -391,15 +391,15 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         if (!data) {
             return { code: 404, message: 'Classroom not found' };
         }
-        
+
         // Current date for comparison
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
+        // today.setHours(0, 0, 0, 0);
+
         const classItem = data;
         const standardsMap = new Map();
         const currentDate = new Date();
-        
+
         // Iterate over each course in the classroom to map standards
         classItem.classroomCourses?.forEach(course => {
             const standard = course.standard;
@@ -414,9 +414,9 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                         averageObtainedWeightage: 0  // Default value set to 0
                     });
                 }
-        
+
                 const standardEntry = standardsMap.get(standard.id);
-        
+
                 // Calculate the total weightage for the standard based on daily uploads up to today
                 if (standard.dailyUploads && standard.dailyUploads.length > 0) {
                     standardEntry.currentTotalWeightage += standard.dailyUploads
@@ -425,14 +425,14 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                 }
             }
         });
-        
+
         // Iterate over each student in the classroom to calculate obtained weightage
         classItem.classroomStudents?.forEach(student => {
             classItem.classroomCourses?.forEach(course => {
                 const standard = course.standard;
                 if (standard) {
                     const standardEntry = standardsMap.get(standard.id);
-        
+
                     // Ensure the student is present in the usersWeightage array
                     let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
                     if (!userEntry) {
@@ -444,7 +444,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                         };
                         standardEntry.usersWeightage.push(userEntry);
                     }
-        
+
                     // Track total marks and obtained marks for video questions
                     const videoWeightages = new Map();
                     student.student.VideoQuestionAnswers?.forEach(answer => {
@@ -464,7 +464,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                                 const questionObtainedMarks = Math.max(answer.obtainedMarks, 0);
                                 videoWeightages.get(videoId).totalMarks += questionTotalMarks;
                                 videoWeightages.get(videoId).obtainedMarks += questionObtainedMarks;
-        
+
                                 userEntry.questionsDetails.push({
                                     id: videoQuestion.id,
                                     statement: videoQuestion.statement,
@@ -475,7 +475,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                             }
                         }
                     });
-        
+
                     // Calculate weightage for each video based on total marks and obtained marks of its questions
                     videoWeightages.forEach((video, videoId) => {
                         const weightage = video.weightage;
@@ -484,7 +484,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                         const videoWeightage = (obtainedMarks / totalMarks) * weightage;
                         userEntry.obtainedWeightage += videoWeightage;
                     });
-        
+
                     // Calculate obtained weightage from assessment answers
                     student.student.AssessmentAnswers?.forEach(answer => {
                         const assessmentResource = answer.assessmentResourcesDetail;
@@ -495,7 +495,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                                 const obtainedMarks = Math.max(answer.obtainedMarks, 0);
                                 const questionWeightage = (obtainedMarks / assessmentResource.totalMarks) * weightage;
                                 userEntry.obtainedWeightage += questionWeightage;
-        
+
                                 userEntry.questionsDetails.push({
                                     id: assessmentResource.id,
                                     statement: assessmentResource.statement,
@@ -509,18 +509,18 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                 }
             });
         });
-        
+
         // Calculate the average obtained weightage and student distribution for each standard
         standardsMap?.forEach(standardEntry => {
             const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
             standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
-        
+
             // Check if averageObtainedWeightage is null and set it to 0
             if (isNaN(standardEntry.averageObtainedWeightage)) {
                 standardEntry.averageObtainedWeightage = 0;
             }
         });
-        
+
         // Calculate the total obtained score for each student and the overall average
         const studentsData = classItem.classroomStudents?.map((student, index) => {
             const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
@@ -549,7 +549,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         })
 
         const totalPages = Math.ceil(countAllClassroomStudents / limit);
-        
+
         // let avgObtainedWeightage = 0;
         // if (studentsData.length > 0) {
         //     // Calculate total obtained score for all students and the overall average
@@ -559,7 +559,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         //     }, 0);
         //     avgObtainedWeightage = classItem.classroomStudents.length > 0 ? totalObtainedScoreSum / classItem.classroomStudents.length : 0;
         // }
-        
+
         // // Calculate total weightage of all standards where access date <= today
         // const totalWeightageOfStandards = classItem.classroomCourses.reduce((acc, course) => {
         //     const standard = course.standard;
@@ -571,11 +571,11 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
         //     }
         //     return acc;
         // }, 0);
-        
+
         // // Calculate the average weightage per standard
         // const numberOfStandards = classItem.classroomCourses.length;
         // const averageWeightagePerStandard = numberOfStandards > 0 ? totalWeightageOfStandards / numberOfStandards : 0;
-        
+
         const transformedData = {
             classId: classItem.id,
             className: classItem.name,
