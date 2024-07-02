@@ -176,7 +176,9 @@ const getStandard = async ({ standardId }) => {
                 type: resource.type,
                 topic: resource.topic,
                 videoId: resource.video ? resource.video.id : null,
-                weightage: weightage || 0
+                weightage: weightage || 0,
+                deadline: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.deadline : null,
+                totalMarks: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.totalMarks : null,
             }))
         }));
 
