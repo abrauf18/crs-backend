@@ -1,6 +1,6 @@
 const dotenv = require("dotenv");
 const express = require("express");
-require('./cronJobs/dailyProgress-Job'); 
+require('./cronJobs/dailyProgress-Job');
 // require('./cronJobs/enrollments-Job'); 
 const cookieParser = require("cookie-parser");
 const authRouter = require("./routes/auth-routes");
@@ -28,7 +28,10 @@ const app = express();
 // Use morgan middleware for logging
 app.use(morganMiddleware);
 
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
 
 
 // Parse requests of content-type - application/json
