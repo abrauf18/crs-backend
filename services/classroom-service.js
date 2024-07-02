@@ -580,7 +580,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             classId: classItem.id,
             className: classItem.name,
             totalPages,
-            studentsData,
+            students: studentsData,
             // avgObtainedWeightage,
             // avgTotalWeightage: averageWeightagePerStandard
         };
