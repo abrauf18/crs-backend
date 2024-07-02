@@ -10,7 +10,7 @@ module.exports = {
 
     return User.create({
       name: 'CRS Admin',
-      email: 'admin@crs.com',
+      email: 'admin@crsci.org',
       password: '1@Password',
       role: ROLES.ADMIN,
     });
