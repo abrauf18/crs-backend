@@ -266,145 +266,190 @@ const schoolDashboard = async (req, res) => {
       ],
     });
 
-    let totalClassroomWeightage = 0;
-    let totalObtainedWeightage = 0;
-    const classroomsData = {};
+    // Current date for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    data?.forEach((classItem) => {
-      const standardsData = {};
-
-      let totalClassroomWeightage = 0;
-      let totalObtainedWeightage = 0;
-
-      // Calculate total weightage for each standard in the class
-      classItem.classroomCourses?.forEach((course) => {
-        const standard = course.standard;
-        if (standard) {
-          const standardId = standard.id;
-          const standardName = standard.name;
-
-          let currentTotalWeightage = 0;
-          let obtainedWeightageSum = 0;
-          let totalObtainedMarks = 0; // Initialize total obtained marks for the standard
-
-          // Sum up weightage from dailyUploads that have passed access date
-          course.standard?.dailyUploads?.forEach((upload) => {
-            if (new Date(upload.accessDate) < new Date()) {
-              currentTotalWeightage += upload.weightage;
+    const transformedData = data?.map(classItem => {
+        const standardsMap = new Map();
+        const currentDate = new Date();
+    
+        // Iterate over each course in the classroom to map standards
+        classItem.classroomCourses?.forEach(course => {
+            const standard = course.standard;
+            if (standard) {
+                // If the standard is not already in the map, add it
+                if (!standardsMap.has(standard.id)) {
+                    standardsMap.set(standard.id, {
+                        standardId: standard.id,
+                        standardName: standard.name,
+                        currentTotalWeightage: 0,
+                        usersWeightage: [],
+                        averageObtainedWeightage: 0  // Default value set to 0
+                    });
+                }
+    
+                const standardEntry = standardsMap.get(standard.id);
+    
+                // Calculate the total weightage for the standard based on daily uploads up to today
+                if (standard.dailyUploads && standard.dailyUploads.length > 0) {
+                    standardEntry.currentTotalWeightage += standard.dailyUploads
+                        .filter(upload => new Date(upload.accessDate) <= currentDate)
+                        .reduce((acc, upload) => acc + upload.weightage, 0);
+                }
             }
-          });
-
-          // Sum obtained weightage and obtained marks for all students in this standard
-          classItem.classroomStudents?.forEach((student) => {
-            const studentVideoAnswers =
-              student.student?.VideoQuestionAnswers || [];
-            const studentAssessmentAnswers =
-              student.student?.AssessmentAnswers || [];
-
-            // Sum obtained weightage and obtained marks for VideoQuestionAnswers
-            studentVideoAnswers.forEach((answer) => {
-              const videoQuestion = answer.question;
-              const video = videoQuestion?.video;
-              const dailyUpload = video?.resource?.DailyUpload;
-
-              if (dailyUpload && new Date(dailyUpload.accessDate) < new Date()) {
-                  const videoQuestions = video.questions;
-                  const totalVideoObtainedMarks = videoQuestions.reduce(
-                      (acc, q) => acc + (q.VideoQuestionAnswer?.obtainedMarks === -1 ? 0 : q.VideoQuestionAnswer?.obtainedMarks || 0),
-                      0
-                  );
-                  const totalVideoMarks = videoQuestions.reduce(
-                      (acc, q) => acc + q.totalMarks,
-                      0
-                  );
-                  const obtainedWeightage = (totalVideoObtainedMarks / totalVideoMarks) * dailyUpload.weightage;
-                  obtainedWeightageSum += obtainedWeightage;
-                  totalObtainedMarks += totalVideoObtainedMarks; // Add to total obtained marks
-              }
-          });
-
-            // Sum obtained weightage and obtained marks for AssessmentAnswers
-            studentAssessmentAnswers.forEach((answer) => {
-              const assessmentResource = answer.assessmentResourcesDetail;
-              let obtainedMarks = answer.obtainedMarks;
-              if (obtainedMarks < 0) {
-                obtainedMarks = 0; // Consider obtained marks as 0 if less than 0
-              }
-              if (
-                assessmentResource?.resource?.DailyUpload?.accessDate &&
-                new Date(assessmentResource.resource.DailyUpload.accessDate) <
-                new Date()
-              ) {
-                const obtainedWeightage =
-                  (obtainedMarks / assessmentResource.totalMarks) *
-                  assessmentResource.resource.DailyUpload.weightage;
-                obtainedWeightageSum += obtainedWeightage;
-                totalObtainedMarks += obtainedMarks; // Add to total obtained marks
-              }
+        });
+    
+        // Iterate over each student in the classroom to calculate obtained weightage
+        classItem.classroomStudents?.forEach(student => {
+            classItem.classroomCourses?.forEach(course => {
+                const standard = course.standard;
+                if (standard) {
+                    const standardEntry = standardsMap.get(standard.id);
+    
+                    // Ensure the student is present in the usersWeightage array
+                    let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+                    if (!userEntry) {
+                        userEntry = {
+                            userId: student.student.id,
+                            userName: student.student.name,
+                            obtainedWeightage: 0,
+                            questionsDetails: []
+                        };
+                        standardEntry.usersWeightage.push(userEntry);
+                    }
+    
+                    // Track total marks and obtained marks for video questions
+                    const videoWeightages = new Map();
+                    student.student.VideoQuestionAnswers?.forEach(answer => {
+                        const videoQuestion = answer.question;
+                        if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
+                            const dailyUpload = videoQuestion.video.resource.DailyUpload;
+                            if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+                                const videoId = videoQuestion.video.id;
+                                if (!videoWeightages.has(videoId)) {
+                                    videoWeightages.set(videoId, {
+                                        totalMarks: 0,
+                                        obtainedMarks: 0,
+                                        weightage: dailyUpload.weightage
+                                    });
+                                }
+                                const questionTotalMarks = videoQuestion.totalMarks;
+                                const questionObtainedMarks = Math.max(answer.obtainedMarks, 0);
+                                videoWeightages.get(videoId).totalMarks += questionTotalMarks;
+                                videoWeightages.get(videoId).obtainedMarks += questionObtainedMarks;
+    
+                                userEntry.questionsDetails.push({
+                                    id: videoQuestion.id,
+                                    statement: videoQuestion.statement,
+                                    answer: answer.answer,
+                                    totalMarks: questionTotalMarks,
+                                    obtainedMarks: questionObtainedMarks
+                                });
+                            }
+                        }
+                    });
+    
+                    // Calculate weightage for each video based on total marks and obtained marks of its questions
+                    videoWeightages.forEach((video, videoId) => {
+                        const weightage = video.weightage;
+                        const totalMarks = video.totalMarks;
+                        const obtainedMarks = video.obtainedMarks;
+                        const videoWeightage = (obtainedMarks / totalMarks) * weightage;
+                        userEntry.obtainedWeightage += videoWeightage;
+                    });
+    
+                    // Calculate obtained weightage from assessment answers
+                    student.student.AssessmentAnswers?.forEach(answer => {
+                        const assessmentResource = answer.assessmentResourcesDetail;
+                        if (assessmentResource.resource.DailyUpload) {
+                            const dailyUpload = assessmentResource.resource.DailyUpload;
+                            if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+                                const weightage = dailyUpload.weightage;
+                                const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+                                const questionWeightage = (obtainedMarks / assessmentResource.totalMarks) * weightage;
+                                userEntry.obtainedWeightage += questionWeightage;
+    
+                                userEntry.questionsDetails.push({
+                                    id: assessmentResource.id,
+                                    statement: assessmentResource.statement,
+                                    answer: answer.answer,
+                                    totalMarks: assessmentResource.totalMarks,
+                                    obtainedMarks: obtainedMarks
+                                });
+                            }
+                        }
+                    });
+                }
             });
-          });
+        });
+    
+        // Calculate the average obtained weightage and student distribution for each standard
+        standardsMap?.forEach(standardEntry => {
+            const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
+            standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
+    
+            // Check if averageObtainedWeightage is null and set it to 0
+            if (isNaN(standardEntry.averageObtainedWeightage)) {
+                standardEntry.averageObtainedWeightage = 0;
+            }
+        });
+    
+        // Calculate the total obtained score for each student and the overall average
+        const studentsData = classItem.classroomStudents?.map(student => {
+            const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
+                const userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+                return acc + (userEntry ? userEntry.obtainedWeightage : 0);
+            }, 0);
+            return {
+                userId: student.student.id,
+                userName: student.student.name,
+                userEmail: student.student.email,
+                image: student.student.image,
+                totalObtainedScore: totalObtainedScore / standardsMap.size,
+                classId: classItem.id,
+                className: classItem.name,
+            };
+        });
 
-          // Calculate average obtained weightage per student, including those who haven't answered
-          const totalStudentsInClass = classItem.classroomStudents.length;
-          const averageObtainedWeightage =
-            totalStudentsInClass > 0
-              ? obtainedWeightageSum / totalStudentsInClass
-              : 0;
-
-          // Store data for the standard
-          standardsData[standardId] = {
-            totalWeightage: currentTotalWeightage,
-            obtainedWeightage: averageObtainedWeightage,
-            totalObtainedMarks: totalObtainedMarks, // Store total obtained marks for the standard
-          };
-
-          // Accumulate total weightage for the class
-          totalClassroomWeightage += currentTotalWeightage;
-          totalObtainedWeightage += averageObtainedWeightage;
+        let avgObtainedWeightage = 0
+        if (studentsData.length > 0) {
+        // Calculate total obtained score for all students and the overall average
+            const totalObtainedScoreSum = studentsData.reduce((acc, student) => {
+                // Check if student.totalObtainedScore is a number, if not, add 0 to the accumulator
+                return acc + (isNaN(student.totalObtainedScore) ? 0 : student.totalObtainedScore);
+            }, 0);
+            avgObtainedWeightage = classItem.classroomStudents.length > 0 ? totalObtainedScoreSum / classItem.classroomStudents.length : 0;
         }
-      });
 
-      // Calculate performance metrics for the class
-      const totalStandardsInClass = Object.keys(standardsData).length;
-      const classTotalWeightage =
-        totalStandardsInClass > 0
-          ? totalClassroomWeightage / totalStandardsInClass
-          : 0;
-      const classObtainedWeightage =
-        totalStandardsInClass > 0
-          ? totalObtainedWeightage / totalStandardsInClass
-          : 0;
+        // Calculate total weightage of all standards where access date <= today
+        const totalWeightageOfStandards = classItem.classroomCourses.reduce((acc, course) => {
+            const standard = course.standard;
+            if (standard && standard.dailyUploads && standard.dailyUploads.length > 0) {
+                const totalWeightage = standard.dailyUploads
+                    .filter(upload => new Date(upload.accessDate) <= today)
+                    .reduce((sum, upload) => sum + upload.weightage, 0);
+                return acc + totalWeightage;
+            }
+            return acc;
+        }, 0);
 
-      classroomsData[classItem.id] = {
-        totalWeightage: classTotalWeightage,
-        obtainedWeightage: classObtainedWeightage,
-        standards: standardsData,
-      };
+        // Calculate the average weightage per standard
+        const numberOfStandards = classItem.classroomCourses.length;
+        const averageWeightagePerStandard = numberOfStandards > 0 ? totalWeightageOfStandards / numberOfStandards : 0;
 
-      // Reset total weightages for the next class
-      totalClassroomWeightage = 0;
-      totalObtainedWeightage = 0;
+        return {
+            classId: classItem.id,
+            className: classItem.name,
+            standardList: Array.from(standardsMap.values()),
+            studentsData,
+            avgObtainedWeightage,
+            avgTotalWeightage: averageWeightagePerStandard
+        };
     });
 
-    // Calculate overall school performance metrics
-    const totalClasses = Object.keys(classroomsData).length;
-    let totalSchoolWeightage = 0;
-    let totalSchoolObtainedWeightage = 0;
-
-    // Sum up total weightage and obtained weightage for all classes
-    Object.values(classroomsData).forEach((classData) => {
-      // console.log('\n\n\n\n ',classData)
-      totalSchoolWeightage += classData.totalWeightage;
-      totalSchoolObtainedWeightage += classData.obtainedWeightage;
-      // console.log(totalSchoolWeightage, totalSchoolObtainedWeightage);
-    });
-
-    // Calculate school performance metrics
-    const schoolTotalWeightage =
-      totalClasses > 0 ? totalSchoolWeightage / totalClasses : 0;
-    const schoolObtainedWeightage =
-      totalClasses > 0 ? totalSchoolObtainedWeightage / totalClasses : 0;
-    // console.log('\n\n\n\n ', totalSchoolWeightage, totalSchoolObtainedWeightage, totalClasses);
+    const avgObtainedWeightage = (transformedData.reduce((acc, classItem) => acc + classItem.avgObtainedWeightage, 0) / transformedData.length).toFixed(1);
+    const avgTotalWeightage = (transformedData.reduce((acc, classItem) => acc + classItem.avgTotalWeightage, 0) / transformedData.length).toFixed(1)
 
     const users = await Model.User.findAll({});
 
@@ -448,9 +493,8 @@ const schoolDashboard = async (req, res) => {
       totalClassroom: totalClassroomCount,
       getSchoolTeacher: getSchoolTeacher,
       getSchoolTickets: getSchoolTickets,
-      overAllPerformance: classroomsData,
-      totalWeightage: schoolTotalWeightage.toFixed(1),
-      obtainedWeightage: schoolObtainedWeightage.toFixed(1),
+      totalWeightage: avgTotalWeightage,
+      obtainedWeightage: avgObtainedWeightage,
       usersJoining: cumulativeResults,
       usersCount: users.length,
 
