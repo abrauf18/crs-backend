@@ -796,6 +796,27 @@ const updateTeacherClassrooms = async ({ schoolId, teacherId, classroomIds }) =>
     }
 }
 
+const changeClassStatus = async ({ schoolId, classroomId, status }) => {
+    try {
+        const classroom = await Classroom.findOne({ where: { id: classroomId } });
+        if (!classroom) {
+            return { code: 404, message: 'Classroom not found' };
+        }
+
+        if (classroom.schoolId !== schoolId) {
+            return { code: 403, message: 'Unauthorized, class does not belong to this school' };
+        }
+
+        const updated = await classroom.update({ status: status });
+        return { code: 200, data: updated };
+
+    } catch (error) {
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while converting class to inactive');
+        return { code: 500 };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -808,5 +829,6 @@ module.exports = {
     addStudentToClassroom,
     removeStudentFromClassroom,
     updateClassroomStudent,
-    updateTeacherClassrooms
+    updateTeacherClassrooms,
+    changeClassStatus
 };

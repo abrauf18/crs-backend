@@ -259,6 +259,29 @@ const updateTeacherClassrooms = async (req, res) => {
     }
 }
 
+const changeClassStatus = async (req, res) => {
+    try {
+        const { schoolId, classroomId, status } = req.body;
+        const reply = await classroomService.changeClassStatus({ schoolId, classroomId, status });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 403) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 
 module.exports = {
     createClassroom,
@@ -272,5 +295,6 @@ module.exports = {
     addStudentToClassroom,
     removeStudentFromClassroom,
     updateClassroomStudent,
-    updateTeacherClassrooms
+    updateTeacherClassrooms,
+    changeClassStatus
 };

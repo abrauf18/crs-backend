@@ -101,4 +101,12 @@ router.put(
     classroomController.updateTeacherClassrooms
 )
 
+router.post(
+    "/changeClassStatus",
+    classroomValidation.changeClassStatus,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    classroomController.changeClassStatus
+)
+
 module.exports = router;
