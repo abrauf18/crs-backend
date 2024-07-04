@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const { logger } = require("../../Logs/logger");
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
+const { CLASSROOM_STATUS } = require('../../utils/enumTypes');
 
 const createSchemaMiddleware = (schema, target = 'body') => async (req, res, next) => {
     try {
@@ -118,8 +119,17 @@ const updateTeacherClassrooms = createSchemaMiddleware(
         teacherId: Joi.string().guid().required(),
         classroomIds: Joi.array().items(Joi.string().guid().optional()).required(),
         accessToken: Joi.string().required(),
-      })
-    );
+    })
+);
+
+const changeClassStatus = createSchemaMiddleware(
+    Joi.object({
+        schoolId: Joi.string().guid().required(),
+        classroomId: Joi.string().guid().required(),
+        status: Joi.string().valid(CLASSROOM_STATUS.ACTIVE, CLASSROOM_STATUS.INACTIVE).required(),
+        accessToken: Joi.string().required()
+    })
+);
 
 module.exports = {
     createClassroom,
@@ -133,5 +143,6 @@ module.exports = {
     addStudentToClassroom,
     removeStudentFromClassroom,
     updateClassroomStudent,
-    updateTeacherClassrooms
+    updateTeacherClassrooms,
+    changeClassStatus
 };
