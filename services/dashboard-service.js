@@ -4,204 +4,15 @@ const { logger } = require("../Logs/logger.js");
 const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
-const transformData = (data) => {
+function canSubmitAssessment(uploadDate, daysToAdd) {
+    const uploadDateObj = new Date(uploadDate);
+    uploadDateObj.setDate(uploadDateObj.getDate() + daysToAdd + 1);
     const today = new Date();
-    const classroomsData = {};
-
-    data?.forEach((classItem) => {
-        const standardsData = {};
-
-        let totalClassroomWeightage = 0;
-        let totalObtainedWeightage = 0;
-
-        // Calculate total weightage for each standard in the class
-        classItem.classroomCourses?.forEach((course) => {
-            const standard = course.standard;
-            if (standard) {
-                const standardId = standard.id;
-                const standardName = standard.name;
-
-                let currentTotalWeightage = 0;
-                let obtainedWeightageSum = 0;
-                let totalObtainedMarks = 0; // Initialize total obtained marks for the standard
-
-                const studentData = [];
-
-                // Sum up weightage from dailyUploads that have passed access date
-                course.standard?.dailyUploads?.forEach((upload) => {
-                    if (new Date(upload.accessDate) < today) {
-                        currentTotalWeightage += upload.weightage;
-                    }
-                });
-
-                // Sum obtained weightage and obtained marks for all students in this standard
-                classItem.classroomStudents?.forEach((student) => {
-                    const studentDetails = {
-                        id: student.student.id,
-                        name: student.student.name,
-                        email: student.student.email,
-                        image: student.student.image,
-                        totalObtainedMarks: 0,
-                        totalWeightage: 0,
-                        answers: [],
-                    };
-
-                    const studentVideoAnswers = student.student?.VideoQuestionAnswers || [];
-                    const studentAssessmentAnswers = student.student?.AssessmentAnswers || [];
-
-                    const videoData = {};
-
-                    // Sum obtained weightage and obtained marks for VideoQuestionAnswers
-                    studentVideoAnswers.forEach((answer) => {
-                        const videoQuestion = answer.question;
-                        let obtainedMarks = answer.obtainedMarks;
-                        if (obtainedMarks < 0) {
-                            obtainedMarks = 0; // Consider obtained marks as 0 if less than 0
-                        }
-                        if (
-                            videoQuestion?.video?.resource?.DailyUpload?.accessDate &&
-                            new Date(videoQuestion.video.resource.DailyUpload.accessDate) < today
-                        ) {
-                            const videoId = videoQuestion.video.id;
-
-                            if (!videoData[videoId]) {
-                                videoData[videoId] = {
-                                    totalMarks: 0,
-                                    obtainedMarks: 0,
-                                    weightage: videoQuestion.video.resource.DailyUpload.weightage,
-                                };
-                            }
-
-                            videoData[videoId].totalMarks += videoQuestion.totalMarks;
-                            videoData[videoId].obtainedMarks += obtainedMarks;
-
-                            studentDetails.answers.push({
-                                type: 'VideoQuestionAnswer',
-                                questionId: videoQuestion.id,
-                                obtainedMarks: obtainedMarks,
-                                totalMarks: videoQuestion.totalMarks,
-                            });
-                        }
-                    });
-
-                    Object.keys(videoData).forEach((videoId) => {
-                        const video = videoData[videoId];
-                        const obtainedWeightage =
-                            (video.obtainedMarks / video.totalMarks) * video.weightage;
-                        obtainedWeightageSum += obtainedWeightage;
-                        totalObtainedMarks += video.obtainedMarks;
-
-                        studentDetails.totalObtainedMarks += video.obtainedMarks;
-                        studentDetails.totalWeightage += obtainedWeightage;
-
-                        studentDetails.answers.forEach((answer) => {
-                            if (answer.type === 'VideoQuestionAnswer' && answer.videoId === videoId) {
-                                answer.weightage = obtainedWeightage;
-                            }
-                        });
-                    });
-
-                    // Sum obtained weightage and obtained marks for AssessmentAnswers
-                    studentAssessmentAnswers.forEach((answer) => {
-                        const assessmentResource = answer.assessmentResourcesDetail;
-                        let obtainedMarks = answer.obtainedMarks;
-                        if (obtainedMarks < 0) {
-                            obtainedMarks = 0; // Consider obtained marks as 0 if less than 0
-                        }
-                        if (
-                            assessmentResource?.resource?.DailyUpload?.accessDate &&
-                            new Date(assessmentResource.resource.DailyUpload.accessDate) < today
-                        ) {
-                            const obtainedWeightage =
-                                (obtainedMarks / assessmentResource.totalMarks) *
-                                assessmentResource.resource.DailyUpload.weightage;
-                            obtainedWeightageSum += obtainedWeightage;
-                            totalObtainedMarks += obtainedMarks; // Add to total obtained marks
-
-                            studentDetails.totalObtainedMarks += obtainedMarks;
-                            studentDetails.totalWeightage += obtainedWeightage;
-
-                            studentDetails.answers.push({
-                                type: 'AssessmentAnswer',
-                                resourceId: assessmentResource.resource.id,
-                                obtainedMarks: obtainedMarks,
-                                totalMarks: assessmentResource.totalMarks,
-                                weightage: obtainedWeightage,
-                            });
-                        }
-                    });
-
-                    studentData.push(studentDetails);
-                });
-
-                // Calculate average obtained weightage per student, including those who haven't answered
-                const totalStudentsInClass = classItem.classroomStudents.length;
-                const averageObtainedWeightage =
-                    totalStudentsInClass > 0
-                        ? obtainedWeightageSum / totalStudentsInClass
-                        : 0;
-
-                // Store data for the standard
-                standardsData[standardId] = {
-                    standardId: standardId,
-                    standardName: standardName,
-                    totalWeightage: currentTotalWeightage,
-                    obtainedWeightage: averageObtainedWeightage,
-                    totalObtainedMarks: totalObtainedMarks,
-                    students: studentData,
-                };
-
-                // Accumulate total weightage for the class
-                totalClassroomWeightage += currentTotalWeightage;
-                totalObtainedWeightage += averageObtainedWeightage;
-            }
-        });
-
-        // Calculate performance metrics for the class
-        const totalStandardsInClass = Object.keys(standardsData).length;
-        const classTotalWeightage =
-            totalStandardsInClass > 0
-                ? totalClassroomWeightage / totalStandardsInClass
-                : 0;
-        const classObtainedWeightage =
-            totalStandardsInClass > 0
-                ? totalObtainedWeightage / totalStandardsInClass
-                : 0;
-
-        classroomsData[classItem.id] = {
-            totalWeightage: classTotalWeightage,
-            obtainedWeightage: classObtainedWeightage,
-            standards: standardsData,
-        };
-
-        // Reset total weightages for the next class
-        totalClassroomWeightage = 0;
-        totalObtainedWeightage = 0;
-    });
-
-    // Calculate overall school performance metrics
-    const totalClasses = Object.keys(classroomsData).length;
-    let totalClassesWeightage = 0;
-    let totalClassesObtainedWeightage = 0;
-
-    // Sum up total weightage and obtained weightage for all classes
-    Object.values(classroomsData).forEach((classData) => {
-        totalClassesWeightage += classData.totalWeightage;
-        totalClassesObtainedWeightage += classData.obtainedWeightage;
-    });
-
-    // Calculate school performance metrics
-    const schoolTotalWeightage =
-        totalClasses > 0 ? totalClassesWeightage / totalClasses : 0;
-    const schoolObtainedWeightage =
-        totalClasses > 0 ? totalClassesObtainedWeightage / totalClasses : 0;
-
-    return {
-        totalWeightage: schoolTotalWeightage,
-        obtainedWeightage: schoolObtainedWeightage,
-        classrooms: classroomsData,
-    };
-};
+    if (today > uploadDateObj) {
+        return false;
+    }
+    return true;
+}
 
 const getTeacherDashboardSummaries = async ({ teacherId }) => {
     try {
@@ -723,6 +534,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 averageTotalWeightage: 0,
                 assignmentsSolved: 0,
                 assignmentsLeft: 0,
+                assignmentsMissed: 0,
             };
 
             return { code: 200, data: result };
@@ -905,6 +717,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 averageTotalWeightage: 0,
                 assignmentsSolved: 0,
                 assignmentsLeft: 0,
+                assignmentsMissed: 0,
             };
             return {
                 code: 200,
@@ -922,6 +735,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 averageTotalWeightage: 0,
                 assignmentsSolved: 0,
                 assignmentsLeft: 0,
+                assignmentsMissed: 0,
             };
             return {
                 code: 200,
@@ -931,6 +745,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
 
         let assignmentsSolved = 0;
         let assignmentsLeft = 0;
+        let assignmentsMissed = 0;
 
         const transformedData = data?.classroom?.classroomCourses?.map(course => {
             const standard = course?.standard;
@@ -970,7 +785,11 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                     if (upload.resource.type === RESOURCE_TYPES.ASSIGNMENT) {
                         if (upload.resource.AssessmentResourcesDetail.assessmentAnswers.length > 0) {
                             assignmentsSolved++;
-                        } else {
+                        } 
+                        else if (upload.resource.AssessmentResourcesDetail.assessmentAnswers.length === 0 && canSubmitAssessment(upload.accessDate, upload.resource.AssessmentResourcesDetail.deadline) === false) {
+                            assignmentsMissed++;
+                        } 
+                        else {
                             assignmentsLeft++;
                         }
                     }
@@ -1005,7 +824,8 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             averageObtainedWeightage,
             averageTotalWeightage,
             assignmentsSolved,
-            assignmentsLeft
+            assignmentsLeft,
+            assignmentsMissed
         };
 
         return { code: 200, data: result };
