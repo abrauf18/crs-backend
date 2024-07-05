@@ -721,6 +721,8 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 videosData: [],
                 averageObtainedWeightage: 0,
                 averageTotalWeightage: 0,
+                assignmentsSolved: 0,
+                assignmentsLeft: 0,
             };
 
             return { code: 200, data: result };
@@ -901,6 +903,8 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 videosData: [],
                 averageObtainedWeightage: 0,
                 averageTotalWeightage: 0,
+                assignmentsSolved: 0,
+                assignmentsLeft: 0,
             };
             return {
                 code: 200,
@@ -916,12 +920,17 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 videosData: [],
                 averageObtainedWeightage: 0,
                 averageTotalWeightage: 0,
+                assignmentsSolved: 0,
+                assignmentsLeft: 0,
             };
             return {
                 code: 200,
                 data: result
             };
         }
+
+        let assignmentsSolved = 0;
+        let assignmentsLeft = 0;
 
         const transformedData = data?.classroom?.classroomCourses?.map(course => {
             const standard = course?.standard;
@@ -957,6 +966,14 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                         totalPossibleMarks += upload.resource.AssessmentResourcesDetail?.totalMarks || 0;
                     }
                     obtainedWeightage += totalPossibleMarks > 0 ? (totalObtainedMarks / totalPossibleMarks) * upload.weightage : upload.weightage;
+
+                    if (upload.resource.type === RESOURCE_TYPES.ASSIGNMENT) {
+                        if (upload.resource.AssessmentResourcesDetail.assessmentAnswers.length > 0) {
+                            assignmentsSolved++;
+                        } else {
+                            assignmentsLeft++;
+                        }
+                    }
                 }
             })
             return {
@@ -986,7 +1003,9 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             standardsData,
             videosData,
             averageObtainedWeightage,
-            averageTotalWeightage
+            averageTotalWeightage,
+            assignmentsSolved,
+            assignmentsLeft
         };
 
         return { code: 200, data: result };
