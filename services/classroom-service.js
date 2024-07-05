@@ -807,6 +807,41 @@ const changeClassStatus = async ({ schoolId, classroomId, status }) => {
             return { code: 403, message: 'Unauthorized, class does not belong to this school' };
         }
 
+        if (status === CLASSROOM_STATUS.ACTIVE) {
+            const studentsInClassroom = await ClassroomStudent.findAll({
+                where: { classroomId: classroomId },
+                attributes: ['studentId']
+            });
+
+            const studentIds = studentsInClassroom.map(student => student.studentId);
+
+            const activeClassroomsWithStudents = await Classroom.findAll({
+                where: {
+                    status: CLASSROOM_STATUS.ACTIVE,
+                    id: { [Op.ne]: classroomId }
+                },
+                include: {
+                    model: ClassroomStudent,
+                    as: 'classroomStudents',
+                    where: {
+                        studentId: { [Op.in]: studentIds }
+                    },
+                    include: {
+                        model: User,
+                        as: 'student',
+                    }
+                }
+            });
+
+            const studentNames = activeClassroomsWithStudents.flatMap(classroom => 
+                classroom.classroomStudents.map(cs => cs.student.name)
+            );
+
+            if (activeClassroomsWithStudents.length > 0) {
+                return { code: 400, message: `${activeClassroomsWithStudents.length} ${activeClassroomsWithStudents.length > 1 ? 'students are' : 'student is'} enrolled in another active classroom: ${studentNames.join(', ')}`}
+            }
+        }
+
         const updated = await classroom.update({ status: status });
         return { code: 200, data: updated };
 
