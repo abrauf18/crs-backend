@@ -270,12 +270,12 @@ const schoolDashboard = async (req, res) => {
     const today = new Date();
     // today.setHours(0, 0, 0, 0);
 
-    const transformedData = data?.map(classItem => {
+    const transformedData = data?.map((classItem) => {
       const standardsMap = new Map();
       const currentDate = new Date();
 
       // Iterate over each course in the classroom to map standards
-      classItem.classroomCourses?.forEach(course => {
+      classItem.classroomCourses?.forEach((course) => {
         const standard = course.standard;
         if (standard) {
           // If the standard is not already in the map, add it
@@ -285,7 +285,7 @@ const schoolDashboard = async (req, res) => {
               standardName: standard.name,
               currentTotalWeightage: 0,
               usersWeightage: [],
-              averageObtainedWeightage: 0  // Default value set to 0
+              averageObtainedWeightage: 0, // Default value set to 0
             });
           }
 
@@ -294,57 +294,69 @@ const schoolDashboard = async (req, res) => {
           // Calculate the total weightage for the standard based on daily uploads up to today
           if (standard.dailyUploads && standard.dailyUploads.length > 0) {
             standardEntry.currentTotalWeightage += standard.dailyUploads
-              .filter(upload => new Date(upload.accessDate) <= currentDate)
+              .filter((upload) => new Date(upload.accessDate) <= currentDate)
               .reduce((acc, upload) => acc + upload.weightage, 0);
           }
         }
       });
 
       // Iterate over each student in the classroom to calculate obtained weightage
-      classItem.classroomStudents?.forEach(student => {
-        classItem.classroomCourses?.forEach(course => {
+      classItem.classroomStudents?.forEach((student) => {
+        classItem.classroomCourses?.forEach((course) => {
           const standard = course.standard;
           if (standard) {
             const standardEntry = standardsMap.get(standard.id);
 
             // Ensure the student is present in the usersWeightage array
-            let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+            let userEntry = standardEntry.usersWeightage.find(
+              (u) => u.userId === student.student.id
+            );
             if (!userEntry) {
               userEntry = {
                 userId: student.student.id,
                 userName: student.student.name,
                 obtainedWeightage: 0,
-                questionsDetails: []
+                questionsDetails: [],
               };
               standardEntry.usersWeightage.push(userEntry);
             }
 
             // Track total marks and obtained marks for video questions
             const videoWeightages = new Map();
-            student.student.VideoQuestionAnswers?.forEach(answer => {
+            student.student.VideoQuestionAnswers?.forEach((answer) => {
               const videoQuestion = answer.question;
-              if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
+              if (
+                videoQuestion.video &&
+                videoQuestion.video.resource.DailyUpload
+              ) {
                 const dailyUpload = videoQuestion.video.resource.DailyUpload;
-                if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+                if (
+                  new Date(dailyUpload.accessDate) <= currentDate &&
+                  dailyUpload.standardId === standard.id
+                ) {
                   const videoId = videoQuestion.video.id;
                   if (!videoWeightages.has(videoId)) {
                     videoWeightages.set(videoId, {
                       totalMarks: 0,
                       obtainedMarks: 0,
-                      weightage: dailyUpload.weightage
+                      weightage: dailyUpload.weightage,
                     });
                   }
                   const questionTotalMarks = videoQuestion.totalMarks;
-                  const questionObtainedMarks = Math.max(answer.obtainedMarks, 0);
+                  const questionObtainedMarks = Math.max(
+                    answer.obtainedMarks,
+                    0
+                  );
                   videoWeightages.get(videoId).totalMarks += questionTotalMarks;
-                  videoWeightages.get(videoId).obtainedMarks += questionObtainedMarks;
+                  videoWeightages.get(videoId).obtainedMarks +=
+                    questionObtainedMarks;
 
                   userEntry.questionsDetails.push({
                     id: videoQuestion.id,
                     statement: videoQuestion.statement,
                     answer: answer.answer,
                     totalMarks: questionTotalMarks,
-                    obtainedMarks: questionObtainedMarks
+                    obtainedMarks: questionObtainedMarks,
                   });
                 }
               }
@@ -360,14 +372,18 @@ const schoolDashboard = async (req, res) => {
             });
 
             // Calculate obtained weightage from assessment answers
-            student.student.AssessmentAnswers?.forEach(answer => {
+            student.student.AssessmentAnswers?.forEach((answer) => {
               const assessmentResource = answer.assessmentResourcesDetail;
               if (assessmentResource.resource.DailyUpload) {
                 const dailyUpload = assessmentResource.resource.DailyUpload;
-                if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+                if (
+                  new Date(dailyUpload.accessDate) <= currentDate &&
+                  dailyUpload.standardId === standard.id
+                ) {
                   const weightage = dailyUpload.weightage;
                   const obtainedMarks = Math.max(answer.obtainedMarks, 0);
-                  const questionWeightage = (obtainedMarks / assessmentResource.totalMarks) * weightage;
+                  const questionWeightage =
+                    (obtainedMarks / assessmentResource.totalMarks) * weightage;
                   userEntry.obtainedWeightage += questionWeightage;
 
                   userEntry.questionsDetails.push({
@@ -375,7 +391,7 @@ const schoolDashboard = async (req, res) => {
                     statement: assessmentResource.statement,
                     answer: answer.answer,
                     totalMarks: assessmentResource.totalMarks,
-                    obtainedMarks: obtainedMarks
+                    obtainedMarks: obtainedMarks,
                   });
                 }
               }
@@ -385,9 +401,13 @@ const schoolDashboard = async (req, res) => {
       });
 
       // Calculate the average obtained weightage and student distribution for each standard
-      standardsMap?.forEach(standardEntry => {
-        const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
-        standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
+      standardsMap?.forEach((standardEntry) => {
+        const totalObtainedWeightage = standardEntry.usersWeightage.reduce(
+          (acc, user) => acc + user.obtainedWeightage,
+          0
+        );
+        standardEntry.averageObtainedWeightage =
+          totalObtainedWeightage / classItem.classroomStudents.length;
 
         // Check if averageObtainedWeightage is null and set it to 0
         if (isNaN(standardEntry.averageObtainedWeightage)) {
@@ -396,11 +416,16 @@ const schoolDashboard = async (req, res) => {
       });
 
       // Calculate the total obtained score for each student and the overall average
-      const studentsData = classItem.classroomStudents?.map(student => {
-        const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
-          const userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
-          return acc + (userEntry ? userEntry.obtainedWeightage : 0);
-        }, 0);
+      const studentsData = classItem.classroomStudents?.map((student) => {
+        const totalObtainedScore = Array.from(standardsMap.values()).reduce(
+          (acc, standardEntry) => {
+            const userEntry = standardEntry.usersWeightage.find(
+              (u) => u.userId === student.student.id
+            );
+            return acc + (userEntry ? userEntry.obtainedWeightage : 0);
+          },
+          0
+        );
         return {
           userId: student.student.id,
           userName: student.student.name,
@@ -412,31 +437,47 @@ const schoolDashboard = async (req, res) => {
         };
       });
 
-      let avgObtainedWeightage = 0
+      let avgObtainedWeightage = 0;
       if (studentsData.length > 0) {
         // Calculate total obtained score for all students and the overall average
         const totalObtainedScoreSum = studentsData.reduce((acc, student) => {
           // Check if student.totalObtainedScore is a number, if not, add 0 to the accumulator
-          return acc + (isNaN(student.totalObtainedScore) ? 0 : student.totalObtainedScore);
+          return (
+            acc +
+            (isNaN(student.totalObtainedScore) ? 0 : student.totalObtainedScore)
+          );
         }, 0);
-        avgObtainedWeightage = classItem.classroomStudents.length > 0 ? totalObtainedScoreSum / classItem.classroomStudents.length : 0;
+        avgObtainedWeightage =
+          classItem.classroomStudents.length > 0
+            ? totalObtainedScoreSum / classItem.classroomStudents.length
+            : 0;
       }
 
       // Calculate total weightage of all standards where access date <= today
-      const totalWeightageOfStandards = classItem.classroomCourses.reduce((acc, course) => {
-        const standard = course.standard;
-        if (standard && standard.dailyUploads && standard.dailyUploads.length > 0) {
-          const totalWeightage = standard.dailyUploads
-            .filter(upload => new Date(upload.accessDate) <= today)
-            .reduce((sum, upload) => sum + upload.weightage, 0);
-          return acc + totalWeightage;
-        }
-        return acc;
-      }, 0);
+      const totalWeightageOfStandards = classItem.classroomCourses.reduce(
+        (acc, course) => {
+          const standard = course.standard;
+          if (
+            standard &&
+            standard.dailyUploads &&
+            standard.dailyUploads.length > 0
+          ) {
+            const totalWeightage = standard.dailyUploads
+              .filter((upload) => new Date(upload.accessDate) <= today)
+              .reduce((sum, upload) => sum + upload.weightage, 0);
+            return acc + totalWeightage;
+          }
+          return acc;
+        },
+        0
+      );
 
       // Calculate the average weightage per standard
       const numberOfStandards = classItem.classroomCourses.length;
-      const averageWeightagePerStandard = numberOfStandards > 0 ? totalWeightageOfStandards / numberOfStandards : 0;
+      const averageWeightagePerStandard =
+        numberOfStandards > 0
+          ? totalWeightageOfStandards / numberOfStandards
+          : 0;
 
       return {
         classId: classItem.id,
@@ -444,12 +485,22 @@ const schoolDashboard = async (req, res) => {
         standardList: Array.from(standardsMap.values()),
         studentsData,
         avgObtainedWeightage,
-        avgTotalWeightage: averageWeightagePerStandard
+        avgTotalWeightage: averageWeightagePerStandard,
       };
     });
 
-    const avgObtainedWeightage = (transformedData.reduce((acc, classItem) => acc + classItem.avgObtainedWeightage, 0) / transformedData.length).toFixed(1);
-    const avgTotalWeightage = (transformedData.reduce((acc, classItem) => acc + classItem.avgTotalWeightage, 0) / transformedData.length).toFixed(1)
+    const avgObtainedWeightage = (
+      transformedData.reduce(
+        (acc, classItem) => acc + classItem.avgObtainedWeightage,
+        0
+      ) / transformedData.length
+    ).toFixed(1);
+    const avgTotalWeightage = (
+      transformedData.reduce(
+        (acc, classItem) => acc + classItem.avgTotalWeightage,
+        0
+      ) / transformedData.length
+    ).toFixed(1);
 
     const users = await Model.User.findAll({});
 
@@ -465,7 +516,7 @@ const schoolDashboard = async (req, res) => {
         [literal("date_trunc('month', \"createdAt\")"), "ASC"],
       ],
       where: {
-        school_id: schoolId
+        school_id: schoolId,
       },
       raw: true,
     });
@@ -497,7 +548,6 @@ const schoolDashboard = async (req, res) => {
       obtainedWeightage: avgObtainedWeightage,
       usersJoining: cumulativeResults,
       usersCount: users.length,
-
     };
 
     return successResponse(
@@ -717,14 +767,14 @@ const listTeacher = async (req, res) => {
       teacher.dataValues.classroomCount = classroomCount; // Add the count to the teacher object
     }
 
-    const transformedData = teachers?.map(user => ({
+    const transformedData = teachers?.map((user) => ({
       classroomCount: user.dataValues.classroomCount.toString(),
       User: {
         id: user.dataValues.id,
         name: user.dataValues.name,
         email: user.dataValues.email,
-        image: user.dataValues.image
-      }
+        image: user.dataValues.image,
+      },
     }));
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -773,18 +823,18 @@ const getTeacher = async (req, res) => {
       ],
     });
 
-    let classrooms = []
+    let classrooms = [];
     classrooms = await Model.Classroom.findAll({
       where: {
         schoolId: school_id,
         status: CLASSROOM_STATUS.ACTIVE,
-      }
+      },
     });
 
     const response = {
       teachers,
-      classrooms
-    }
+      classrooms,
+    };
 
     return successResponse(res, 200, "Teachers fetched successfully", response);
   } catch (error) {
@@ -834,7 +884,7 @@ const inviteTeacher = async (req, res) => {
 
 const getSchoolCourses = async (req, res) => {
   try {
-    let { schoolId } = req.query;
+    let { schoolId, teacherId } = req.query;
 
     const course = await Model.Classroom.findAll({
       attributes: ["id"],
@@ -849,6 +899,12 @@ const getSchoolCourses = async (req, res) => {
               as: "standard",
             },
           ],
+        },
+        {
+          model: Model.User,
+          where: {
+            id: teacherId,
+          },
         },
       ],
       where: {
@@ -956,132 +1012,6 @@ const getResourceDetail = async (req, res) => {
   }
 };
 
-// const getResourceResult = async (req, res) => {
-//   try {
-//     let { resourceId, schoolId } = req.query;
-
-//     const courseDetail = await Model.Resource.findAll({
-//       // attributes: ["id"],
-//       include: [
-//         {
-//           model: Model.Video,
-//           as: "video",
-//           include: [
-//             {
-//               model: Model.Question,
-//               as: "questions",
-//               include: [
-//                 {
-//                   model: Model.VideoQuestionAnswer,
-//                   as: "answers",
-//                   include: [
-//                     {
-//                       model: Model.User,
-//                       as: "user",
-//                       where: {
-//                         school_id: schoolId,
-//                       },
-//                     },
-//                   ],
-//                 },
-//               ],
-//             },
-//           ],
-//         },
-//         {
-//           model: Model.AssessmentResourcesDetail,
-//           as: "AssessmentResourcesDetail",
-//           attributes: ["id", "totalMarks"],
-//           include: [
-//             {
-//               model: Model.AssessmentAnswer,
-//               as: "assessmentAnswers",
-//               attributes: ["id", "obtainedMarks", "answerURL"],
-//               include: [
-//                 {
-//                   model: Model.User,
-//                   as: "user",
-//                   attributes: ["id", "name", "email", "image"],
-//                   where: {
-//                     school_id: schoolId,
-//                   },
-//                 },
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//       where: {
-//         id: resourceId,
-//       },
-//     });
-
-//     const result = courseDetail.map((resource) => {
-//       let totalObtainedMarks = 0;
-//       let totalPossibleMarks = 0;
-//       let totalVideoAnswers = 0;
-//       let totalAssessmentAnswers = 0;
-//       let totalMarks = 0;
-//       let averageVideoQuestionsMarks = 0;
-//       let obtainedMarks = 0;
-//       let averageObtainedMarks = 0;
-
-
-//       if (resource.video) {
-//         resource.video.questions.forEach((question, index) => {
-//           totalMarks += question.totalMarks;
-//           question.answers.forEach((answer) => {
-//             obtainedMarks = Math.max(answer.obtainedMarks, 0);
-//             totalObtainedMarks += obtainedMarks;
-//             totalVideoAnswers += 1;
-//           });
-//           averageVideoQuestionsMarks += obtainedMarks / resource.video.questions[index].answers.length;
-//           console.log(averageVideoQuestionsMarks)
-//         });
-//       }
-
-//       console.log("\n\n\n", averageVideoQuestionsMarks, totalAssessmentAnswers)
-
-//       if (resource.AssessmentResourcesDetail) {
-//         resource.AssessmentResourcesDetail.assessmentAnswers.forEach(
-//           (answer) => {
-//             totalMarks += resource.AssessmentResourcesDetail.totalMarks;
-//             const obtainedMarks = Math.max(answer.obtainedMarks, 0);
-//             totalObtainedMarks += obtainedMarks;
-//             totalAssessmentAnswers += 1;
-//             totalPossibleMarks += resource.AssessmentResourcesDetail.totalMarks;
-//           }
-//         );
-//       }
-
-
-
-//       if (totalAssessmentAnswers === 0) {
-//         averageObtainedMarks = averageVideoQuestionsMarks;
-//       } else {
-//         const totalAnswers = totalAssessmentAnswers;
-//         averageObtainedMarks =
-//           totalAnswers > 0 ? totalObtainedMarks / totalAnswers : 0;
-//       }
-//       // const averagePercentage =
-//       //   totalPossibleMarks > 0
-//       //     ? (totalObtainedMarks / totalPossibleMarks) * 100
-//       //     : 0;
-
-
-//       return {
-//         ...resource.toJSON(),
-//         averageObtainedMarks,
-//         totalMarks,
-//       };
-//     });
-
-//     return successResponse(res, 200, "Data fetched successfully", result);
-//   } catch (error) {
-//     return failureResponse(res, 500, error.message);
-//   }
-// };
-
 const getResourceResult = async (req, res) => {
   try {
     let { resourceId, schoolId } = req.query;
@@ -1146,11 +1076,10 @@ const getResourceResult = async (req, res) => {
       let totalObtainedMarks = 0;
       let totalPossibleMarks = 0;
       let totalAssessmentAnswers = 0;
-      let totalObtainedAverage = 0
+      let totalObtainedAverage = 0;
 
       if (resource.video) {
         resource.video.questions.forEach((question) => {
-
           let totalObtainedMarksOfOneQuestion = 0;
           let totalAnswersOfOneQuestion = 0;
 
@@ -1161,7 +1090,10 @@ const getResourceResult = async (req, res) => {
           });
 
           totalPossibleMarks += question.totalMarks;
-          totalObtainedAverage += totalAnswersOfOneQuestion > 0 ? totalObtainedMarksOfOneQuestion / totalAnswersOfOneQuestion : 0;
+          totalObtainedAverage +=
+            totalAnswersOfOneQuestion > 0
+              ? totalObtainedMarksOfOneQuestion / totalAnswersOfOneQuestion
+              : 0;
         });
       }
 
@@ -1174,7 +1106,10 @@ const getResourceResult = async (req, res) => {
           }
         );
         totalPossibleMarks = resource.AssessmentResourcesDetail.totalMarks;
-        totalObtainedAverage += totalAssessmentAnswers > 0 ? totalObtainedMarks / totalAssessmentAnswers : 0;
+        totalObtainedAverage +=
+          totalAssessmentAnswers > 0
+            ? totalObtainedMarks / totalAssessmentAnswers
+            : 0;
       }
 
       return {
@@ -1190,6 +1125,31 @@ const getResourceResult = async (req, res) => {
   }
 };
 
+const getAllTeacher = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+
+    let { schoolId } = req.query;
+
+    if (!schoolId) {
+      return successResponse(res, 200, "Missing required Failed");
+    }
+
+    // First, get the teachers
+    const teachers = await Model.User.findAll({
+      attributes: ["id", "name"],
+      where: {
+        school_id: schoolId,
+      },
+      raw: true,
+    });
+
+    return successResponse(res, 200, "Teachers fetched successfully", teachers);
+  } catch (error) {
+    return failureResponse(res, 500, error.message);
+  }
+};
 
 module.exports = {
   createSchool,
@@ -1207,4 +1167,5 @@ module.exports = {
   getSchoolCourses,
   getResourceDetail,
   getResourceResult,
+  getAllTeacher
 };

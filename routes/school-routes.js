@@ -71,6 +71,14 @@ router.get(
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.getResourceResult
 );
+
+router.get(
+    '/get-resource-result',
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    schoolController.getAllTeacher
+);
+
 router.post("/place-order", stripe.stripeRedirection);
 router.post("/webhook", stripe.stripeNotification);
 
