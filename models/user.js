@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "studentId",
         as: "videoTrackings",
       });
-      User.hasOne(models.Classroom, {
+      User.hasMany(models.Classroom, {
         foreignKey: "teacherId",
       });
       User.hasMany(models.Ticket, {
@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       });
       User.hasMany(models.AssessmentAnswer, { foreignKey: 'userId' })
       User.hasMany(models.VideoQuestionAnswer, { foreignKey: 'userId' })
+      User.hasOne(models.ClassroomStudent, { foreignKey: 'studentId' })
     }
   }
 

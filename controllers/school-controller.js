@@ -886,6 +886,8 @@ const getSchoolCourses = async (req, res) => {
   try {
     let { schoolId, teacherId } = req.query;
 
+    const teacherCondition = teacherId ? { id: teacherId } : {};
+
     const course = await Model.Classroom.findAll({
       attributes: ["id"],
       include: [
@@ -902,9 +904,7 @@ const getSchoolCourses = async (req, res) => {
         },
         {
           model: Model.User,
-          where: {
-            id: teacherId,
-          },
+          where: teacherCondition,
         },
       ],
       where: {
@@ -1014,7 +1014,14 @@ const getResourceDetail = async (req, res) => {
 
 const getResourceResult = async (req, res) => {
   try {
-    let { resourceId, schoolId } = req.query;
+    let { resourceId, schoolId, teacherId } = req.query;
+
+    const teachersClassrooms = await Model.Classroom.findAll({
+      where: {
+        teacherId: teacherId,
+      },
+      attributes: ["id"],
+    });
 
     const courseDetail = await Model.Resource.findAll({
       // attributes: ["id"],
@@ -1030,6 +1037,7 @@ const getResourceResult = async (req, res) => {
                 {
                   model: Model.VideoQuestionAnswer,
                   as: "answers",
+                  separate: true,
                   include: [
                     {
                       model: Model.User,
@@ -1037,6 +1045,18 @@ const getResourceResult = async (req, res) => {
                       where: {
                         school_id: schoolId,
                       },
+                      include: teacherId ? [{
+                        model: Model.ClassroomStudent,
+                        attributes: ["id"],
+                        include: {
+                          model: Model.Classroom,
+                          as: 'classroom',
+                          attributes: ["id"],
+                          where: {
+                            id: teachersClassrooms.map((classroom) => classroom.id)
+                          },
+                        }
+                      }] : [],
                     },
                   ],
                 },
@@ -1053,6 +1073,7 @@ const getResourceResult = async (req, res) => {
               model: Model.AssessmentAnswer,
               as: "assessmentAnswers",
               attributes: ["id", "obtainedMarks", "answerURL"],
+              separate: true,
               include: [
                 {
                   model: Model.User,
@@ -1061,6 +1082,18 @@ const getResourceResult = async (req, res) => {
                   where: {
                     school_id: schoolId,
                   },
+                  include: teacherId ? [{
+                    model: Model.ClassroomStudent,
+                    attributes: ["id"],
+                    include: {
+                      model: Model.Classroom,
+                      as: 'classroom',
+                      attributes: ["id"],
+                      where: {
+                        id: teachersClassrooms.map((classroom) => classroom.id)
+                      },
+                    }
+                  }] : [],
                 },
               ],
             },
