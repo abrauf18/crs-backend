@@ -1016,6 +1016,16 @@ const getResourceResult = async (req, res) => {
   try {
     let { resourceId, schoolId, teacherId } = req.query;
 
+    const teacher = await Model.User.findOne({
+      where: {
+        id: teacherId,
+      },
+    });
+
+    if (!teacher) {
+      return failureResponse(res, 404, "Teacher Not Found");
+    }
+
     const courseDetail = await Model.Resource.findAll({
       // attributes: ["id"],
       include: [
