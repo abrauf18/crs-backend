@@ -1016,12 +1016,12 @@ const getResourceResult = async (req, res) => {
   try {
     let { resourceId, schoolId, teacherId } = req.query;
 
-    const teachersClassrooms = await Model.Classroom.findAll({
+    const teachersClassrooms = teacherId ? await Model.Classroom.findAll({
       where: {
         teacherId: teacherId,
       },
       attributes: ["id"],
-    });
+    }) : [];
 
     const courseDetail = await Model.Resource.findAll({
       // attributes: ["id"],
