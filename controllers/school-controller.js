@@ -1016,13 +1016,6 @@ const getResourceResult = async (req, res) => {
   try {
     let { resourceId, schoolId, teacherId } = req.query;
 
-    const teachersClassrooms = teacherId ? await Model.Classroom.findAll({
-      where: {
-        teacherId: teacherId,
-      },
-      attributes: ["id"],
-    }) : [];
-
     const courseDetail = await Model.Resource.findAll({
       // attributes: ["id"],
       include: [
@@ -1047,13 +1040,14 @@ const getResourceResult = async (req, res) => {
                       },
                       include: teacherId ? [{
                         model: Model.ClassroomStudent,
-                        attributes: ["id"],
+                        attributes: ["id", "classroomId", "studentId"],
+                        required: true,
                         include: {
                           model: Model.Classroom,
                           as: 'classroom',
-                          attributes: ["id"],
+                          attributes: ["id", "teacherId"],
                           where: {
-                            id: teachersClassrooms.map((classroom) => classroom.id)
+                            teacherId: teacherId
                           },
                         }
                       }] : [],
@@ -1084,13 +1078,14 @@ const getResourceResult = async (req, res) => {
                   },
                   include: teacherId ? [{
                     model: Model.ClassroomStudent,
-                    attributes: ["id"],
+                    attributes: ["id", "classroomId", "studentId"],
+                    required: true,
                     include: {
                       model: Model.Classroom,
                       as: 'classroom',
-                      attributes: ["id"],
+                      attributes: ["id", "teacherId"],
                       where: {
-                        id: teachersClassrooms.map((classroom) => classroom.id)
+                        teacherId: teacherId
                       },
                     }
                   }] : [],
