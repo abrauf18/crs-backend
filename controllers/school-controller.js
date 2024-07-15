@@ -1158,6 +1158,10 @@ const getResourceResult = async (req, res) => {
         ...resource.toJSON(),
         averageObtainedMarks: totalObtainedAverage,
         totalMarks: totalPossibleMarks,
+        teacher: {
+          id: teacher.id || '',
+          name: teacher.name || '',
+        }
       };
     });
 
