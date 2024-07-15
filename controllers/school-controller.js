@@ -1016,14 +1016,18 @@ const getResourceResult = async (req, res) => {
   try {
     let { resourceId, schoolId, teacherId } = req.query;
 
-    const teacher = await Model.User.findOne({
-      where: {
-        id: teacherId,
-      },
-    });
+    let teacher = {};
 
-    if (!teacher) {
-      return failureResponse(res, 404, "Teacher Not Found");
+    if (teacherId) {
+      teacher = await Model.User.findOne({
+        where: {
+          id: teacherId,
+        },
+      });
+
+      if (!teacher) {
+        return failureResponse(res, 404, "Teacher Not Found");
+      }
     }
 
     const courseDetail = await Model.Resource.findAll({
@@ -1159,6 +1163,7 @@ const getResourceResult = async (req, res) => {
 
     return successResponse(res, 200, "Data fetched successfully", result);
   } catch (error) {
+    console.log('\n\n\n\ ', error)
     return failureResponse(res, 500, error.message);
   }
 };
