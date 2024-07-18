@@ -127,7 +127,7 @@ const getStandard = async ({ standardId }) => {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate', 'weightage'],
+                attributes: ['accessDate', 'weightage', 'topicName'],
                 include: [{
                     model: Resource,
                     as: 'resource',
@@ -153,10 +153,10 @@ const getStandard = async ({ standardId }) => {
         const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
             const date = upload.accessDate;
             if (!result[date]) {
-                result[date] = [];
+                result[date] = { topicName: upload.topicName, resources: [] };
             }
             if (upload.resource) {
-                result[date].push({ resource: upload.resource, weightage: upload.weightage });
+                result[date].resources.push({ resource: upload.resource, weightage: upload.weightage });
             }
             return result;
         }, {});
@@ -169,8 +169,8 @@ const getStandard = async ({ standardId }) => {
         // as required on frontend
         const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
             date: date,
-            topics: uploadsByDate[date].map(({ resource, weightage }) => ({
-
+            topicName: uploadsByDate[date].topicName,
+            topics: uploadsByDate[date].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
                 name: resource.name,
                 type: resource.type,
