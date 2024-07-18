@@ -123,11 +123,55 @@ const getSummarizedStandard = async (req, res) => {
     }
 };
 
+const getStandardTopics = async (req, res) => {
+    try {
+        const { standardid } = req.headers;
+
+        const reply = await standardService.getStandardTopics({ standardId: standardid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getTopicResources = async (req, res) => {
+    try {
+        const { standardid, topicname } = req.headers;
+
+        const reply = await standardService.getTopicResources({ standardId: standardid, topicName: topicname });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createStandard,
     updateStandard,
     getStandard,
     getAllSummarizedStandards,
     deleteStandards,
-    getSummarizedStandard
+    getSummarizedStandard,
+    getStandardTopics,
+    getTopicResources
 };

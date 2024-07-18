@@ -3,6 +3,7 @@ const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+const dailyupload = require("../models/dailyupload.js");
 
 const createStandard = async ({ name, description, dailyUploads }) => {
     try {
@@ -222,6 +223,14 @@ const getAllSummarizedStandards = async () => {
                         WHERE "du"."standardId" = "Standard"."id" AND "r"."type" != 'video'
                     )`),
                     'totalNonVideoUploads'
+                ],
+                [
+                    Sequelize.literal(`(
+                        SELECT COUNT(DISTINCT "du"."topicName")
+                        FROM "DailyUploads" AS "du"
+                        WHERE "du"."standardId" = "Standard"."id"
+                    )`),
+                    'topicCount'
                 ]
             ]
         });
@@ -311,6 +320,14 @@ const getSummarizedStandard = async ({ standardId }) => {
                         WHERE "du"."standardId" = "Standard"."id" AND "r"."type" != 'video'
                     )`),
                     'totalNonVideoUploads'
+                ],
+                [
+                    Sequelize.literal(`(
+                        SELECT COUNT(DISTINCT "du"."topicName")
+                        FROM "DailyUploads" AS "du"
+                        WHERE "du"."standardId" = "Standard"."id"
+                    )`),
+                    'topicCount'
                 ]
             ]
         });
@@ -324,11 +341,154 @@ const getSummarizedStandard = async ({ standardId }) => {
     }
 }
 
+const getStandardTopics = async ({ standardId }) => {
+    try {
+        const standard = await Standard.findByPk(standardId, {
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['accessDate', 'weightage', 'topicName'],
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id', 'name', 'type', 'topic'],
+                    include: [{
+                        model: Video,
+                        as: 'video',
+                        attributes: ['id'],
+                        required: false,
+                    }, {
+                        model: AssessmentResourcesDetail,
+                        as: 'AssessmentResourcesDetail',
+                        attributes: ['id'],
+                        required: false,
+                    }]
+                }]
+            },]
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const topicResourceCounts = {};
+        let totalVideoCount = 0;
+        let totalNonVideoCount = 0;
+
+        standard.dailyUploads.forEach(upload => {
+            const topicName = upload.topicName;
+            if (!topicResourceCounts[topicName]) {
+                topicResourceCounts[topicName] = { videoCount: 0, nonVideoCount: 0 };
+            }
+            if (upload.resource.video) {
+                topicResourceCounts[topicName].videoCount++;
+                totalVideoCount++;
+            } else {
+                topicResourceCounts[topicName].nonVideoCount++;
+                totalNonVideoCount++;
+            }
+        });
+
+        topicResourceCounts['All Resources'] = { videoCount: totalVideoCount, nonVideoCount: totalNonVideoCount };
+
+        const totalTopics = Object.keys(topicResourceCounts).length
+
+        return { 
+            code: 200, 
+            data: {
+                totalTopics,
+                topicResourceCounts
+            } 
+        };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
+const getTopicResources = async ({ standardId, topicName }) => {
+    try {
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const standard = await Standard.findByPk(standardId, {
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['accessDate', 'weightage', 'topicName'],
+                where: topicName? { topicName }: {},
+                include: [{
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id', 'name', 'type', 'topic'],
+                    include: [{
+                        model: Video,
+                        as: 'video',
+                        attributes: ['id']
+                    }, {
+                        model: AssessmentResourcesDetail,
+                        as: 'AssessmentResourcesDetail',
+                        attributes: ['id', 'totalMarks', 'deadline']
+                    }]
+                }]
+            },]
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Topic not found' };
+        }
+
+        // Transform the data
+        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
+            const date = upload.accessDate;
+            if (!result[date]) {
+                result[date] = { topicName: upload.topicName, resources: [] };
+            }
+            if (upload.resource) {
+                result[date].resources.push({ resource: upload.resource, weightage: upload.weightage });
+            }
+            return result;
+        }, {});
+
+        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
+            date: date,
+            topicName: uploadsByDate[date].topicName,
+            topics: uploadsByDate[date].resources.map(({ resource, weightage }) => ({
+                resourceId: resource.id,
+                name: resource.name,
+                type: resource.type,
+                topic: resource.topic,
+                videoId: resource.video ? resource.video.id : null,
+                weightage: weightage || 0,
+                deadline: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.deadline : null,
+                totalMarks: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.totalMarks : null,
+            }))
+        }));
+
+        const result = {
+            name: standard.name,
+            description: standard.description,
+            dailyUploads: transformedDailyUploads
+        };
+
+        return { code: 200, data: result };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
 module.exports = {
     createStandard,
     updateStandard,
     getStandard,
     getAllSummarizedStandards,
     deleteStandards,
-    getSummarizedStandard
+    getSummarizedStandard,
+    getStandardTopics,
+    getTopicResources
 };

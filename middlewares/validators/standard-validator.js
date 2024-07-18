@@ -59,9 +59,26 @@ const getSummarizedStandard = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const getStandardTopics = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const getTopicResources = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        topicname: Joi.string().optional().allow(''),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createStandard,
     updateStandard,
     getStandard,
-    getSummarizedStandard
+    getSummarizedStandard,
+    getStandardTopics,
+    getTopicResources
 };
