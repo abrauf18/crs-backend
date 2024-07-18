@@ -52,4 +52,20 @@ router.get(
     standardController.getSummarizedStandard
 );
 
+router.get(
+    "/getStandardTopics",
+    standardValidation.getStandardTopics,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getStandardTopics
+);
+
+router.get(
+    "/getTopicResources",
+    standardValidation.getTopicResources,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getTopicResources
+);
+
 module.exports = router;
