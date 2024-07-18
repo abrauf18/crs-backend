@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       allowNull: false,
     },
+    topicName:{
+      type: DataTypes.STRING,
+      defaultValue:'',
+      allowNull: false,
+    },
     standardId: {
       type: DataTypes.UUID,
       defaultValue:'',
