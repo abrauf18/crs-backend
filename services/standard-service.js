@@ -391,13 +391,19 @@ const getStandardTopics = async ({ standardId }) => {
 
         topicResourceCounts['All Resources'] = { videoCount: totalVideoCount, nonVideoCount: totalNonVideoCount };
 
-        const totalTopics = Object.keys(topicResourceCounts).length
+        const topicResourceCountsArray = Object.entries(topicResourceCounts).map(([topic, counts]) => ({
+            topicName: topic,
+            ...counts
+        }));
+
+        const totalTopics = topicResourceCountsArray.length;
 
         return { 
             code: 200, 
             data: {
+                name: standard.name,
                 totalTopics,
-                topicResourceCounts
+                topicResourceCounts: topicResourceCountsArray
             } 
         };
     } catch (error) {
