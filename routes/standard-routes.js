@@ -38,10 +38,11 @@ router.get(
 );
 
 router.delete(
-    "/deleteStandards",
+    "/deleteStandard",
+    standardValidation.deleteStandard,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
-    standardController.deleteStandards
+    standardController.deleteStandard
 );
 
 router.get(

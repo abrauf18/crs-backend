@@ -286,9 +286,18 @@ const getAllSummarizedStandards = async () => {
 //     }
 // };
 
-const deleteStandards = async () => {
+const deleteStandard = async ({ standardId }) => {
     try {
-        await Standard.destroy({ where: {} });
+        const exisitingStandard = await Standard.findByPk(standardId);
+        if (!exisitingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+        
+        await Standard.destroy({ 
+            where: {
+                id: standardId
+            } 
+        });
         return { code: 200 };
     } catch (error) {
         logger.error(error?.message || 'An error occurred while deleting the standards');
@@ -493,7 +502,7 @@ module.exports = {
     updateStandard,
     getStandard,
     getAllSummarizedStandards,
-    deleteStandards,
+    deleteStandard,
     getSummarizedStandard,
     getStandardTopics,
     getTopicResources

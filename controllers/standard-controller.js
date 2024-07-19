@@ -86,12 +86,17 @@ const getAllSummarizedStandards = async (req, res) => {
     }
 };
 
-const deleteStandards = async (req, res) => {
+const deleteStandard = async (req, res) => {
     try {
-        const reply = await standardService.deleteStandards();
+        const { standardid } = req.headers;
+
+        const reply = await standardService.deleteStandard({ standardId: standardid });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
         }
         else {
             return handleInternalServerError(res);
@@ -170,7 +175,7 @@ module.exports = {
     updateStandard,
     getStandard,
     getAllSummarizedStandards,
-    deleteStandards,
+    deleteStandard,
     getSummarizedStandard,
     getStandardTopics,
     getTopicResources
