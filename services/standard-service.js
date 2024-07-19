@@ -389,7 +389,7 @@ const getStandardTopics = async ({ standardId }) => {
             }
         });
 
-        topicResourceCounts['All-Topics'] = { videoCount: totalVideoCount, nonVideoCount: totalNonVideoCount };
+        // topicResourceCounts['All-Topics'] = { videoCount: totalVideoCount, nonVideoCount: totalNonVideoCount };
 
         const topicResourceCountsArray = Object.entries(topicResourceCounts).map(([topic, counts]) => ({
             topicName: topic,
