@@ -70,12 +70,11 @@ const updateUserProfile = async ({ user, image, name, email, password, schoolNam
         }
 
         if (password != "") {
-            const hashedPassword = bcrypt.hashSync(password, 10);
             await user.update({
                 name,
                 email,
                 image,
-                password: hashedPassword,
+                password,
             });
         } else {
             await user.update({
