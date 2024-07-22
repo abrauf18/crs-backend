@@ -4,7 +4,14 @@ const RESOURCE_TYPES = {
     EXIT_TICKET_TEST: "exit-ticket-test", 
     WORKSHEET: "worksheet", 
     QUIZ: "quiz", 
-    ASSIGNMENT: "assignment"
+    ASSIGNMENT: "assignment",
+    LAB: 'lab',
+    STATION: 'station',
+    ACTIVITY: 'activity',
+    GUIDED_NOTE: 'guided-note',
+    FORMATIVE_ASSESSMENT: 'formative-assessment',
+    SUMMARIZED_ASSESSMENT: 'summarize-assessment',
+    DATA_TRACKER: 'data-tracker'
 }
 
 const RESOURCE_STATUS = { 
