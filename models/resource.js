@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
           RESOURCE_TYPES.ACTIVITY,
           RESOURCE_TYPES.GUIDED_NOTE,
           RESOURCE_TYPES.FORMATIVE_ASSESSMENT,
-          RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,
+          RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,
           RESOURCE_TYPES.DATA_TRACKER,
         ),
       allowNull: false,
