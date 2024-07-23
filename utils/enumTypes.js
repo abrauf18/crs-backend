@@ -10,7 +10,7 @@ const RESOURCE_TYPES = {
     ACTIVITY: 'activity',
     GUIDED_NOTE: 'guided-note',
     FORMATIVE_ASSESSMENT: 'formative-assessment',
-    SUMMARIZED_ASSESSMENT: 'summarize-assessment',
+    SUMMARIZE_ASSESSMENT: 'summarize-assessment',
     DATA_TRACKER: 'data-tracker'
 }
 

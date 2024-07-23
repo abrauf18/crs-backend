@@ -32,7 +32,7 @@ const createResource = createSchemaMiddleware(
             RESOURCE_TYPES.ACTIVITY,
             RESOURCE_TYPES.GUIDED_NOTE,
             RESOURCE_TYPES.FORMATIVE_ASSESSMENT,
-            RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,
+            RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,
             RESOURCE_TYPES.DATA_TRACKER,
         ).required(),
         topic: Joi.string().required(),
@@ -44,12 +44,12 @@ const createResource = createSchemaMiddleware(
         }),
         duration: Joi.string().optional(),
         totalMarks: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZED_ASSESSMENT),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
         deadline: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZED_ASSESSMENT),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
@@ -77,7 +77,7 @@ const getResources = createSchemaMiddleware(
             RESOURCE_TYPES.ACTIVITY,
             RESOURCE_TYPES.GUIDED_NOTE,
             RESOURCE_TYPES.FORMATIVE_ASSESSMENT,
-            RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,
+            RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,
             RESOURCE_TYPES.DATA_TRACKER,
         ).allow('').optional(),
         topic: Joi.string().allow('').optional(),
@@ -118,18 +118,18 @@ const updateResource = createSchemaMiddleware(
             RESOURCE_TYPES.ACTIVITY,
             RESOURCE_TYPES.GUIDED_NOTE,
             RESOURCE_TYPES.FORMATIVE_ASSESSMENT,
-            RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,
+            RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,
             RESOURCE_TYPES.DATA_TRACKER,
         ).required(),
         topic: Joi.string().required(),
         accessToken: Joi.string().required(),
         totalMarks: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
         deadline: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZED_ASSESSMENT),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
@@ -150,7 +150,7 @@ const getResourcesByType = createSchemaMiddleware(
             RESOURCE_TYPES.ACTIVITY,
             RESOURCE_TYPES.GUIDED_NOTE,
             RESOURCE_TYPES.FORMATIVE_ASSESSMENT,
-            RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,
+            RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,
             RESOURCE_TYPES.DATA_TRACKER,
         ).required(),
         accesstoken: Joi.string().required()
@@ -172,7 +172,7 @@ const getResourcesByName = createSchemaMiddleware(
             RESOURCE_TYPES.ACTIVITY,
             RESOURCE_TYPES.GUIDED_NOTE,
             RESOURCE_TYPES.FORMATIVE_ASSESSMENT,
-            RESOURCE_TYPES.SUMMARIZED_ASSESSMENT,
+            RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,
             RESOURCE_TYPES.DATA_TRACKER,
         ).required(),
         accesstoken: Joi.string().required()

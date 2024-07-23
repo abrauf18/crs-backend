@@ -5,7 +5,7 @@ const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const isAssessmentResource = (type) => {
-    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET || type === RESOURCE_TYPES.FORMATIVE_ASSESSMENT || type === RESOURCE_TYPES.SUMMARIZED_ASSESSMENT;
+    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET || type === RESOURCE_TYPES.FORMATIVE_ASSESSMENT || type === RESOURCE_TYPES.SUMMARIZE_ASSESSMENT;
 };
 
 const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline }) => {
@@ -134,6 +134,7 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
 
         return { code: 200, data: res };
     } catch (error) {
+        console.log('\n\n\n', error);
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
@@ -154,7 +155,7 @@ const getResourcesCount = async ({ topic }) => {
             [RESOURCE_TYPES.ACTIVITY]: 0,
             [RESOURCE_TYPES.GUIDED_NOTE]: 0,
             [RESOURCE_TYPES.FORMATIVE_ASSESSMENT]: 0,
-            [RESOURCE_TYPES.SUMMARIZED_ASSESSMENT]: 0,
+            [RESOURCE_TYPES.SUMMARIZE_ASSESSMENT]: 0,
             [RESOURCE_TYPES.DATA_TRACKER]: 0,
         };
 
@@ -186,7 +187,7 @@ const getResourcesCount = async ({ topic }) => {
             activityCount: resourceCountsObject[RESOURCE_TYPES.ACTIVITY],
             guidedNoteCount: resourceCountsObject[RESOURCE_TYPES.GUIDED_NOTE],
             formativeAssessmentCount: resourceCountsObject[RESOURCE_TYPES.FORMATIVE_ASSESSMENT],
-            summarizedAssessmentCount: resourceCountsObject[RESOURCE_TYPES.SUMMARIZED_ASSESSMENT],
+            summarizeAssessmentCount: resourceCountsObject[RESOURCE_TYPES.SUMMARIZE_ASSESSMENT],
             dataTrackerCount: resourceCountsObject[RESOURCE_TYPES.DATA_TRACKER],
             totalCount,
         };
