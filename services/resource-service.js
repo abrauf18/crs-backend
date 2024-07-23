@@ -5,7 +5,7 @@ const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const isAssessmentResource = (type) => {
-    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET;
+    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET || type === RESOURCE_TYPES.FORMATIVE_ASSESSMENT || type === RESOURCE_TYPES.SUMMARIZED_ASSESSMENT;
 };
 
 const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline }) => {
@@ -148,7 +148,14 @@ const getResourcesCount = async ({ topic }) => {
             [RESOURCE_TYPES.WORKSHEET]: 0,
             [RESOURCE_TYPES.EXIT_TICKET_TEST]: 0,
             [RESOURCE_TYPES.QUIZ]: 0,
-            [RESOURCE_TYPES.ASSIGNMENT]: 0
+            [RESOURCE_TYPES.ASSIGNMENT]: 0,
+            [RESOURCE_TYPES.LAB]: 0,
+            [RESOURCE_TYPES.STATION]: 0,
+            [RESOURCE_TYPES.ACTIVITY]: 0,
+            [RESOURCE_TYPES.GUIDED_NOTE]: 0,
+            [RESOURCE_TYPES.FORMATIVE_ASSESSMENT]: 0,
+            [RESOURCE_TYPES.SUMMARIZED_ASSESSMENT]: 0,
+            [RESOURCE_TYPES.DATA_TRACKER]: 0,
         };
 
         // Get the individual counts of resources by type for a specific topic
@@ -174,6 +181,13 @@ const getResourcesCount = async ({ topic }) => {
             exitTicketTestCount: resourceCountsObject[RESOURCE_TYPES.EXIT_TICKET_TEST],
             quizCount: resourceCountsObject[RESOURCE_TYPES.QUIZ],
             assignmentCount: resourceCountsObject[RESOURCE_TYPES.ASSIGNMENT],
+            labCount: resourceCountsObject[RESOURCE_TYPES.LAB],
+            stationCount: resourceCountsObject[RESOURCE_TYPES.STATION],
+            activityCount: resourceCountsObject[RESOURCE_TYPES.ACTIVITY],
+            guidedNoteCount: resourceCountsObject[RESOURCE_TYPES.GUIDED_NOTE],
+            formativeAssessmentCount: resourceCountsObject[RESOURCE_TYPES.FORMATIVE_ASSESSMENT],
+            summarizedAssessmentCount: resourceCountsObject[RESOURCE_TYPES.SUMMARIZED_ASSESSMENT],
+            dataTrackerCount: resourceCountsObject[RESOURCE_TYPES.DATA_TRACKER],
             totalCount,
         };
 
