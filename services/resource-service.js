@@ -5,7 +5,7 @@ const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const isAssessmentResource = (type) => {
-    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET || type === RESOURCE_TYPES.FORMATIVE_ASSESSMENT || type === RESOURCE_TYPES.SUMMARIZE_ASSESSMENT;
+    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET || type === RESOURCE_TYPES.FORMATIVE_ASSESSMENT || type === RESOURCE_TYPES.SUMMARIZE_ASSESSMENT;
 };
 
 const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline }) => {
@@ -147,7 +147,6 @@ const getResourcesCount = async ({ topic }) => {
             [RESOURCE_TYPES.SLIDESHOW]: 0,
             [RESOURCE_TYPES.VIDEO]: 0,
             [RESOURCE_TYPES.WORKSHEET]: 0,
-            [RESOURCE_TYPES.EXIT_TICKET_TEST]: 0,
             [RESOURCE_TYPES.QUIZ]: 0,
             [RESOURCE_TYPES.ASSIGNMENT]: 0,
             [RESOURCE_TYPES.LAB]: 0,
@@ -179,7 +178,6 @@ const getResourcesCount = async ({ topic }) => {
             slideshowCount: resourceCountsObject[RESOURCE_TYPES.SLIDESHOW],
             videoCount: resourceCountsObject[RESOURCE_TYPES.VIDEO],
             worksheetCount: resourceCountsObject[RESOURCE_TYPES.WORKSHEET],
-            exitTicketTestCount: resourceCountsObject[RESOURCE_TYPES.EXIT_TICKET_TEST],
             quizCount: resourceCountsObject[RESOURCE_TYPES.QUIZ],
             assignmentCount: resourceCountsObject[RESOURCE_TYPES.ASSIGNMENT],
             labCount: resourceCountsObject[RESOURCE_TYPES.LAB],
