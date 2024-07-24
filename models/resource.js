@@ -38,7 +38,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM(
           RESOURCE_TYPES.SLIDESHOW, 
           RESOURCE_TYPES.VIDEO, 
-          RESOURCE_TYPES.EXIT_TICKET_TEST, 
           RESOURCE_TYPES.WORKSHEET, 
           RESOURCE_TYPES.QUIZ,
           RESOURCE_TYPES.ASSIGNMENT,

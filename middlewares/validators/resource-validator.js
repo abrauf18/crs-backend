@@ -23,7 +23,6 @@ const createResource = createSchemaMiddleware(
         type: Joi.string().valid(
             RESOURCE_TYPES.SLIDESHOW,
             RESOURCE_TYPES.VIDEO,
-            RESOURCE_TYPES.EXIT_TICKET_TEST,
             RESOURCE_TYPES.WORKSHEET,
             RESOURCE_TYPES.QUIZ,
             RESOURCE_TYPES.ASSIGNMENT,
@@ -44,12 +43,12 @@ const createResource = createSchemaMiddleware(
         }),
         duration: Joi.string().optional(),
         totalMarks: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
         deadline: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
@@ -68,7 +67,6 @@ const getResources = createSchemaMiddleware(
         type: Joi.string().valid(
             RESOURCE_TYPES.SLIDESHOW,
             RESOURCE_TYPES.VIDEO,
-            RESOURCE_TYPES.EXIT_TICKET_TEST,
             RESOURCE_TYPES.WORKSHEET,
             RESOURCE_TYPES.QUIZ,
             RESOURCE_TYPES.ASSIGNMENT,
@@ -109,7 +107,6 @@ const updateResource = createSchemaMiddleware(
         type: Joi.string().valid(
             RESOURCE_TYPES.SLIDESHOW,
             RESOURCE_TYPES.VIDEO,
-            RESOURCE_TYPES.EXIT_TICKET_TEST,
             RESOURCE_TYPES.WORKSHEET,
             RESOURCE_TYPES.QUIZ,
             RESOURCE_TYPES.ASSIGNMENT,
@@ -124,12 +121,12 @@ const updateResource = createSchemaMiddleware(
         topic: Joi.string().required(),
         accessToken: Joi.string().required(),
         totalMarks: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT,),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
         deadline: Joi.number().integer().min(0).when('type', {
-            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.EXIT_TICKET_TEST, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
+            is: Joi.valid(RESOURCE_TYPES.WORKSHEET, RESOURCE_TYPES.QUIZ, RESOURCE_TYPES.ASSIGNMENT, RESOURCE_TYPES.FORMATIVE_ASSESSMENT, RESOURCE_TYPES.SUMMARIZE_ASSESSMENT),
             then: Joi.required(),
             otherwise: Joi.optional()
         }),
@@ -141,7 +138,6 @@ const getResourcesByType = createSchemaMiddleware(
         resourcetype: Joi.string().valid(
             RESOURCE_TYPES.SLIDESHOW,
             RESOURCE_TYPES.VIDEO,
-            RESOURCE_TYPES.EXIT_TICKET_TEST,
             RESOURCE_TYPES.WORKSHEET,
             RESOURCE_TYPES.QUIZ,
             RESOURCE_TYPES.ASSIGNMENT,
@@ -163,7 +159,6 @@ const getResourcesByName = createSchemaMiddleware(
         resourcetype: Joi.string().valid(
             RESOURCE_TYPES.SLIDESHOW,
             RESOURCE_TYPES.VIDEO,
-            RESOURCE_TYPES.EXIT_TICKET_TEST,
             RESOURCE_TYPES.WORKSHEET,
             RESOURCE_TYPES.QUIZ,
             RESOURCE_TYPES.ASSIGNMENT,

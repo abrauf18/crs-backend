@@ -1,7 +1,6 @@
 const RESOURCE_TYPES = {
     SLIDESHOW:"slideshow", 
     VIDEO:"video", 
-    EXIT_TICKET_TEST: "exit-ticket-test", 
     WORKSHEET: "worksheet", 
     QUIZ: "quiz", 
     ASSIGNMENT: "assignment",
