@@ -143,4 +143,12 @@ router.get(
     studentController.getAllSummarizedStudentAndStandardsForTeacher
 )
 
+router.get(
+    "/getAllSummarizedStudentAndStandardsForTeacherV2",
+    studentValidation.getAllSummarizedStudentAndStandardsForTeacherV2,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getAllSummarizedStudentAndStandardsForTeacherV2
+)
+
 module.exports = router;
