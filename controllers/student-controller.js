@@ -347,6 +347,26 @@ const getAllSummarizedStudentAndStandardsForTeacher = async (req, res) => {
     }
 }
 
+const getAllSummarizedStudentAndStandardsForTeacherV2 = async (req, res) => {
+    try {
+        const { teacherid } = req.headers;
+        const reply = await studentService.getAllSummarizedStudentAndStandardsForTeacherV2({ teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -364,5 +384,6 @@ module.exports = {
     getStudentNameEmailForTeacher,
     assignMarksToStudentAnswer,
     getStudentAssessmentAnswer,
-    getAllSummarizedStudentAndStandardsForTeacher
+    getAllSummarizedStudentAndStandardsForTeacher,
+    getAllSummarizedStudentAndStandardsForTeacherV2
 };
