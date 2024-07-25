@@ -150,18 +150,39 @@ const updateVideo = async ({ videoId, name, thumbnailURL, questions, topics }) =
         await resource.update({ name });
 
         if (questions) {
+            // Assuming `video` is your video instance and `questions` is your incoming questions array
             const oldQuestions = await video.getQuestions();
+            const oldQuestionIds = oldQuestions.map(q => q.id);
+            const incomingQuestionIds = questions.map(q => q.id);
 
-            for (let question of oldQuestions) {
+            // Update questions
+            const questionsToUpdate = questions.filter(q => q.id && oldQuestionIds.includes(q.id));
+            for (let question of questionsToUpdate) {
+                await Question.update({ ...question }, { where: { id: question.id } });
+            }
+
+            // Delete questions that are not present in the incoming questions
+            const questionsToDelete = oldQuestions.filter(q => !incomingQuestionIds.includes(q.id));
+            for (let question of questionsToDelete) {
                 await question.destroy();
             }
 
-            const newQuestions = await Question.bulkCreate(questions.map(({ id, ...question }) => ({ ...question, videoId })));
-            await video.setQuestions(newQuestions);
+            // Create new questions where incoming id is empty or 0
+            const questionsToCreate = questions.filter(q => !q.id || q.id === '');
+            const newQuestions = await Question.bulkCreate(questionsToCreate.map(({ id, ...question }) => ({ ...question, videoId: videoId })));
+
+            // Fetch updated questions to recalculate total marks
+            const updatedQuestions = await video.getQuestions();
+
+            // Calculate total marks
+            const totalMarks = updatedQuestions.reduce((acc, question) => acc + question.totalMarks, 0);
+
+            // Update video's total marks
+            await video.update({ totalMarks });
         }
 
         if (topics) {
-            await video.update( {topics} );
+            await video.update({ topics });
         }
 
         return { code: 200, data: video };

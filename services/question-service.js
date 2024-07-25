@@ -1,15 +1,24 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
-const { Question } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
-const question = require("../models/question.js");
+// @ts-ignore
+const { Question, Video } = require("../models/index.js");
 
 const createVideoQuestions = async ({ videoId, questions }) => {
     try {
+        const existingVideo = await Video.findOne({ where: { id: videoId } });
+        if (!existingVideo) {
+            return { code: 404, message: 'Video not found' };
+        }
+
+        let sumAllQuestionMarks = 0;
+
         const createdQuestions = await Promise.all(questions.map(question => {
             const { statement, options, correctOption, correctOptionExplanation, totalMarks, popUpTime } = question;
+            sumAllQuestionMarks = sumAllQuestionMarks + totalMarks;
             return Question.create({ videoId, statement, options, correctOption, correctOptionExplanation, totalMarks, popUpTime });
         }));
+
+        await existingVideo.update({ totalMarks: sumAllQuestionMarks });
 
         return { code: 200, data: createdQuestions };
     } catch (error) {
