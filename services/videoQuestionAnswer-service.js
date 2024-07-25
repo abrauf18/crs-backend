@@ -1,9 +1,10 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
+// @ts-ignore
 const { Question, VideoQuestionAnswer } = require("../models/index.js");
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
-const createVideoQuestionAnswer = async (userId, questionId, answer) => {
+const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId}) => {
     try {
         const question = await Question.findByPk(questionId);
         if (!question) {
@@ -14,6 +15,7 @@ const createVideoQuestionAnswer = async (userId, questionId, answer) => {
             where: {
                 userId,
                 questionId,
+                standardId,
             },
         });
         if (existingAnswer) {
@@ -27,6 +29,7 @@ const createVideoQuestionAnswer = async (userId, questionId, answer) => {
                 userId,
                 questionId,
                 answer,
+                standardId,
             });
         } 
         else {
@@ -37,6 +40,7 @@ const createVideoQuestionAnswer = async (userId, questionId, answer) => {
                 questionId,
                 answer,
                 obtainedMarks,
+                standardId,
             });
         }
 

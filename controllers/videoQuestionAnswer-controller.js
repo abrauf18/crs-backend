@@ -3,9 +3,10 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createVideoQuestionAnswer = async (req, res) => {
     try {
-        const { userId, questionId, answer } = req.body;
+        const { userId, questionId, answer, standardId } = req.body;
+        console.log('\n\n\n', userId, questionId, answer, standardId);
 
-        const reply = await videoQuestionAnswerService.createVideoQuestionAnswer(userId, questionId, answer);
+        const reply = await videoQuestionAnswerService.createVideoQuestionAnswer({userId, questionId, answer, standardId});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
