@@ -151,9 +151,12 @@ const getStandardTopics = async (req, res) => {
 
 const getTopicResources = async (req, res) => {
     try {
-        const { standardid, topicname } = req.headers;
+        const { standardid } = req.headers;
+        const { topicName } = req.query;
 
-        const reply = await standardService.getTopicResources({ standardId: standardid, topicName: topicname });
+        const decodedTopicName = decodeURIComponent(topicName);
+
+        const reply = await standardService.getTopicResources({ standardId: standardid, topicName: decodedTopicName });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
