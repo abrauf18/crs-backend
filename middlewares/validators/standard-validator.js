@@ -76,10 +76,9 @@ const getStandardTopics = createSchemaMiddleware(
 const getTopicResources = createSchemaMiddleware(
     Joi.object({
         standardid: Joi.string().guid().required(),
-        topicname: Joi.string().optional().allow(''),
         accesstoken: Joi.string().required()
     }).unknown(), 'headers'
-);
+);// has topicName in query params now
 
 module.exports = {
     createStandard,
