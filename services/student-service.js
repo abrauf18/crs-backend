@@ -158,21 +158,27 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
         if (watchedVideo) {
             const video = await Video.findOne({
                 where: { id: videoId },
-                include: [{
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['name', 'url'],
-                }, {
-                    model: Question,
-                    as: 'questions',
-                    order: [['popUpTime', 'ASC']],
-                    include: [{
-                        model: VideoQuestionAnswer,
-                        as: 'answers',
-                        where: { userId: studentId },
-                        required: false
-                    }]
-                }],
+                include: [
+                    {
+                        model: Resource,
+                        as: 'resource',
+                        attributes: ['name', 'url'],
+                    }, 
+                    {
+                        model: Question,
+                        as: 'questions',
+                        order: [['popUpTime', 'ASC']],
+                        include: [{
+                            model: VideoQuestionAnswer,
+                            as: 'answers',
+                            where: { 
+                                userId: studentId,
+                                standardId: standardId
+                            },
+                            required: false
+                        }]
+                    }
+                ],
                 group: ['Video.id', 'resource.id', 'questions.id', 'questions.answers.id'],
             });
 
@@ -204,15 +210,18 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
         } else {
             const video = await Video.findOne({
                 where: { id: videoId },
-                include: [{
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['name', 'url'],
-                }, {
-                    model: Question,
-                    as: 'questions',
-                    order: [['popUpTime', 'ASC']],
-                }],
+                include: [
+                    {
+                        model: Resource,
+                        as: 'resource',
+                        attributes: ['name', 'url'],
+                    }, 
+                    {
+                        model: Question,
+                        as: 'questions',
+                        order: [['popUpTime', 'ASC']],
+                    }
+                ],
                 group: ['Video.id', 'resource.id', 'questions.id'],
             });
 
@@ -851,7 +860,10 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                                 include: [{
                                     model: VideoQuestionAnswer,
                                     as: 'answers',
-                                    where: { userId: studentId },
+                                    where: { 
+                                        userId: studentId,
+                                        standardId: standardId
+                                    },
                                     attributes: ['obtainedMarks', 'answer'],
                                     required: false
                                 }]
@@ -864,7 +876,10 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                             include: [{
                                 model: AssessmentAnswer,
                                 as: 'assessmentAnswers',
-                                where: { userId: studentId },
+                                where: { 
+                                    userId: studentId,
+                                    standardId: standardId,
+                                },
                                 attributes: ['obtainedMarks', 'answerURL'],
                                 required: false,
                                 separate: true
