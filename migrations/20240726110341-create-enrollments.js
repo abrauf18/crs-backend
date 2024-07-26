@@ -1,5 +1,5 @@
 'use strict';
-
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('Enrollments', {
@@ -40,8 +40,9 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       result: {
-        type: Sequelize.STRING,
-        allowNull: true,
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
       },
       createdAt: {
         allowNull: false,
