@@ -47,6 +47,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:0,
       allowNull: false,
     },
+    accessibleDay: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
   }, {
     sequelize,
     modelName: 'DailyUpload',
