@@ -1,7 +1,7 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
 
@@ -107,7 +107,16 @@ const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
         const classroomStandards = await Promise.all(classroomIds.map(async id => {
             const existingEntry = await ClassroomCourses.findOne({ where: { classroomId: id, standardId } });
             if (!existingEntry) {
-                return ClassroomCourses.create({ classroomId: id, standardId });
+                await ClassroomCourses.create({ classroomId: id, standardId });
+
+                const students = await ClassroomStudent.findAll({ where: { classroomId: id } });
+                const enrollments = students.map(student => ({
+                    classroomId: id,
+                    standardId,
+                    studentId: student.id,
+                    result: 0
+                }));
+                await Enrollment.bulkCreate(enrollments);
             }
         }));
 
@@ -633,6 +642,17 @@ const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
 
         const classroomStudent = await ClassroomStudent.create({ classroomId: classroomId, studentId: student.id });
 
+        const classroomCourses = await ClassroomCourses.findAll({ where: { classroomId: classroomId } });
+
+        const enrollments = classroomCourses.map(course => ({
+            classroomId: classroomId,
+            standardId: course.standardId,
+            studentId: student.id,
+            result: 0
+        }));
+
+        await Enrollment.bulkCreate(enrollments);
+
         return { code: 200, data: classroomStudent };
     } catch (error) {
         console.log('\n\n\n\n', error);
@@ -657,6 +677,13 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
         }
 
         const deleted = await classroomStudent.destroy();
+
+        await Enrollment.destroy({
+            where: {
+                classroomId: classroomStudent.classroomId,
+                studentId: classroomStudent.studentId
+            }
+        });
 
         return { code: 200, data: deleted };
     } catch (error) {
