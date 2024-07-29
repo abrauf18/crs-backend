@@ -1,6 +1,5 @@
 const Joi = require('joi');
 const { logger } = require("../../Logs/logger");
-const { RESOURCE_TYPES, RESOURCE_STATUS } = require('../../utils/enumTypes');
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
 
 const createSchemaMiddleware = (schema, target = 'body') => async (req, res, next) => {
@@ -24,7 +23,8 @@ const createStandard = createSchemaMiddleware(
             topicName: Joi.string().required(),
             resourceId: Joi.string().guid().required(),
             weightage: Joi.number().integer().required(),
-            accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+            accessibleDay: Joi.number().integer().required(),
+            // accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
         })).required(),
         accessToken: Joi.string().required()
     })
@@ -39,7 +39,8 @@ const updateStandard = createSchemaMiddleware(
             topicName: Joi.string().required(),
             resourceId: Joi.string().guid().required(),
             weightage: Joi.number().integer().required(),
-            accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+            accessibleDay: Joi.number().integer().required(),
+            // accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
         })).required(),
         accessToken: Joi.string().required()
     })
