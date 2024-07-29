@@ -288,8 +288,8 @@ const getStudentNameEmailForTeacher = async (req, res) => {
 
 const assignMarksToStudentAnswer = async (req, res) => {
     try {
-        const { targetType, studentId, idsAndMarks } = req.body;
-        const reply = await studentService.assignMarksToStudentAnswer({ targetType, studentId, idsAndMarks });
+        const { targetType, studentId, idsAndMarks, standardId } = req.body;
+        const reply = await studentService.assignMarksToStudentAnswer({ targetType, studentId, idsAndMarks, standardId });
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
@@ -309,8 +309,8 @@ const assignMarksToStudentAnswer = async (req, res) => {
 
 const getStudentAssessmentAnswer = async (req, res) => {
     try {
-        const { studentid, assessmentdetailid } = req.headers;
-        const reply = await studentService.getStudentAssessmentAnswer({ studentId: studentid, assessmentDetailId: assessmentdetailid });
+        const { studentid, assessmentdetailid, standardid } = req.headers;
+        const reply = await studentService.getStudentAssessmentAnswer({ studentId: studentid, assessmentDetailId: assessmentdetailid, standardId: standardid });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);

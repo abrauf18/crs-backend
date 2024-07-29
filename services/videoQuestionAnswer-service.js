@@ -1,8 +1,8 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Question, VideoQuestionAnswer } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+const { Question, VideoQuestionAnswer, ClassroomStudent, Resource, DailyUpload, Standard, Enrollment, Video, Classroom } = require("../models/index.js");
+const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId}) => {
     try {
@@ -41,6 +41,64 @@ const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId
                 answer,
                 obtainedMarks,
                 standardId,
+            });
+
+            const video = await Video.findOne({
+                where: {
+                    id: question.videoId,
+                },
+                attributes: ['id', 'totalMarks'],
+                include: {
+                    model: Resource,
+                    as: 'resource',
+                    attributes: ['id'],
+                    include: {
+                        model: DailyUpload,
+                        as: 'DailyUpload',
+                        attributes: ['id', 'weightage'],
+                        include: {
+                            model: Standard,
+                            as: 'standard',
+                            attributes: ['id'],
+                            where: {
+                                id: standardId,
+                            }
+                        },
+                    },
+                },
+            }); 
+
+            const classroomStudent = await ClassroomStudent.findOne({
+                where: {
+                    studentId: userId,
+                },
+                include: {
+                    model: Classroom,
+                    as: 'classroom',
+                    where: {
+                        status: CLASSROOM_STATUS.ACTIVE
+                    }
+                }
+            }); 
+
+            // Retrieve weightage from data
+            let weightage = 0;
+            if (video && video.resource && video.resource.DailyUpload && video.resource.DailyUpload.standard) {
+                weightage = video.resource.DailyUpload.weightage;
+            }
+
+            let classroomId = '';
+            if (classroomStudent && classroomStudent.classroom) {
+                classroomId = classroomStudent.classroom.id;
+            }
+
+            await Enrollment.increment('result', {
+                by: obtainedMarks/video.totalMarks * weightage,
+                where: {
+                    studentId: userId,
+                    standardId: standardId,
+                    classroomId: classroomId, 
+                }
             });
         }
 
