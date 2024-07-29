@@ -396,11 +396,11 @@ const getStandardTopics = async ({ standardId }) => {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate', 'weightage', 'topicName'],
+                attributes: ['topicName'],
                 include: [{
                     model: Resource,
                     as: 'resource',
-                    attributes: ['id', 'name', 'type', 'topic'],
+                    attributes: ['id'],
                     include: [{
                         model: Video,
                         as: 'video',
