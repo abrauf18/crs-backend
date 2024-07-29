@@ -1,41 +1,54 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
-const dailyupload = require("../models/dailyupload.js");
+const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
 
 const createStandard = async ({ name, description, dailyUploads }) => {
+    const transaction = await sequelize.transaction();
     try {
         const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
         if (totalWeightage !== 100) {
+            await transaction.rollback();
             return { code: 400, message: `The sum of weightages is ${totalWeightage}, it must be 100` };
         }
 
-        const dates = dailyUploads.map(upload => new Date(upload.accessDate));
-        const minDate = new Date(Math.min.apply(null, dates));
-        const maxDate = new Date(Math.max.apply(null, dates));
+        const resourceIdCount = {};
+        const duplicates = [];
+        dailyUploads.forEach(upload => {
+            const { resourceId } = upload;
+            if (resourceIdCount[resourceId]) {
+                resourceIdCount[resourceId]++;
+                if (resourceIdCount[resourceId] === 2) {
+                    duplicates.push(resourceId);
+                }
+            } else {
+                resourceIdCount[resourceId] = 1;
+            }
+        });
 
-        // @ts-ignore
-        const diffTime = Math.abs(maxDate - minDate);
-        const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
+        if (duplicates.length > 0) {
+            const duplicateResource = await Promise.all(duplicates.map(async resourceId => {
+                const foundResource = await Resource.findByPk(resourceId, { transaction });
+                return foundResource.name;
+            }));
+            await transaction.rollback();
+            return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
+        }
 
-        const createdStandard = await Standard.create({ name, description, courseLength });
+        const days = dailyUploads.map(upload => upload.accessibleDay);
+        const minDay = Math.min(...days);
+        const maxDay = Math.max(...days);
 
-        // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
-        //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
-        // }));
+        const dayDiff = Math.abs(maxDay - minDay);
+        const courseLength = (dayDiff / 7).toFixed(1) + " week";
 
-        // const duplicates = existingResourceInStandards.filter(Boolean);
-
-        // if (duplicates.length > 0) {
-        //     const duplicateResourceIds = duplicates.map(resource => resource.resourceId);
-        //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResourceIds.join(', ')}`};
-        // }
+        const createdStandard = await Standard.create({ name, description, courseLength }, { transaction });
 
         const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
-            return DailyUpload.create({ ...upload, standardId: createdStandard.id });
+            return DailyUpload.create({ ...upload, standardId: createdStandard.id }, { transaction });
         }));
+
+        await transaction.commit();
 
         const standard = {
             ...createdStandard.toJSON(),
@@ -44,15 +57,18 @@ const createStandard = async ({ name, description, dailyUploads }) => {
 
         return { code: 200, data: standard };
     } catch (error) {
-        logger.error(error?.message || 'An error occurred while updating the standard');
+        await transaction.rollback();
+        logger.error(error?.message || 'An error occurred while creating the standard');
         return { code: 500 };
     }
 };
 
 const updateStandard = async ({ standardId, name, description, dailyUploads }) => {
+    const transaction = await sequelize.transaction();
     try {
-        const standard = await Standard.findByPk(standardId);
+        const standard = await Standard.findByPk(standardId, { transaction });
         if (!standard) {
+            await transaction.rollback();
             return { code: 404 };
         }
 
@@ -60,54 +76,84 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
         if (dailyUploads) {
             const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
             if (totalWeightage !== 100) {
+                await transaction.rollback();
                 return { code: 400, message: `The sum of weightages is ${totalWeightage}, it must be 100` };
             }
-            // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
-            //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
-            // }));
 
-            // const duplicates = existingResourceInStandards.filter(Boolean);
+            const resourceIdCount = {};
+            const duplicates = [];
+            dailyUploads.forEach(upload => {
+                const { resourceId } = upload;
+                if (resourceIdCount[resourceId]) {
+                    resourceIdCount[resourceId]++;
+                    if (resourceIdCount[resourceId] === 2) {
+                        duplicates.push(resourceId);
+                    }
+                } else {
+                    resourceIdCount[resourceId] = 1;
+                }
+            });
 
-            // if (duplicates.length > 0) {
-            //     const duplicateResource = await Promise.all(duplicates.map(async resource => {
-            //         const foundResource = await Resource.findByPk(resource.resourceId);
-            //         return foundResource.name;
-            //     }));
-            //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
-            // }
-
-            const oldDailyUploads = await standard.getDailyUploads();
-
-            for (let dailyUpload of oldDailyUploads) {
-                await dailyUpload.destroy();
+            if (duplicates.length > 0) {
+                const duplicateResource = await Promise.all(duplicates.map(async resourceId => {
+                    const foundResource = await Resource.findByPk(resourceId, { transaction });
+                    return foundResource.name;
+                }));
+                await transaction.rollback();
+                return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
             }
 
-            // newDailyUploads = await Promise.all(dailyUploads.map(upload => {
-            //     return DailyUpload.create({ ...upload, standardId: standard.id });
-            // }));
-            newDailyUploads = await DailyUpload.bulkCreate(
-                dailyUploads.map((upload) => ({ ...upload, standardId: standard.id }))
+            const oldDailyUploads = await standard.getDailyUploads({ transaction });
+
+            // Create maps for quick lookup
+            const oldUploadsMap = new Map(oldDailyUploads.map(upload => [upload.resourceId, upload]));
+            const newUploadsMap = new Map(dailyUploads.map(upload => [upload.resourceId, upload]));
+
+            // Identify resources to delete and update
+            const resourcesToDelete = Array.from(oldUploadsMap.keys()).filter(id => !newUploadsMap.has(id));
+            const resourcesToUpdate = Array.from(oldUploadsMap.keys()).filter(id => newUploadsMap.has(id));
+            const resourcesToCreate = Array.from(newUploadsMap.keys()).filter(id => !oldUploadsMap.has(id));
+
+            // Handle resources to update
+            await Promise.all(resourcesToUpdate.map(async id => {
+                const oldUpload = oldUploadsMap.get(id);
+                const newUpload = newUploadsMap.get(id);
+                // Check if any fields have changed that need updating
+                if (JSON.stringify(oldUpload.toJSON()) !== JSON.stringify(newUpload)) {
+                    await oldUpload.update(newUpload, { transaction });
+                }
+            }));
+
+            // Handle resources to delete
+            await Promise.all(resourcesToDelete.map(async id => {
+                const oldUpload = oldUploadsMap.get(id);
+                await oldUpload.destroy({ transaction });
+            }));
+
+            // Handle resources to create
+            const newDailyUploads = await DailyUpload.bulkCreate(
+                resourcesToCreate.map(id => ({ ...newUploadsMap.get(id), standardId: standard.id })),
+                { transaction }
             );
 
-            const dates = dailyUploads.map(upload => new Date(upload.accessDate));
-            const minDate = new Date(Math.min.apply(null, dates));
-            const maxDate = new Date(Math.max.apply(null, dates));
+            const days = dailyUploads.map(upload => upload.accessibleDay);
+            const minDay = Math.min(...days);
+            const maxDay = Math.max(...days);
 
-            // @ts-ignore
-            const diffTime = Math.abs(maxDate - minDate);
-            const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
-            await standard.update({ courseLength });
-
-            // await standard.setDailyUploads(newDailyUploads);
+            const dayDiff = Math.abs(maxDay - minDay);
+            const courseLength = (dayDiff / 7).toFixed(1) + " week";
+            await standard.update({ courseLength }, { transaction });
         }
 
         if (name) {
-            await standard.update({ name });
+            await standard.update({ name }, { transaction });
         }
 
         if (description) {
-            await standard.update({ description });
+            await standard.update({ description }, { transaction });
         }
+
+        await transaction.commit();
 
         const updatedStandard = {
             ...standard.toJSON(),
@@ -116,7 +162,7 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
 
         return { code: 200, data: updatedStandard };
     } catch (error) {
-        console.log('\n\n\n\n', error)
+        await transaction.rollback();
         logger.error(error?.message || 'An error occurred while updating the standard');
         return { code: 500 };
     }
@@ -128,7 +174,7 @@ const getStandard = async ({ standardId }) => {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate', 'weightage', 'topicName'],
+                attributes: ['accessibleDay', 'weightage', 'topicName'],
                 include: [{
                     model: Resource,
                     as: 'resource',
@@ -151,27 +197,21 @@ const getStandard = async ({ standardId }) => {
         }
 
         // Transform the data
-        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
-            const date = upload.accessDate;
-            if (!result[date]) {
-                result[date] = { topicName: upload.topicName, resources: [] };
+        const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
+            const day = upload.accessibleDay;
+            if (!result[day]) {
+                result[day] = { topicName: upload.topicName, resources: [] };
             }
             if (upload.resource) {
-                result[date].resources.push({ resource: upload.resource, weightage: upload.weightage });
+                result[day].resources.push({ resource: upload.resource, weightage: upload.weightage });
             }
             return result;
         }, {});
 
-        // const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
-        //     accessDate: date,
-        //     resources: uploadsByDate[date]
-        // }));
-
-        // as required on frontend
-        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
-            date: date,
-            topicName: uploadsByDate[date].topicName,
-            topics: uploadsByDate[date].resources.map(({ resource, weightage }) => ({
+        const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
+            accessibleDay: day,
+            topicName: uploadsByDay[day].topicName,
+            topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
                 name: resource.name,
                 type: resource.type,
