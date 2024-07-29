@@ -1,8 +1,8 @@
 const { Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
-const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
+const { CLASSROOM_STATUS, RESOURCE_TYPES } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
 
 function timeToSeconds(time) {
@@ -32,6 +32,75 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     }
     return true;
 }
+
+async function getResourceDetails ({ resourceType, standardId, studentId, resourceSubcategoryId }) {
+    try {
+        let resource;
+        let totalMarks = 0;
+        let weightage = 0;
+        let classroomId = '';
+
+        const resourceQuery = {
+            where: {
+                id: resourceSubcategoryId,
+            },
+            attributes: ['id', 'totalMarks'],
+            include: {
+                model: Resource,
+                as: 'resource',
+                attributes: ['id'],
+                include: {
+                    model: DailyUpload,
+                    as: 'DailyUpload',
+                    attributes: ['id', 'weightage'],
+                    include: {
+                        model: Standard,
+                        as: 'standard',
+                        attributes: ['id'],
+                        where: {
+                            id: standardId,
+                        }
+                    },
+                },
+            },
+        };
+
+        if (resourceType === RESOURCE_TYPES.VIDEO) {
+            resource = await Video.findOne(resourceQuery);
+        } else {
+            resource = await AssessmentResourcesDetail.findOne(resourceQuery);
+        }
+
+        if (resource) {
+            totalMarks = resource.totalMarks;
+            if (resource.resource && resource.resource.DailyUpload && resource.resource.DailyUpload.standard) {
+                weightage = resource.resource.DailyUpload.weightage;
+            }
+        }
+
+        const classroomStudent = await ClassroomStudent.findOne({
+            where: {
+                studentId: studentId,
+            },
+            include: {
+                model: Classroom,
+                as: 'classroom',
+                where: {
+                    status: CLASSROOM_STATUS.ACTIVE
+                }
+            }
+        });
+
+        if (classroomStudent && classroomStudent.classroom) {
+            classroomId = classroomStudent.classroom.id;
+        }
+
+        return { weightage, classroomId, totalMarks };
+    } catch (error) {
+        console.error('Error retrieving resource details:', error);
+        throw error;
+    }
+};
 
 async function checkStudentAndStandard({ role, studentId, standardId }) {
     const student = await User.findByPk(studentId);
@@ -1549,7 +1618,7 @@ const getStudentNameEmailForTeacher = async ({ studentId }) => {
     }
 }
 
-const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }) => {
+const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, standardId }) => {
     const transaction = await sequelize.transaction();
     try {
         const student = await User.findByPk(studentId);
@@ -1558,33 +1627,68 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }
             return { code: 404, message: 'Student not found' };
         }
 
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            await transaction.rollback();
+            return { code: 404, message: 'Standard not found' };
+        }
+
         const results = [];
 
         if (targetType === 'videoQuestion') {
             for (const [targetId, marks] of Object.entries(idsAndMarks)) {
-                const videoQuestion = await Question.findByPk(targetId);
 
+                const videoQuestion = await Question.findByPk(targetId);
                 if (!videoQuestion) {
                     await transaction.rollback();
                     return { code: 404, message: `Video question with Id: ${targetId} not found` };
                 }
 
+                const video = await Video.findByPk(videoQuestion.videoId);
+                if (!video) {
+                    await transaction.rollback();
+                    return { code: 404, message: `Video not found` };
+                }
+
                 const videoQuestionAnswer = await VideoQuestionAnswer.findOne({
                     where: {
                         userId: studentId,
-                        questionId: videoQuestion.id
+                        questionId: videoQuestion.id,
+                        standardId: standardId
                     }
                 });
-
                 if (!videoQuestionAnswer) {
                     await transaction.rollback();
                     return { code: 404, message: `Answer for: ${videoQuestion.statement} not found` };
                 }
-
                 if (marks > videoQuestion.totalMarks) {
                     await transaction.rollback();
                     return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
+
+                const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: RESOURCE_TYPES.VIDEO, standardId, studentId, resourceSubcategoryId: video.id })
+                if (message != null || message != ''){
+                    await transaction.rollback();
+                    return { code: 400, message: message };
+                }
+                if (videoQuestionAnswer.obtainedMarks > 0) {
+                    await Enrollment.decrement('result', {
+                        by: videoQuestionAnswer.obtainedMarks/totalMarks * weightage,
+                        where: {
+                            studentId: studentId,
+                            standardId: standardId,
+                            classroomId: classroomId, 
+                        }
+                    });
+                }
+                await Enrollment.increment('result', {
+                    by: marks/totalMarks * weightage,
+                    where: {
+                        studentId: studentId,
+                        standardId: standardId,
+                        classroomId: classroomId, 
+                    }
+                });
 
                 const updatedAnswer = await videoQuestionAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
                 results.push(updatedAnswer);
@@ -1592,8 +1696,8 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }
         }
         else {
             for (const [targetId, marks] of Object.entries(idsAndMarks)) {
-                const assessment = await AssessmentResourcesDetail.findByPk(targetId);
 
+                const assessment = await AssessmentResourcesDetail.findByPk(targetId);
                 if (!assessment) {
                     await transaction.rollback();
                     return { code: 404, message: `Assessment with Id: ${targetId} not found` };
@@ -1602,19 +1706,42 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }
                 const assessmentAnswer = await AssessmentAnswer.findOne({
                     where: {
                         userId: studentId,
-                        assessmentResourcesDetailId: assessment.id
+                        assessmentResourcesDetailId: assessment.id,
+                        standardId: standardId
                     }
                 });
-
                 if (!assessmentAnswer) {
                     await transaction.rollback();
                     return { code: 404, message: 'Answer of this Assessment not found' };
                 }
-
                 if (marks > assessment.totalMarks) {
                     await transaction.rollback();
                     return { code: 400, message: 'Obtained Marks are exceeding Total Marks' };
                 }
+
+                const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: 'assessment', standardId, studentId, resourceSubcategoryId: assessment.id })
+                if (message != null || message != ''){
+                    await transaction.rollback();
+                    return { code: 400, message: message };
+                }
+                if (assessmentAnswer.obtainedMarks > 0) {
+                    await Enrollment.decrement('result', {
+                        by: assessmentAnswer.obtainedMarks/totalMarks * weightage,
+                        where: {
+                            studentId: studentId,
+                            standardId: standardId,
+                            classroomId: classroomId, 
+                        }
+                    });
+                }
+                await Enrollment.increment('result', {
+                    by: marks/totalMarks * weightage,
+                    where: {
+                        studentId: studentId,
+                        standardId: standardId,
+                        classroomId: classroomId, 
+                    }
+                });
 
                 const updatedAnswer = await assessmentAnswer.update({ obtainedMarks: marks }, { returning: true, transaction });
                 results.push(updatedAnswer);
@@ -1634,11 +1761,16 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks }
     }
 }
 
-const getStudentAssessmentAnswer = async ({ studentId, assessmentDetailId }) => {
+const getStudentAssessmentAnswer = async ({ studentId, assessmentDetailId, standardId }) => {
     try {
         const student = await User.findByPk(studentId);
         if (!student) {
             return { code: 404, message: 'Student not found' };
+        }
+
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found' };
         }
 
         const assessmentAnswer = await AssessmentResourcesDetail.findOne({
@@ -1648,7 +1780,10 @@ const getStudentAssessmentAnswer = async ({ studentId, assessmentDetailId }) => 
             include: [{
                 model: AssessmentAnswer,
                 as: 'assessmentAnswers',
-                where: { userId: student.id },
+                where: { 
+                    userId: student.id,
+                    standardId: standardId
+                },
                 required: true
             }]
         })

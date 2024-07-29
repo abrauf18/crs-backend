@@ -150,6 +150,7 @@ const assignMarksToStudentAnswer = createSchemaMiddleware(
         targetType: Joi.string().valid('videoQuestion', 'assessmentResource').required(), 
         studentId: Joi.string().guid().required(),
         idsAndMarks: marksSchema.required(),
+        standardId: Joi.string().guid().required(),
     })
 );
 
@@ -157,6 +158,7 @@ const getStudentAssessmentAnswer = createSchemaMiddleware(
     Joi.object({
         studentid: Joi.string().guid().required(),
         assessmentdetailid: Joi.string().guid().required(),
+        standardid: Joi.string().guid().required(),
         accesstoken: Joi.string().required(),
     }).unknown(), 'headers'
 );

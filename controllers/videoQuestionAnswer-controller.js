@@ -4,7 +4,6 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 const createVideoQuestionAnswer = async (req, res) => {
     try {
         const { userId, questionId, answer, standardId } = req.body;
-        console.log('\n\n\n', userId, questionId, answer, standardId);
 
         const reply = await videoQuestionAnswerService.createVideoQuestionAnswer({userId, questionId, answer, standardId});
 
