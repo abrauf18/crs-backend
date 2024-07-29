@@ -284,48 +284,6 @@ const getAllSummarizedStandards = async () => {
     }
 };
 
-// const getAllSummarizedStandards = async () => {
-//     try {
-//         const totalStandards = await Standard.count();
-
-//         const standards = await Standard.findAll({
-//             include: [
-//                 {
-//                     model: DailyUpload,
-//                     as: 'dailyUploads',
-//                     include: [
-//                         {
-//                             model: Resource,
-//                             as: 'resource'
-//                         }
-//                     ]
-//                 }
-//             ]
-//         });
-
-//         const standardSummaries = standards.map(standard => {
-//             const dailyUploads = standard.dailyUploads;
-//             const resources = dailyUploads.map(upload => upload.resource);
-//             const totalVideoUploads = resources.filter(resource => resource.type === RESOURCE_TYPES.VIDEO).length;
-//             const totalNonVideoUploads = resources.filter(resource => resource.type !== RESOURCE_TYPES.VIDEO).length;
-
-//             return {
-//                 id: standard.id,
-//                 name: standard.name,
-//                 courseLength: standard.courseLength,
-//                 totalVideoUploads,
-//                 totalNonVideoUploads
-//             };
-//         });
-
-//         return { code: 200, data: {standardsCount: totalStandards, allStandards: standardSummaries} };
-//     } catch (error) {
-//         console.log('\n\n\n\n', error);
-//         logger.error(error?.message || 'An error occurred while fetching the summarized standards');
-//         return { code: 500 };
-//     }
-// };
-
 const deleteStandard = async ({ standardId }) => {
     try {
         const exisitingStandard = await Standard.findByPk(standardId);
@@ -473,7 +431,7 @@ const getTopicResources = async ({ standardId, topicName }) => {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate', 'weightage', 'topicName'],
+                attributes: ['accessibleDay', 'weightage', 'topicName'],
                 where: topicName? { topicName }: {},
                 include: [{
                     model: Resource,
@@ -497,21 +455,21 @@ const getTopicResources = async ({ standardId, topicName }) => {
         }
 
         // Transform the data
-        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
-            const date = upload.accessDate;
-            if (!result[date]) {
-                result[date] = { topicName: upload.topicName, resources: [] };
+        const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
+            const day = upload.accessibleDay;
+            if (!result[day]) {
+                result[day] = { topicName: upload.topicName, resources: [] };
             }
             if (upload.resource) {
-                result[date].resources.push({ resource: upload.resource, weightage: upload.weightage });
+                result[day].resources.push({ resource: upload.resource, weightage: upload.weightage });
             }
             return result;
         }, {});
 
-        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
-            date: date,
-            topicName: uploadsByDate[date].topicName,
-            topics: uploadsByDate[date].resources.map(({ resource, weightage }) => ({
+        const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
+            day: day,
+            topicName: uploadsByDay[day].topicName,
+            topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
                 name: resource.name,
                 type: resource.type,
