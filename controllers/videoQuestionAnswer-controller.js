@@ -11,7 +11,7 @@ const createVideoQuestionAnswer = async (req, res) => {
             return handleSuccessResponse(res, 200, reply.data);
         } 
         else if (reply.code == 404) {
-            return handleErrorResponse(res, 404, 'Question not found');
+            return handleErrorResponse(res, 404, reply.message);
         } 
         else if (reply.code == 409) {
             return handleErrorResponse(res, 409, 'User has already answered this question');

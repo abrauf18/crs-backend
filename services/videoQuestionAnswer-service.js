@@ -3,12 +3,34 @@ const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { Question, VideoQuestionAnswer, ClassroomStudent, Resource, DailyUpload, Standard, Enrollment, Video, Classroom } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
+const classroom = require("../models/classroom.js");
+
+async function getClassroomIdOfStudent (studentId) {
+    const classroomStudent = await ClassroomStudent.findOne({
+        where: {
+            studentId: studentId,
+        },
+        include: {
+            model: Classroom,
+            as: 'classroom',
+            where: {
+                status: CLASSROOM_STATUS.ACTIVE
+            }
+        }
+    });
+    return classroomStudent?.classroom?.id;
+}
 
 const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId}) => {
     try {
         const question = await Question.findByPk(questionId);
         if (!question) {
-            return { code: 404 };
+            return { code: 404, message: 'Question not found' };
+        }
+
+        const studentClassroomId = await getClassroomIdOfStudent(userId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
         }
 
         const existingAnswer = await VideoQuestionAnswer.findOne({
@@ -16,6 +38,7 @@ const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId
                 userId,
                 questionId,
                 standardId,
+                classroomId: studentClassroomId,
             },
         });
         if (existingAnswer) {
@@ -30,6 +53,7 @@ const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId
                 questionId,
                 answer,
                 standardId,
+                classroomId: studentClassroomId,
             });
         } 
         else {
@@ -41,6 +65,7 @@ const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId
                 answer,
                 obtainedMarks,
                 standardId,
+                classroomId: studentClassroomId,
             });
 
             const video = await Video.findOne({
@@ -68,28 +93,10 @@ const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId
                 },
             }); 
 
-            const classroomStudent = await ClassroomStudent.findOne({
-                where: {
-                    studentId: userId,
-                },
-                include: {
-                    model: Classroom,
-                    as: 'classroom',
-                    where: {
-                        status: CLASSROOM_STATUS.ACTIVE
-                    }
-                }
-            }); 
-
             // Retrieve weightage from data
             let weightage = 0;
             if (video && video.resource && video.resource.DailyUpload && video.resource.DailyUpload.standard) {
                 weightage = video.resource.DailyUpload.weightage;
-            }
-
-            let classroomId = '';
-            if (classroomStudent && classroomStudent.classroom) {
-                classroomId = classroomStudent.classroom.id;
             }
 
             await Enrollment.increment('result', {
@@ -97,7 +104,7 @@ const createVideoQuestionAnswer = async ({userId, questionId, answer, standardId
                 where: {
                     studentId: userId,
                     standardId: standardId,
-                    classroomId: classroomId, 
+                    classroomId: studentClassroomId, 
                 }
             });
         }
