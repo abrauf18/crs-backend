@@ -4,6 +4,7 @@ const { logger } = require("../Logs/logger.js");
 const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
 const { CLASSROOM_STATUS, RESOURCE_TYPES } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
+const classroom = require("../models/classroom.js");
 
 function timeToSeconds(time) {
     const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -31,6 +32,22 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
         return false;
     }
     return true;
+}
+
+async function getClassroomIdOfStudent (studentId) {
+    const classroomStudent = await ClassroomStudent.findOne({
+        where: {
+            studentId: studentId,
+        },
+        include: {
+            model: Classroom,
+            as: 'classroom',
+            where: {
+                status: CLASSROOM_STATUS.ACTIVE
+            }
+        }
+    });
+    return classroomStudent?.classroom?.id;
 }
 
 async function getResourceDetails ({ resourceType, standardId, studentId, resourceSubcategoryId }) {
@@ -216,11 +233,17 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
             return checkActiveStandardResult
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const watchedVideo = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
                 studentId: studentId,
-                standardId: standardId
+                standardId: standardId,
+                classroomId: studentClassroomId,
             }
         });
 
@@ -330,11 +353,17 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
             return checkActiveStandardResult
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const existingVideoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
                 studentId: studentId,
-                standardId: standardId
+                standardId: standardId,
+                classroomId: studentClassroomId,
             }
         });
 
@@ -350,7 +379,8 @@ const storeStudentVideo = async ({ role, videoId, studentId, last_seen_time, sta
             videoId: videoId,
             studentId: studentId,
             last_seen_time: last_seen_time,
-            standardId: standardId
+            standardId: standardId,
+            classroomId: studentClassroomId,
         });
 
         return { code: 200, data: videotracking };
@@ -366,6 +396,11 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
         const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
         if (checkActiveStandardResult.code !== 200) {
             return checkActiveStandardResult
+        }
+
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
         }
 
         const standard = await Standard.findByPk(standardId, {
@@ -389,7 +424,8 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
                                 attributes: ['id', 'watchedCompletely'],
                                 where: {
                                     studentId: studentId,
-                                    standardId: standardId
+                                    standardId: standardId,
+                                    classroomId: studentClassroomId
                                 }
                             }]
                         },
@@ -460,11 +496,17 @@ const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardI
             return checkActiveStandardResult
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const videoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
                 studentId: studentId,
-                standardId: standardId
+                standardId: standardId,
+                classroomId: studentClassroomId
             }
         });
 
@@ -479,6 +521,7 @@ const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardI
                 standardId: standardId,
                 last_seen_time: last_seen_time,
                 watchedCompletely: watchedCompletely,
+                classroomId: studentClassroomId,
             });
 
             return { code: 200, data: newVideotracking };
@@ -509,11 +552,17 @@ const UpdateStudentVideoLastSeenTime = async ({ role, videoId, studentId, standa
             return checkActiveStandardResult
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const videoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
                 studentId: studentId,
-                standardId: standardId
+                standardId: standardId,
+                classroomId: studentClassroomId
             }
         });
 
@@ -527,6 +576,7 @@ const UpdateStudentVideoLastSeenTime = async ({ role, videoId, studentId, standa
                 studentId: studentId,
                 standardId: standardId,
                 last_seen_time: last_seen_time,
+                classroomId: studentClassroomId,
             });
 
             return { code: 200, data: newVideotracking };
@@ -556,11 +606,17 @@ const SaveOrRemoveVideo = async ({ role, videoId, studentId, standardId, save })
             return checkActiveStandardResult
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const existingVideoTracking = await VideoTracking.findOne({
             where: {
                 videoId: videoId,
                 studentId: studentId,
-                standardId: standardId
+                standardId: standardId,
+                classroomId: studentClassroomId
             }
         });
 
@@ -580,6 +636,7 @@ const SaveOrRemoveVideo = async ({ role, videoId, studentId, standardId, save })
             studentId: studentId,
             standardId: standardId,
             saved: save,
+            classroomId: studentClassroomId,
         });
 
         return { code: 200, data: videotracking };
@@ -595,6 +652,11 @@ const getSavedVideos = async ({ studentId }) => {
         const student = await User.findByPk(studentId);
         if (!student) {
             return { code: 404, message: 'Student not found' };
+        }
+
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
         }
 
         // const videoTrackingData = await VideoTracking.findAll({
@@ -701,7 +763,7 @@ const getSavedVideos = async ({ studentId }) => {
                                             INNER JOIN 
                                                 "ClassroomCourses" AS CC ON CC."classroomId" = C."id" AND CC."standardId" = DU."standardId"
                                             WHERE 
-                                                VT."saved" = true AND '${studentId}' = VT."studentId" AND C."status" = 'active'
+                                                VT."saved" = true AND '${studentId}' = VT."studentId" AND C."status" = 'active' AND VT."classroomId" = '${studentClassroomId}'
                                             GROUP BY 
                                                 V."id", R."name", VT."last_seen_time", V."thumbnailURL", V."duration", DU."accessDate", VT."watchedCompletely", DU."standardId";`
         );

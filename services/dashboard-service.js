@@ -576,48 +576,48 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             };
         }));
 
-        // Fetch all daily uploads for the classroom student
-        const allDailyVideoUploads = await DailyUpload.findAll({
-            where: { standardId: classroomCourses?.map(course => course.standard.id) },
-            include: [{
-                model: Resource,
-                as: 'resource',
-                include: [{
-                    model: Video,
-                    as: 'video',
-                    include: [
-                        {
-                            model: VideoTracking,
-                            as: 'videoTrackings',
-                            where: { saved: true, studentId: studentId },
-                            required: true
-                        },
-                        {
-                            model: Question,
-                            as: 'questions',
-                            required: false
-                        }
-                    ],
-                    required: true
-                }],
-                required: true
-            }],
-            order: [['createdAt', 'DESC']],
-            limit: 6
-        });
+        // // Fetch all daily uploads for the classroom student
+        // const allDailyVideoUploads = await DailyUpload.findAll({
+        //     where: { standardId: classroomCourses?.map(course => course.standard.id) },
+        //     include: [{
+        //         model: Resource,
+        //         as: 'resource',
+        //         include: [{
+        //             model: Video,
+        //             as: 'video',
+        //             include: [
+        //                 {
+        //                     model: VideoTracking,
+        //                     as: 'videoTrackings',
+        //                     where: { saved: true, studentId: studentId },
+        //                     required: true
+        //                 },
+        //                 {
+        //                     model: Question,
+        //                     as: 'questions',
+        //                     required: false
+        //                 }
+        //             ],
+        //             required: true
+        //         }],
+        //         required: true
+        //     }],
+        //     order: [['createdAt', 'DESC']],
+        //     limit: 6
+        // });
 
-        // For each video, get the required data
-        const videosData = allDailyVideoUploads?.map(upload => ({
-            standardId: upload?.standardId,
-            videoId: upload.resource?.video?.id,
-            videoName: upload.resource?.name,
-            questionsCount: upload.resource?.video?.questions?.length,
-            topicsCount: Object.keys(upload.resource?.video?.topics).length,
-            lastSeenTime: upload.resource?.video?.videoTrackings?.length > 0 ? upload.resource?.video?.videoTrackings[0]?.last_seen_time : null,
-            duration: upload.resource?.video?.duration,
-            thumbnailURL: upload.resource?.video?.thumbnailURL,
-            completed: upload.resource.video.videoTrackings[0].watchedCompletely,
-        }));
+        // // For each video, get the required data
+        // const videosData = allDailyVideoUploads?.map(upload => ({
+        //     standardId: upload?.standardId,
+        //     videoId: upload.resource?.video?.id,
+        //     videoName: upload.resource?.name,
+        //     questionsCount: upload.resource?.video?.questions?.length,
+        //     topicsCount: Object.keys(upload.resource?.video?.topics).length,
+        //     lastSeenTime: upload.resource?.video?.videoTrackings?.length > 0 ? upload.resource?.video?.videoTrackings[0]?.last_seen_time : null,
+        //     duration: upload.resource?.video?.duration,
+        //     thumbnailURL: upload.resource?.video?.thumbnailURL,
+        //     completed: upload.resource.video.videoTrackings[0].watchedCompletely,
+        // }));
 
         const data = await ClassroomStudent.findOne({
             where: {
@@ -820,7 +820,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             standardsCount,
             classroomName,
             standardsData,
-            videosData,
+            // videosData,
             averageObtainedWeightage,
             averageTotalWeightage,
             assignmentsSolved,
