@@ -63,35 +63,43 @@ const getAllClassroomsOfTeacher = async ({ teacherId }) => {
 }
 
 const assignStandardToClassrooms = async ({ classCourses, standardId }) => {
+    const transaction = await sequelize.transaction(); // Start transaction
     try {
-        const standard = await Standard.findOne({ where: { id: standardId } });
+        // Check if standard exists
+        const standard = await Standard.findOne({ where: { id: standardId }, transaction });
         if (!standard) {
+            await transaction.rollback(); // Rollback if standard not found
             return { code: 404, message: "Standard not found" };
         }
 
         const classroomIds = classCourses.map(course => course.classroomId);
 
         if (new Set(classroomIds).size !== classroomIds.length) {
+            await transaction.rollback(); // Rollback on duplicate classrooms
             return { code: 400, message: "Duplicate classrooms are not allowed." };
         }
 
-        const classrooms = await Promise.all(classroomIds.map(id => Classroom.findOne({
-            where: { id },
-            raw: true
-        })));
+        // Check if classrooms exist
+        const classrooms = await Promise.all(classroomIds.map(id => 
+            Classroom.findOne({ where: { id }, raw: true, transaction })
+        ));
 
         const notFoundIds = classroomIds.filter((id, index) => !classrooms[index]);
         if (notFoundIds.length > 0) {
+            await transaction.rollback(); // Rollback if some classrooms not found
             return { code: 404, message: `Classrooms not found: ${notFoundIds.join(', ')}` };
         }
 
+        // Check for inactive classrooms
         const inactiveNames = classrooms
             .filter(classroom => classroom && classroom.status === CLASSROOM_STATUS.INACTIVE)
             .map(classroom => classroom.name);
         if (inactiveNames.length > 0) {
+            await transaction.rollback(); // Rollback on inactive classrooms
             return { code: 404, message: `Inactive classrooms: ${inactiveNames.join(', ')}` };
         }
 
+        // Check if standard is already assigned to classrooms
         const classroomsWithStandard = await Classroom.findAll({
             where: { id: classroomIds },
             include: [{
@@ -99,32 +107,47 @@ const assignStandardToClassrooms = async ({ classCourses, standardId }) => {
                 as: 'classroomCourses',
                 where: { standardId },
                 required: true
-            }]
+            }],
+            transaction
         });
         if (classroomsWithStandard.length > 0) {
             const classroomNames = classroomsWithStandard.map(classroom => classroom.name);
+            await transaction.rollback(); // Rollback if standard already assigned
             return { code: 409, message: `Classrooms with this course already assigned are: ${classroomNames.join(', ')}` };
         }
 
-        const classroomStandards = await Promise.all(classCourses.map(async course => {
-            const existingEntry = await ClassroomCourses.findOne({ where: { classroomId: course.classroomId, standardId } });
+        // Create new classroom-course relationships and enrollments
+        await Promise.all(classCourses.map(async course => {
+            const existingEntry = await ClassroomCourses.findOne({
+                where: { classroomId: course.classroomId, standardId },
+                transaction
+            });
             if (!existingEntry) {
-                await ClassroomCourses.create({ classroomId: course.classroomId, standardId, startDate: course.startDate });
+                await ClassroomCourses.create({
+                    classroomId: course.classroomId,
+                    standardId,
+                    startDate: course.startDate
+                }, { transaction });
 
-                const students = await ClassroomStudent.findAll({ where: { classroomId: course.classroomId } });
+                const students = await ClassroomStudent.findAll({ 
+                    where: { classroomId: course.classroomId }, 
+                    transaction 
+                });
                 const enrollments = students.map(student => ({
                     classroomId: course.classroomId,
                     standardId,
                     studentId: student.studentId,
                     result: 0
                 }));
-                await Enrollment.bulkCreate(enrollments);
+                await Enrollment.bulkCreate(enrollments, { transaction });
             }
         }));
 
-        return { code: 200, data: classroomStandards };
+        await transaction.commit(); // Commit transaction if all operations succeed
+        return { code: 200, data: classCourses };
 
     } catch (error) {
+        await transaction.rollback(); // Rollback transaction on error
         console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while assigning standard to classroom');
         return { code: 500 };
