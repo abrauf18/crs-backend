@@ -265,7 +265,8 @@ const getStudentVideo = async ({ role, videoId, studentId, standardId }) => {
                             as: 'answers',
                             where: { 
                                 userId: studentId,
-                                standardId: standardId
+                                standardId: standardId,
+                                classroomId: studentClassroomId
                             },
                             required: false
                         }]
@@ -960,6 +961,11 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             return checkActiveStandardResult
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const standard = await Standard.findByPk(standardId, {
             attributes: ['id', 'name', 'description', 'courseLength'],
             include: [{
@@ -993,7 +999,8 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                                     as: 'answers',
                                     where: { 
                                         userId: studentId,
-                                        standardId: standardId
+                                        standardId: standardId,
+                                        classroomId: studentClassroomId
                                     },
                                     attributes: ['obtainedMarks', 'answer'],
                                     required: false
@@ -1122,6 +1129,11 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             return { code: 404, message: 'Student not found' };
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
@@ -1171,7 +1183,10 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                                                     separate: true,
                                                     model: VideoQuestionAnswer,
                                                     as: 'answers',
-                                                    where: { userId: studentId },
+                                                    where: { 
+                                                        userId: studentId,
+                                                        classroomId: studentClassroomId,
+                                                    },
                                                     required: false,
                                                     attributes: ['obtainedMarks']
                                                 }]
@@ -1308,6 +1323,11 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
             return { code: 404, message: 'Student not found' };
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
@@ -1357,7 +1377,10 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
                                                     separate: true,
                                                     model: VideoQuestionAnswer,
                                                     as: 'answers',
-                                                    where: { userId: studentId },
+                                                    where: { 
+                                                        userId: studentId,
+                                                        classroomId: studentClassroomId,
+                                                    },
                                                     required: false,
                                                     attributes: ['obtainedMarks']
                                                 }]
@@ -1475,6 +1498,11 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             return { code: 404, message: 'Student not found' };
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const data = await ClassroomStudent.findOne({
             where: {
                 studentId: studentId
@@ -1529,7 +1557,10 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                                                     separate: true,
                                                     model: VideoQuestionAnswer,
                                                     as: 'answers',
-                                                    where: { userId: studentId },
+                                                    where: { 
+                                                        userId: studentId,
+                                                        classroomId: studentClassroomId,
+                                                    },
                                                     required: false,
                                                     attributes: ['obtainedMarks']
                                                 }]
@@ -1712,11 +1743,14 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     return { code: 404, message: `Video not found` };
                 }
 
+                const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: RESOURCE_TYPES.VIDEO, standardId, studentId, resourceSubcategoryId: video.id })
+
                 const videoQuestionAnswer = await VideoQuestionAnswer.findOne({
                     where: {
                         userId: studentId,
                         questionId: videoQuestion.id,
-                        standardId: standardId
+                        standardId: standardId,
+                        classroomId: classroomId
                     }
                 });
                 if (!videoQuestionAnswer) {
@@ -1728,7 +1762,6 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
 
-                const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: RESOURCE_TYPES.VIDEO, standardId, studentId, resourceSubcategoryId: video.id })
                 if (message != null || message != ''){
                     await transaction.rollback();
                     return { code: 400, message: message };
