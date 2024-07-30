@@ -233,6 +233,9 @@ const deleteClassCourse = async ({ classroomCourseId }) => {
             return { code: 404, message: 'Classroom is not active any more' };
         }
 
+        const enrollments = await Enrollment.findAll({ where: { classroomId: classroomCourse.classroomId, standardId: classroomCourse.standardId } });
+        await Promise.all(enrollments.map(enrollment => enrollment.destroy()));
+
         const deleted = await classroomCourse.destroy();
 
         return { code: 200, data: deleted };
