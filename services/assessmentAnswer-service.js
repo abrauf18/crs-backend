@@ -1,8 +1,8 @@
 const { Sequelize, where } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { User, Standard, AssessmentResourcesDetail, AssessmentAnswer, Resource, DailyUpload } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+const { User, Standard, AssessmentResourcesDetail, AssessmentAnswer, Resource, DailyUpload, ClassroomStudent, Classroom } = require("../models/index.js");
+const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 function canSubmitAssessment(uploadDate, daysToAdd) {
     const uploadDateObj = new Date(uploadDate);
@@ -18,6 +18,22 @@ function getDeadline(uploadDate, daysToAdd) {
     const deadlineDate = new Date(uploadDate);
     deadlineDate.setDate(deadlineDate.getDate() + daysToAdd + 1);
     return deadlineDate
+}
+
+async function getClassroomIdOfStudent (studentId) {
+    const classroomStudent = await ClassroomStudent.findOne({
+        where: {
+            studentId: studentId,
+        },
+        include: {
+            model: Classroom,
+            as: 'classroom',
+            where: {
+                status: CLASSROOM_STATUS.ACTIVE
+            }
+        }
+    });
+    return classroomStudent?.classroom?.id;
 }
 
 const createAssessmentAnswer = async ({userId, resourceId, standardId, answerURL}) => {
@@ -44,6 +60,11 @@ const createAssessmentAnswer = async ({userId, resourceId, standardId, answerURL
             return { code: 404, message: "Assessment Resource not found" };
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(userId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const dailyUpload = await DailyUpload.findOne({
             where: { resourceId, standardId }
         });
@@ -59,7 +80,8 @@ const createAssessmentAnswer = async ({userId, resourceId, standardId, answerURL
             where: {
                 userId,
                 standardId,
-                assessmentResourcesDetailId: existingAssessmentResourcesDetail.id
+                assessmentResourcesDetailId: existingAssessmentResourcesDetail.id,
+                classroomId: studentClassroomId
             }
         });
 
@@ -75,7 +97,8 @@ const createAssessmentAnswer = async ({userId, resourceId, standardId, answerURL
                 userId,
                 standardId,
                 assessmentResourcesDetailId: existingAssessmentResourcesDetail.id,
-                answerURL
+                answerURL,
+                classroomId: studentClassroomId
             });
             if (!createdAssessmentAnswer) {
                 return { code: 500 };
@@ -106,6 +129,11 @@ const getAssessmentAnswer = async ({ assessmentAnswerId }) => {
 
 const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardId }) => {
     try {
+        const studentClassroomId = await getClassroomIdOfStudent(userId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const assessmentAnswer = await Resource.findOne({
             where: { id: resourceId },
             attributes: ['id', 'name', 'url'],
@@ -122,7 +150,8 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardI
                         attributes: ['id', 'answerURL', 'obtainedMarks'],
                         where: { 
                             userId: userId, 
-                            standardId: standardId, 
+                            standardId: standardId,
+                            classroomId: studentClassroomId 
                         },
                     }]
                 },

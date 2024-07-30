@@ -673,7 +673,10 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                                                     separate: true,
                                                     model: VideoQuestionAnswer,
                                                     as: 'answers',
-                                                    where: { userId: studentId },
+                                                    where: { 
+                                                        userId: studentId,
+                                                        classroomId: classroomStudent.classroom.id
+                                                    },
                                                     required: false,
                                                     attributes: ['obtainedMarks']
                                                 }]
@@ -687,7 +690,10 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                                                 separate: true,
                                                 model: AssessmentAnswer,
                                                 as: 'assessmentAnswers',
-                                                where: { userId: studentId },
+                                                where: { 
+                                                    userId: studentId,
+                                                    classroomId: classroomStudent.classroom.id
+                                                },
                                                 attributes: ['obtainedMarks', 'answerURL'],
                                                 required: false,
                                             }]

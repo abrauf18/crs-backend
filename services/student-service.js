@@ -1017,6 +1017,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                                 where: { 
                                     userId: studentId,
                                     standardId: standardId,
+                                    classroomId: studentClassroomId
                                 },
                                 attributes: ['obtainedMarks', 'answerURL'],
                                 required: false,
@@ -1200,7 +1201,10 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                                                 separate: true,
                                                 model: AssessmentAnswer,
                                                 as: 'assessmentAnswers',
-                                                where: { userId: studentId },
+                                                where: { 
+                                                    userId: studentId,
+                                                    classroomId: studentClassroomId,
+                                                },
                                                 attributes: ['obtainedMarks', 'answerURL'],
                                                 required: false,
                                             }]
@@ -1394,7 +1398,10 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
                                                 separate: true,
                                                 model: AssessmentAnswer,
                                                 as: 'assessmentAnswers',
-                                                where: { userId: studentId },
+                                                where: { 
+                                                    userId: studentId,
+                                                    classroomId: studentClassroomId,
+                                                },
                                                 attributes: ['obtainedMarks', 'answerURL'],
                                                 required: false,
                                             }]
@@ -1574,7 +1581,10 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                                                 separate: true,
                                                 model: AssessmentAnswer,
                                                 as: 'assessmentAnswers',
-                                                where: { userId: studentId },
+                                                where: { 
+                                                    userId: studentId, 
+                                                    classroomId: studentClassroomId, 
+                                                },
                                                 attributes: ['obtainedMarks', 'answerURL'],
                                                 required: false,
                                             }]
@@ -1798,11 +1808,14 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     return { code: 404, message: `Assessment with Id: ${targetId} not found` };
                 }
 
+                const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: 'assessment', standardId, studentId, resourceSubcategoryId: assessment.id })
+                
                 const assessmentAnswer = await AssessmentAnswer.findOne({
                     where: {
                         userId: studentId,
                         assessmentResourcesDetailId: assessment.id,
-                        standardId: standardId
+                        standardId: standardId,
+                        classroomId: classroomId,
                     }
                 });
                 if (!assessmentAnswer) {
@@ -1814,7 +1827,6 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     return { code: 400, message: 'Obtained Marks are exceeding Total Marks' };
                 }
 
-                const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: 'assessment', standardId, studentId, resourceSubcategoryId: assessment.id })
                 if (message != null || message != ''){
                     await transaction.rollback();
                     return { code: 400, message: message };
@@ -1868,6 +1880,11 @@ const getStudentAssessmentAnswer = async ({ studentId, assessmentDetailId, stand
             return { code: 404, message: 'Standard not found' };
         }
 
+        const studentClassroomId = await getClassroomIdOfStudent(studentId);
+        if (!studentClassroomId) {
+            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+        }
+
         const assessmentAnswer = await AssessmentResourcesDetail.findOne({
             where: {
                 id: assessmentDetailId,
@@ -1877,7 +1894,8 @@ const getStudentAssessmentAnswer = async ({ studentId, assessmentDetailId, stand
                 as: 'assessmentAnswers',
                 where: { 
                     userId: student.id,
-                    standardId: standardId
+                    standardId: standardId,
+                    classroomId: studentClassroomId,
                 },
                 required: true
             }]

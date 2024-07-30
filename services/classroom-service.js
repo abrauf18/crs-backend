@@ -382,6 +382,9 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                                 attributes: ['id', 'userId', 'standardId', 'obtainedMarks'],
                                 separate: true,
                                 required: false,
+                                where: {
+                                    classroomId: classroomId
+                                },
                                 include: [{
                                     model: AssessmentResourcesDetail,
                                     as: 'assessmentResourcesDetail',
@@ -403,6 +406,9 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                                 attributes: ['id', 'userId', 'obtainedMarks'],
                                 separate: true,
                                 required: false,
+                                where: {
+                                    classroomId: classroomId
+                                },
                                 include: [{
                                     model: Question,
                                     as: 'question',
