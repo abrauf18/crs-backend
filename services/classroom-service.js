@@ -219,32 +219,39 @@ const getClassesAndCourses = async ({ teacherId }) => {
 }
 
 const deleteClassCourse = async ({ classroomCourseId }) => {
+    const transaction = await sequelize.transaction(); // Start a new transaction
     try {
-        const classroomCourse = await ClassroomCourses.findByPk(classroomCourseId);
+        const classroomCourse = await ClassroomCourses.findByPk(classroomCourseId, { transaction });
         if (!classroomCourse) {
+            await transaction.rollback(); // Rollback transaction if not found
             return { code: 404, message: 'Relation between standard and class Not found' };
         }
 
-        const classroom = await Classroom.findOne({ where: { id: classroomCourse.classroomId } });
+        const classroom = await Classroom.findOne({ where: { id: classroomCourse.classroomId }, transaction });
         if (!classroom) {
+            await transaction.rollback(); // Rollback transaction if not found
             return { code: 404, message: 'Classroom not found' };
         }
         if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            await transaction.rollback(); // Rollback transaction if classroom is not active
             return { code: 404, message: 'Classroom is not active any more' };
         }
 
-        const enrollments = await Enrollment.findAll({ where: { classroomId: classroomCourse.classroomId, standardId: classroomCourse.standardId } });
-        await Promise.all(enrollments.map(enrollment => enrollment.destroy()));
+        const enrollments = await Enrollment.findAll({ where: { classroomId: classroomCourse.classroomId, standardId: classroomCourse.standardId }, transaction });
+        await Promise.all(enrollments.map(enrollment => enrollment.destroy({ transaction }))); // Ensure destroy is within transaction
 
-        const deleted = await classroomCourse.destroy();
+        const deleted = await classroomCourse.destroy({ transaction }); // Ensure destroy is within transaction
+
+        await transaction.commit(); // Commit transaction if all operations succeed
 
         return { code: 200, data: deleted };
     } catch (error) {
+        await transaction.rollback(); // Rollback transaction in case of error
         console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while deleting class course');
         return { code: 500 };
     }
-}
+};
 
 // const getClassroomStudents = async ({ classroomId, page, limit }) => {
 //     try {
