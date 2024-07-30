@@ -62,12 +62,14 @@ const getAllClassroomsOfTeacher = async ({ teacherId }) => {
     }
 }
 
-const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
+const assignStandardToClassrooms = async ({ classCourses, standardId }) => {
     try {
         const standard = await Standard.findOne({ where: { id: standardId } });
         if (!standard) {
             return { code: 404, message: "Standard not found" };
         }
+
+        const classroomIds = classCourses.map(course => course.classroomId);
 
         if (new Set(classroomIds).size !== classroomIds.length) {
             return { code: 400, message: "Duplicate classrooms are not allowed." };
@@ -104,16 +106,16 @@ const assignStandardToClassrooms = async ({ classroomIds, standardId }) => {
             return { code: 409, message: `Classrooms with this course already assigned are: ${classroomNames.join(', ')}` };
         }
 
-        const classroomStandards = await Promise.all(classroomIds.map(async id => {
-            const existingEntry = await ClassroomCourses.findOne({ where: { classroomId: id, standardId } });
+        const classroomStandards = await Promise.all(classCourses.map(async course => {
+            const existingEntry = await ClassroomCourses.findOne({ where: { classroomId: course.classroomId, standardId } });
             if (!existingEntry) {
-                await ClassroomCourses.create({ classroomId: id, standardId });
+                await ClassroomCourses.create({ classroomId: course.classroomId, standardId, startDate: course.startDate });
 
-                const students = await ClassroomStudent.findAll({ where: { classroomId: id } });
+                const students = await ClassroomStudent.findAll({ where: { classroomId: course.classroomId } });
                 const enrollments = students.map(student => ({
-                    classroomId: id,
+                    classroomId: course.classroomId,
                     standardId,
-                    studentId: student.id,
+                    studentId: student.studentId,
                     result: 0
                 }));
                 await Enrollment.bulkCreate(enrollments);

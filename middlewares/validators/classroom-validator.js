@@ -49,11 +49,17 @@ const getAllClassroomsOfTeacher = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const classCoursesSchema = Joi.array().items(
+    Joi.object({
+        classroomId: Joi.string().guid().required(),
+        startDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+    })
+).required();
 const assignStandardToClassroom = createSchemaMiddleware(
     Joi.object({
-        classroomIds: Joi.array().items(Joi.string().guid()).required(),
         standardId: Joi.string().guid().required(),
-        accessToken: Joi.string().required()
+        accessToken: Joi.string().required(),
+        classCourses: classCoursesSchema
     })
 );
 

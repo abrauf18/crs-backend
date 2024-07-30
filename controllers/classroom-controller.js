@@ -57,8 +57,8 @@ const getAllClassroomsOfTeacher = async (req, res) => {
 
 const assignStandardToClassrooms = async (req, res) => {
     try {
-        const { classroomIds, standardId } = req.body;
-        const reply = await classroomService.assignStandardToClassrooms({ classroomIds, standardId });
+        const { classCourses, standardId } = req.body;
+        const reply = await classroomService.assignStandardToClassrooms({ classCourses, standardId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
