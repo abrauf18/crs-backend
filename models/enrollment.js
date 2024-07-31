@@ -44,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
     },
     result: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue:0,
     },
