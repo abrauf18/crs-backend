@@ -823,9 +823,24 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
                 transaction: t
             });
             if (classroomStudent) {
-                console.log('\n\n\n\n ', classroomStudent, classroomId)
+                const oldEnrollments = await Enrollment.findAll({ 
+                    where: { 
+                        classroomId: classroomStudent.classroomId, 
+                        studentId 
+                    }, 
+                    transaction: t 
+                });
+                await Promise.all(oldEnrollments.map(enrollment => enrollment.destroy({ transaction: t })));
                 updatedClassroomStudent = await classroomStudent.update({ classroomId: classroomId }, { transaction: t });
             }
+            const classroomCourses = await ClassroomCourses.findAll({ where: { classroomId }, transaction: t });
+            const newEnrollments = classroomCourses.map(course => ({
+                classroomId: classroomId,
+                standardId: course.standardId,
+                studentId: studentId,
+                result: 0
+            }));
+            await Enrollment.bulkCreate(newEnrollments, { transaction: t });
         }
 
         if (email) {
