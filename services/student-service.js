@@ -3,8 +3,6 @@ const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
 const { CLASSROOM_STATUS, RESOURCE_TYPES } = require("../utils/enumTypes.js");
-const ROLES = require("../models/roles/index.js");
-const classroom = require("../models/classroom.js");
 
 function timeToSeconds(time) {
     const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -1754,6 +1752,10 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                 }
 
                 const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: RESOURCE_TYPES.VIDEO, standardId, studentId, resourceSubcategoryId: video.id })
+                if (message){
+                    await transaction.rollback();
+                    return { code: 400, message: message };
+                }
 
                 const videoQuestionAnswer = await VideoQuestionAnswer.findOne({
                     where: {
@@ -1772,10 +1774,6 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
 
-                if (message != null || message != ''){
-                    await transaction.rollback();
-                    return { code: 400, message: message };
-                }
                 if (videoQuestionAnswer.obtainedMarks > 0) {
                     await Enrollment.decrement('result', {
                         by: videoQuestionAnswer.obtainedMarks/totalMarks * weightage,
@@ -1809,7 +1807,11 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                 }
 
                 const { weightage, classroomId, totalMarks, message } = await getResourceDetails({ resourceType: 'assessment', standardId, studentId, resourceSubcategoryId: assessment.id })
-                
+                if (message){
+                    await transaction.rollback();
+                    return { code: 400, message: message };
+                }
+
                 const assessmentAnswer = await AssessmentAnswer.findOne({
                     where: {
                         userId: studentId,
@@ -1827,10 +1829,6 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     return { code: 400, message: 'Obtained Marks are exceeding Total Marks' };
                 }
 
-                if (message != null || message != ''){
-                    await transaction.rollback();
-                    return { code: 400, message: message };
-                }
                 if (assessmentAnswer.obtainedMarks > 0) {
                     await Enrollment.decrement('result', {
                         by: assessmentAnswer.obtainedMarks/totalMarks * weightage,
@@ -1861,9 +1859,9 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
         };
 
     } catch (error) {
-        await transaction.rollback();
         console.log('\n\n\n\n', error)
         logger.error(error?.message || 'An error occurred while fetching the saved videos');
+        await transaction.rollback();
         return { code: 500 };
     }
 }
