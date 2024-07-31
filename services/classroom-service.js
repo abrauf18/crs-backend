@@ -641,7 +641,8 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
                 u.name AS student_name,
                 u.email AS student_email,
                 u.image AS student_image,
-                SUM(e.result) AS total_performance
+                SUM(e.result) AS all_standard_results,
+                COUNT(e.id) AS count_of_standards
             FROM
                 public."Classrooms" AS c
             INNER JOIN
@@ -670,7 +671,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             name: student.student_name,
             email: student.student_email,
             image: student.student_image,
-            performance: student.total_performance,
+            performance: student.all_standard_results/student.count_of_standards,
             gradeId: student.classroom_id,
             grade: student.classroom_name
         }));
