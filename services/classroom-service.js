@@ -671,7 +671,7 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
             name: student.student_name,
             email: student.student_email,
             image: student.student_image,
-            performance: student.all_standard_results/student.count_of_standards,
+            performance: parseFloat((student.all_standard_results / student.count_of_standards).toFixed(2)), // Formatting result
             gradeId: student.classroom_id,
             grade: student.classroom_name
         }));
