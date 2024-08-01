@@ -23,15 +23,32 @@ function compareTimes(time1, time2) {
     }
 }
 
-function canSubmitAssessment(uploadDate, daysToAdd) {
-    const uploadDateObj = new Date(uploadDate);
-    uploadDateObj.setDate(uploadDateObj.getDate() + daysToAdd + 1);
+function canSubmitAssessment(startDate, accessibleDay, daysToAdd) {
+    const uploadDateObj = new Date(startDate);
+    uploadDateObj.setDate(uploadDateObj.getDate() + accessibleDay + daysToAdd + 1);
     const today = new Date();
     if (today > uploadDateObj) {
         return false;
     }
     return true;
 }
+
+function isReleased(startDate, accessibleDay) {
+    accessibleDay = Number(accessibleDay);
+    const accessibleDate = new Date(startDate);
+    accessibleDate.setDate(accessibleDate.getDate() + accessibleDay);
+    const today = new Date();
+    const released = today >= accessibleDate;
+
+    // Format the date to 'YYYY-MM-DD'
+    const formattedDate = accessibleDate.toISOString().split('T')[0];
+
+    return {
+        released: released,
+        date: formattedDate
+    };
+}
+
 
 async function getClassroomIdOfStudent (studentId) {
     const classroomStudent = await ClassroomStudent.findOne({
@@ -407,7 +424,7 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate'],
+                attributes: ['accessibleDay'],
                 include: [{
                     model: Resource,
                     as: 'resource',
@@ -436,6 +453,15 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
                         }
                     ]
                 }]
+            },
+            {
+                model: ClassroomCourses,
+                as: 'classroomCourses',
+                where: {
+                    standardId: standardId,
+                    classroomId: studentClassroomId
+                },
+                attributes: ['id', 'standardId', 'classroomId', 'startDate'],
             }]
         });
 
@@ -443,33 +469,36 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
             return { code: 404, message: 'Standard not found' };
         }
 
-
-        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
-            const date = upload.accessDate;
-            if (!result[date]) {
-                result[date] = [];
+        const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
+            const day = upload.accessibleDay;
+            if (!result[day]) {
+                result[day] = [];
             }
             if (upload.resource) {
-                result[date].push(upload.resource);
+                result[day].push(upload.resource);
             }
             return result;
         }, {});
 
-        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
-            date: date,
-            released: date <= new Date().toISOString(),
-            topics: uploadsByDate[date].map(resource => ({
-                resourceId: resource.id,
-                name: resource.name,
-                type: resource.type,
-                topic: resource.topic,
-                videoId: resource.video ? resource.video.id : null,
-                watched: resource.video?.videoTrackings.length > 0,
-                completed: resource.video?.videoTrackings[0]?.watchedCompletely || false,
-                canWrite: resource?.AssessmentResourcesDetail ? canSubmitAssessment(date, resource.AssessmentResourcesDetail.deadline) : false
-            }))
-        }));
-
+        const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => {
+            const { released, date } = isReleased(standard.classroomCourses[0].startDate, parseInt(day));
+            return {
+                day: parseInt(day),
+                date: date,
+                released: released,
+                topics: uploadsByDay[day].map(resource => ({
+                    resourceId: resource.id,
+                    name: resource.name,
+                    type: resource.type,
+                    topic: resource.topic,
+                    videoId: resource.video ? resource.video.id : null,
+                    watched: resource.video && resource.video.videoTrackings ? resource.video.videoTrackings.length > 0 : false,
+                    completed: resource.video && resource.video.videoTrackings && resource.video.videoTrackings[0] ? resource.video.videoTrackings[0].watchedCompletely : false,
+                    canWrite: resource.AssessmentResourcesDetail ? canSubmitAssessment(standard.classroomCourses[0].startDate, day, resource.AssessmentResourcesDetail.deadline) : false
+                }))
+            };
+        });
+        
         const result = {
             name: standard.name,
             description: standard.description,
