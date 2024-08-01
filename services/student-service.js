@@ -1777,8 +1777,8 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             return {
                 standardId: standard.id,
                 standardName: standard.name,
-                totalWeightage: currentTotalWeightage,
-                obtainedWeightage: standard?.Enrollments[0]?.result,
+                totalWeightage: parseFloat(currentTotalWeightage.toFixed(2)),
+                obtainedWeightage: parseFloat(standard?.Enrollments[0]?.result.toFixed(2)),
             };
         })
 
@@ -1788,8 +1788,8 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
             image: student.image,
             classroomName: classroomStudent.classroom.name,
             classroomStudentId: classroomStudent.id,
-            averageTotalWeightage: allClassCurrentWeightage / countOfStandards,
-            averageObtainedWeightage: allResultsSum / countOfStandards,
+            averageTotalWeightage: parseFloat((allClassCurrentWeightage / countOfStandards).toFixed(2)),
+            averageObtainedWeightage: parseFloat((allResultsSum / countOfStandards).toFixed(2)),
         }
 
         return {
@@ -2787,7 +2787,7 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                     return {
                         userId: studentResult.student_id,
                         userName: studentResult.student_name,
-                        obtainedWeightage: obtainedWeightage,
+                        obtainedWeightage: parseFloat(obtainedWeightage.toFixed(2)),
                     };
                 })
 
@@ -2798,7 +2798,9 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                     currentTotalWeightage: totalWeightage,
                     usersWeightage: usersWeightage,
                     studentWeightageDistribution: distribution,
-                    averageObtainedWeightage: usersWeightage.length > 0 ? usersWeightage.reduce((acc, curr) => acc + curr.obtainedWeightage, 0) / usersWeightage.length : 0, // calculating avg of standard
+                    averageObtainedWeightage: usersWeightage.length > 0 
+                        ? parseFloat((usersWeightage.reduce((acc, curr) => acc + curr.obtainedWeightage, 0) / usersWeightage.length).toFixed(2))
+                        : 0, // calculating avg of standard
                 });
             });
 
@@ -2812,7 +2814,7 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                 userName: result.userName,
                 userEmail: result.userEmail,
                 image: result.image,
-                totalObtainedScore: result.allStandardsResult / result.standardsCount,
+                totalObtainedScore: parseFloat((result.allStandardsResult / result.standardsCount).toFixed(2)),
                 classId: result.classId,
                 className: result.className
             }));
