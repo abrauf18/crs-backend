@@ -1,7 +1,7 @@
 const { Sequelize, Op, fn, col, literal } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress } = require("../models/index.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 function canSubmitAssessment(uploadDate, daysToAdd) {
@@ -13,6 +13,386 @@ function canSubmitAssessment(uploadDate, daysToAdd) {
     }
     return true;
 }
+
+// const getTeacherDashboardSummaries = async ({ teacherId }) => {
+//     try {
+//         const classrooms = await Classroom.findAll({
+//             where: { teacherId },
+//             include: [{
+//                 model: ClassroomStudent,
+//                 as: 'classroomStudents'
+//             }]
+//         });
+
+//         const totalClassrooms = classrooms.length;
+//         const totalStudents = classrooms?.reduce((total, classroom) => total + classroom.classroomStudents.length, 0);
+
+//         const studentCounts = await ClassroomStudent.findAll({
+//             attributes: [
+//                 [fn("date_trunc", "year", col("createdAt")), "year"],
+//                 [fn("date_trunc", "month", col("createdAt")), "month"],
+//                 [fn("count", "*"), "count"],
+//             ],
+//             where: {
+//                 classroomId: classrooms?.map(classroom => classroom.id)
+//             },
+//             group: ["year", "month"],
+//             order: [
+//                 [fn("date_trunc", "year", col("createdAt")), "ASC"],
+//                 [fn("date_trunc", "month", col("createdAt")), "ASC"]
+//             ],
+//             raw: true,
+//         });
+
+//         // Transform the data into the desired format
+//         const formattedResults = studentCounts?.map(row => ({
+//             year: new Date(row.year).getFullYear(),
+//             month: new Date(row.month).getMonth() + 1, // Months are 0-indexed in JavaScript
+//             count: parseInt(row.count, 10)
+//         }));
+
+//         // Calculate cumulative count
+//         let cumulativeCount = 0;
+//         const cumulativeResults = formattedResults?.map(row => {
+//             cumulativeCount += row.count;
+//             return {
+//                 year: row.year,
+//                 month: row.month,
+//                 count: cumulativeCount
+//             };
+//         });
+
+//         const data = await Classroom.findAll({
+//             where: { status: CLASSROOM_STATUS.ACTIVE, teacherId: teacherId },
+//             attributes: ["id", "name"],
+//             include: [
+//                 {
+//                     model: ClassroomCourses,
+//                     as: 'classroomCourses',
+//                     attributes: ["id"],
+//                     include: [{
+//                         model: Standard,
+//                         as: 'standard',
+//                         attributes: ['id', 'name'],
+//                         include: [{
+//                             model: DailyUpload,
+//                             as: 'dailyUploads',
+//                             attributes: ['id', 'accessDate', 'weightage'],
+//                             where: {
+//                                 weightage: {
+//                                     [Op.gt]: 0
+//                                 }
+//                             },
+//                             required: true,
+//                             separate: true,
+//                             include: [{
+//                                 model: Resource,
+//                                 as: 'resource',
+//                                 attributes: ['id', 'name', 'type', 'topic', 'url'],
+//                                 include: [
+//                                     {
+//                                         model: Video,
+//                                         as: 'video',
+//                                         attributes: ['id'],
+//                                         include: [{
+//                                             separate: true,
+//                                             model: Question,
+//                                             as: 'questions',
+//                                             required: false,
+//                                             attributes: ['id', 'totalMarks'],
+//                                         }]
+//                                     },
+//                                     {
+//                                         model: AssessmentResourcesDetail,
+//                                         as: 'AssessmentResourcesDetail',
+//                                         attributes: ['id', 'totalMarks', 'deadline']
+//                                     }
+//                                 ]
+//                             }]
+//                         }]
+//                     }],
+//                 },
+//                 {
+//                     model: ClassroomStudent,
+//                     as: 'classroomStudents',
+//                     attributes: ['id', 'classroomId', 'studentId'],
+//                     include: [{
+//                         model: User,
+//                         as: 'student',
+//                         attributes: ['id', 'name', 'email', 'image'],
+//                         include: [
+//                             {
+//                                 model: AssessmentAnswer,
+//                                 attributes: ['id', 'userId', 'standardId', 'obtainedMarks'],
+//                                 separate: true,
+//                                 required: false,
+//                                 include: [{
+//                                     model: AssessmentResourcesDetail,
+//                                     as: 'assessmentResourcesDetail',
+//                                     attributes: ['id', 'totalMarks', 'deadline', 'resourceId'],
+//                                     include: [{
+//                                         model: Resource,
+//                                         as: 'resource',
+//                                         attributes: ['id', 'name', 'type', 'topic', 'url'],
+//                                         include: [{
+//                                             model: DailyUpload,
+//                                             as: 'DailyUpload',
+//                                             attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
+//                                         }]
+//                                     }]
+//                                 }]
+//                             },
+//                             {
+//                                 model: VideoQuestionAnswer,
+//                                 attributes: ['id', 'userId', 'obtainedMarks'],
+//                                 separate: true,
+//                                 required: false,
+//                                 include: [{
+//                                     model: Question,
+//                                     as: 'question',
+//                                     attributes: ['id', 'totalMarks'],
+//                                     include: [
+//                                         {
+//                                             model: Video,
+//                                             as: 'video',
+//                                             attributes: ['id', 'resourceId'],
+//                                             include: [{
+//                                                 model: Resource,
+//                                                 as: 'resource',
+//                                                 attributes: ['id', 'name', 'type', 'topic', 'url'],
+//                                                 include: [{
+//                                                     model: DailyUpload,
+//                                                     as: 'DailyUpload',
+//                                                     attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
+//                                                 }]
+//                                             }]
+//                                         }
+//                                     ]
+//                                 }]
+//                             }
+//                         ]
+//                     }]
+//                 }
+//             ],
+//         });
+//         // Current date for comparison
+//         const today = new Date();
+//         // today.setHours(0, 0, 0, 0);
+
+//         const transformedData = data?.map(classItem => {
+//             const standardsMap = new Map();
+//             const currentDate = new Date();
+
+//             // Iterate over each course in the classroom to map standards
+//             classItem.classroomCourses?.forEach(course => {
+//                 const standard = course.standard;
+//                 if (standard) {
+//                     // If the standard is not already in the map, add it
+//                     if (!standardsMap.has(standard.id)) {
+//                         standardsMap.set(standard.id, {
+//                             standardId: standard.id,
+//                             standardName: standard.name,
+//                             currentTotalWeightage: 0,
+//                             usersWeightage: [],
+//                             studentWeightageDistribution: {
+//                                 '0-25': 0,
+//                                 '25-50': 0,
+//                                 '50-75': 0,
+//                                 '75-100': 0
+//                             },
+//                             averageObtainedWeightage: 0  // Default value set to 0
+//                         });
+//                     }
+
+//                     const standardEntry = standardsMap.get(standard.id);
+
+//                     // Calculate the total weightage for the standard based on daily uploads up to today
+//                     if (standard.dailyUploads && standard.dailyUploads.length > 0) {
+//                         standardEntry.currentTotalWeightage += standard.dailyUploads
+//                             .filter(upload => new Date(upload.accessDate) <= currentDate)
+//                             .reduce((acc, upload) => acc + upload.weightage, 0);
+//                     }
+//                 }
+//             });
+
+//             // Iterate over each student in the classroom to calculate obtained weightage
+//             classItem.classroomStudents?.forEach(student => {
+//                 classItem.classroomCourses?.forEach(course => {
+//                     const standard = course.standard;
+//                     if (standard) {
+//                         const standardEntry = standardsMap.get(standard.id);
+
+//                         // Ensure the student is present in the usersWeightage array
+//                         let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+//                         if (!userEntry) {
+//                             userEntry = {
+//                                 userId: student.student.id,
+//                                 userName: student.student.name,
+//                                 obtainedWeightage: 0,
+//                                 questionsDetails: []
+//                             };
+//                             standardEntry.usersWeightage.push(userEntry);
+//                         }
+
+//                         // Track total marks and obtained marks for video questions
+//                         const videoWeightages = new Map();
+//                         student.student.VideoQuestionAnswers?.forEach(answer => {
+//                             const videoQuestion = answer.question;
+//                             if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
+//                                 const dailyUpload = videoQuestion.video.resource.DailyUpload;
+//                                 if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+//                                     const videoId = videoQuestion.video.id;
+//                                     if (!videoWeightages.has(videoId)) {
+//                                         videoWeightages.set(videoId, {
+//                                             totalMarks: 0,
+//                                             obtainedMarks: 0,
+//                                             weightage: dailyUpload.weightage
+//                                         });
+//                                     }
+//                                     const questionTotalMarks = videoQuestion.totalMarks;
+//                                     const questionObtainedMarks = Math.max(answer.obtainedMarks, 0);
+//                                     videoWeightages.get(videoId).totalMarks += questionTotalMarks;
+//                                     videoWeightages.get(videoId).obtainedMarks += questionObtainedMarks;
+
+//                                     userEntry.questionsDetails.push({
+//                                         id: videoQuestion.id,
+//                                         statement: videoQuestion.statement,
+//                                         answer: answer.answer,
+//                                         totalMarks: questionTotalMarks,
+//                                         obtainedMarks: questionObtainedMarks
+//                                     });
+//                                 }
+//                             }
+//                         });
+
+//                         // Calculate weightage for each video based on total marks and obtained marks of its questions
+//                         videoWeightages.forEach((video, videoId) => {
+//                             const weightage = video.weightage;
+//                             const totalMarks = video.totalMarks;
+//                             const obtainedMarks = video.obtainedMarks;
+//                             const videoWeightage = (obtainedMarks / totalMarks) * weightage;
+//                             userEntry.obtainedWeightage += videoWeightage;
+//                         });
+
+//                         // Calculate obtained weightage from assessment answers
+//                         student.student.AssessmentAnswers?.forEach(answer => {
+//                             const assessmentResource = answer.assessmentResourcesDetail;
+//                             if (assessmentResource.resource.DailyUpload) {
+//                                 const dailyUpload = assessmentResource.resource.DailyUpload;
+//                                 if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
+//                                     const weightage = dailyUpload.weightage;
+//                                     const obtainedMarks = Math.max(answer.obtainedMarks, 0);
+//                                     const questionWeightage = (obtainedMarks / assessmentResource.totalMarks) * weightage;
+//                                     userEntry.obtainedWeightage += questionWeightage;
+
+//                                     userEntry.questionsDetails.push({
+//                                         id: assessmentResource.id,
+//                                         statement: assessmentResource.statement,
+//                                         answer: answer.answer,
+//                                         totalMarks: assessmentResource.totalMarks,
+//                                         obtainedMarks: obtainedMarks
+//                                     });
+//                                 }
+//                             }
+//                         });
+//                     }
+//                 });
+//             });
+
+//             // Calculate the average obtained weightage and student distribution for each standard
+//             standardsMap?.forEach(standardEntry => {
+//                 const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
+//                 standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
+
+//                 // Check if averageObtainedWeightage is null and set it to 0
+//                 if (isNaN(standardEntry.averageObtainedWeightage)) {
+//                     standardEntry.averageObtainedWeightage = 0;
+//                 }
+
+//                 // Calculate student distribution for obtained weightage ranges
+//                 standardEntry.usersWeightage?.forEach(user => {
+//                     if (user.obtainedWeightage < 25) {
+//                         standardEntry.studentWeightageDistribution['0-25']++;
+//                     } else if (user.obtainedWeightage < 50) {
+//                         standardEntry.studentWeightageDistribution['25-50']++;
+//                     } else if (user.obtainedWeightage < 75) {
+//                         standardEntry.studentWeightageDistribution['50-75']++;
+//                     } else {
+//                         standardEntry.studentWeightageDistribution['75-100']++;
+//                     }
+//                 });
+//             });
+
+//             // Calculate the total obtained score for each student and the overall average
+//             const studentsData = classItem.classroomStudents?.map(student => {
+//                 const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
+//                     const userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
+//                     return acc + (userEntry ? userEntry.obtainedWeightage : 0);
+//                 }, 0);
+//                 return {
+//                     userId: student.student.id,
+//                     userName: student.student.name,
+//                     userEmail: student.student.email,
+//                     image: student.student.image,
+//                     totalObtainedScore: totalObtainedScore / standardsMap.size,
+//                     classId: classItem.id,
+//                     className: classItem.name,
+//                 };
+//             });
+
+//             let avgObtainedWeightage = 0
+//             if (studentsData.length > 0) {
+//                 // Calculate total obtained score for all students and the overall average
+//                 const totalObtainedScoreSum = studentsData.reduce((acc, student) => {
+//                     // Check if student.totalObtainedScore is a number, if not, add 0 to the accumulator
+//                     return acc + (isNaN(student.totalObtainedScore) ? 0 : student.totalObtainedScore);
+//                 }, 0);
+//                 avgObtainedWeightage = classItem.classroomStudents.length > 0 ? totalObtainedScoreSum / classItem.classroomStudents.length : 0;
+//             }
+
+//             // Calculate total weightage of all standards where access date <= today
+//             const totalWeightageOfStandards = classItem.classroomCourses.reduce((acc, course) => {
+//                 const standard = course.standard;
+//                 if (standard && standard.dailyUploads && standard.dailyUploads.length > 0) {
+//                     const totalWeightage = standard.dailyUploads
+//                         .filter(upload => new Date(upload.accessDate) <= today)
+//                         .reduce((sum, upload) => sum + upload.weightage, 0);
+//                     return acc + totalWeightage;
+//                 }
+//                 return acc;
+//             }, 0);
+
+//             // Calculate the average weightage per standard
+//             const numberOfStandards = classItem.classroomCourses.length;
+//             const averageWeightagePerStandard = numberOfStandards > 0 ? totalWeightageOfStandards / numberOfStandards : 0;
+
+//             return {
+//                 classId: classItem.id,
+//                 className: classItem.name,
+//                 standardList: Array.from(standardsMap.values()),
+//                 studentsData,
+//                 avgObtainedWeightage,
+//                 avgTotalWeightage: averageWeightagePerStandard
+//             };
+//         });
+
+//         return {
+//             code: 200,
+//             data: {
+//                 totalClassrooms,
+//                 totalStudents,
+//                 usersJoining: cumulativeResults,
+//                 students: transformedData.flatMap(classItem => classItem.studentsData).filter(student => student !== undefined),
+//                 avgObtainedWeightage: (transformedData.reduce((acc, classItem) => acc + classItem.avgObtainedWeightage, 0) / transformedData.length).toFixed(1),
+//                 avgTotalWeightage: (transformedData.reduce((acc, classItem) => acc + classItem.avgTotalWeightage, 0) / transformedData.length).toFixed(1)
+//             }
+//         };
+//     } catch (error) {
+//         console.log('\n\n\n\n', error);
+//         logger.error(error?.message || 'An error occurred while getting total classrooms and students of teacher for teacher dahsboard');
+//         return { code: 500 };
+//     }
+// }
 
 const getTeacherDashboardSummaries = async ({ teacherId }) => {
     try {
@@ -62,6 +442,37 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
             };
         });
 
+        const teacherClassroomResults = await sequelize.query(`
+            SELECT
+                c.id AS classroom_id,
+                c.name AS classroom_name,
+                u.id AS student_id,
+                u.name AS student_name,
+                u.email AS student_email,
+                u.image AS student_image,
+                COUNT(e.id) AS standard_count,
+                SUM(e.result) AS total_performance,
+                CASE 
+                    WHEN COUNT(e.id) > 0 THEN ROUND(SUM(e.result) * 1.0 / COUNT(e.id), 2)
+                    ELSE 0 
+                END AS class_result
+            FROM
+                public."Classrooms" AS c
+            INNER JOIN
+                public."Enrollments" AS e
+                ON c.id = e."classroomId"
+            INNER JOIN
+                public."Users" AS u
+                ON e."studentId" = u.id
+            WHERE
+                c."teacherId" = '${teacherId}'
+            GROUP BY
+                c.id, c.name, u.id, u.name, u.email, u.image
+            ORDER BY
+                u.name ASC
+        `,);
+        const enrollments = teacherClassroomResults[0];
+
         const data = await Classroom.findAll({
             where: { status: CLASSROOM_STATUS.ACTIVE, teacherId: teacherId },
             attributes: ["id", "name"],
@@ -69,7 +480,7 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                 {
                     model: ClassroomCourses,
                     as: 'classroomCourses',
-                    attributes: ["id"],
+                    attributes: ['id', 'startDate'],
                     include: [{
                         model: Standard,
                         as: 'standard',
@@ -77,7 +488,7 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                         include: [{
                             model: DailyUpload,
                             as: 'dailyUploads',
-                            attributes: ['id', 'accessDate', 'weightage'],
+                            attributes: ['id', 'accessibleDay', 'weightage'],
                             where: {
                                 weightage: {
                                     [Op.gt]: 0
@@ -112,78 +523,17 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                         }]
                     }],
                 },
-                {
-                    model: ClassroomStudent,
-                    as: 'classroomStudents',
-                    attributes: ['id', 'classroomId', 'studentId'],
-                    include: [{
-                        model: User,
-                        as: 'student',
-                        attributes: ['id', 'name', 'email', 'image'],
-                        include: [
-                            {
-                                model: AssessmentAnswer,
-                                attributes: ['id', 'userId', 'standardId', 'obtainedMarks'],
-                                separate: true,
-                                required: false,
-                                include: [{
-                                    model: AssessmentResourcesDetail,
-                                    as: 'assessmentResourcesDetail',
-                                    attributes: ['id', 'totalMarks', 'deadline', 'resourceId'],
-                                    include: [{
-                                        model: Resource,
-                                        as: 'resource',
-                                        attributes: ['id', 'name', 'type', 'topic', 'url'],
-                                        include: [{
-                                            model: DailyUpload,
-                                            as: 'DailyUpload',
-                                            attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
-                                        }]
-                                    }]
-                                }]
-                            },
-                            {
-                                model: VideoQuestionAnswer,
-                                attributes: ['id', 'userId', 'obtainedMarks'],
-                                separate: true,
-                                required: false,
-                                include: [{
-                                    model: Question,
-                                    as: 'question',
-                                    attributes: ['id', 'totalMarks'],
-                                    include: [
-                                        {
-                                            model: Video,
-                                            as: 'video',
-                                            attributes: ['id', 'resourceId'],
-                                            include: [{
-                                                model: Resource,
-                                                as: 'resource',
-                                                attributes: ['id', 'name', 'type', 'topic', 'url'],
-                                                include: [{
-                                                    model: DailyUpload,
-                                                    as: 'DailyUpload',
-                                                    attributes: ['weightage', 'accessDate', 'standardId', 'resourceId']
-                                                }]
-                                            }]
-                                        }
-                                    ]
-                                }]
-                            }
-                        ]
-                    }]
-                }
             ],
         });
+
         // Current date for comparison
         const today = new Date();
-        // today.setHours(0, 0, 0, 0);
-
+        
+        // handle each class
         const transformedData = data?.map(classItem => {
             const standardsMap = new Map();
-            const currentDate = new Date();
 
-            // Iterate over each course in the classroom to map standards
+            // Iterate over each course/standard in the classroom to handle current total weightages in class
             classItem.classroomCourses?.forEach(course => {
                 const standard = course.standard;
                 if (standard) {
@@ -193,14 +543,6 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                             standardId: standard.id,
                             standardName: standard.name,
                             currentTotalWeightage: 0,
-                            usersWeightage: [],
-                            studentWeightageDistribution: {
-                                '0-25': 0,
-                                '25-50': 0,
-                                '50-75': 0,
-                                '75-100': 0
-                            },
-                            averageObtainedWeightage: 0  // Default value set to 0
                         });
                     }
 
@@ -209,172 +551,50 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                     // Calculate the total weightage for the standard based on daily uploads up to today
                     if (standard.dailyUploads && standard.dailyUploads.length > 0) {
                         standardEntry.currentTotalWeightage += standard.dailyUploads
-                            .filter(upload => new Date(upload.accessDate) <= currentDate)
+                            .filter((upload) => {
+                                const accessibleDate = new Date(course.startDate);
+                                accessibleDate.setDate(accessibleDate.getDate() + upload.accessibleDay);
+                                return (today >= accessibleDate)
+                            })
                             .reduce((acc, upload) => acc + upload.weightage, 0);
                     }
+
                 }
             });
 
-            // Iterate over each student in the classroom to calculate obtained weightage
-            classItem.classroomStudents?.forEach(student => {
-                classItem.classroomCourses?.forEach(course => {
-                    const standard = course.standard;
-                    if (standard) {
-                        const standardEntry = standardsMap.get(standard.id);
+            const standardsArray = Array.from(standardsMap.values());
 
-                        // Ensure the student is present in the usersWeightage array
-                        let userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
-                        if (!userEntry) {
-                            userEntry = {
-                                userId: student.student.id,
-                                userName: student.student.name,
-                                obtainedWeightage: 0,
-                                questionsDetails: []
-                            };
-                            standardEntry.usersWeightage.push(userEntry);
-                        }
+            // Calculate total and average weightage for the classroom
+            const totalWeightage = standardsArray.reduce((sum, standard) => sum + standard.currentTotalWeightage, 0);
+            const numberOfStandards = standardsArray.length;
+            const averageWeightage = numberOfStandards > 0 ? totalWeightage / numberOfStandards : 0;
 
-                        // Track total marks and obtained marks for video questions
-                        const videoWeightages = new Map();
-                        student.student.VideoQuestionAnswers?.forEach(answer => {
-                            const videoQuestion = answer.question;
-                            if (videoQuestion.video && videoQuestion.video.resource.DailyUpload) {
-                                const dailyUpload = videoQuestion.video.resource.DailyUpload;
-                                if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
-                                    const videoId = videoQuestion.video.id;
-                                    if (!videoWeightages.has(videoId)) {
-                                        videoWeightages.set(videoId, {
-                                            totalMarks: 0,
-                                            obtainedMarks: 0,
-                                            weightage: dailyUpload.weightage
-                                        });
-                                    }
-                                    const questionTotalMarks = videoQuestion.totalMarks;
-                                    const questionObtainedMarks = Math.max(answer.obtainedMarks, 0);
-                                    videoWeightages.get(videoId).totalMarks += questionTotalMarks;
-                                    videoWeightages.get(videoId).obtainedMarks += questionObtainedMarks;
+            // Filter enrollments for the current classroom
+            const currentClassEnrollments = enrollments.filter(enrollment => enrollment.classroom_id === classItem.id);
 
-                                    userEntry.questionsDetails.push({
-                                        id: videoQuestion.id,
-                                        statement: videoQuestion.statement,
-                                        answer: answer.answer,
-                                        totalMarks: questionTotalMarks,
-                                        obtainedMarks: questionObtainedMarks
-                                    });
-                                }
-                            }
-                        });
-
-                        // Calculate weightage for each video based on total marks and obtained marks of its questions
-                        videoWeightages.forEach((video, videoId) => {
-                            const weightage = video.weightage;
-                            const totalMarks = video.totalMarks;
-                            const obtainedMarks = video.obtainedMarks;
-                            const videoWeightage = (obtainedMarks / totalMarks) * weightage;
-                            userEntry.obtainedWeightage += videoWeightage;
-                        });
-
-                        // Calculate obtained weightage from assessment answers
-                        student.student.AssessmentAnswers?.forEach(answer => {
-                            const assessmentResource = answer.assessmentResourcesDetail;
-                            if (assessmentResource.resource.DailyUpload) {
-                                const dailyUpload = assessmentResource.resource.DailyUpload;
-                                if (new Date(dailyUpload.accessDate) <= currentDate && dailyUpload.standardId === standard.id) {
-                                    const weightage = dailyUpload.weightage;
-                                    const obtainedMarks = Math.max(answer.obtainedMarks, 0);
-                                    const questionWeightage = (obtainedMarks / assessmentResource.totalMarks) * weightage;
-                                    userEntry.obtainedWeightage += questionWeightage;
-
-                                    userEntry.questionsDetails.push({
-                                        id: assessmentResource.id,
-                                        statement: assessmentResource.statement,
-                                        answer: answer.answer,
-                                        totalMarks: assessmentResource.totalMarks,
-                                        obtainedMarks: obtainedMarks
-                                    });
-                                }
-                            }
-                        });
-                    }
-                });
-            });
-
-            // Calculate the average obtained weightage and student distribution for each standard
-            standardsMap?.forEach(standardEntry => {
-                const totalObtainedWeightage = standardEntry.usersWeightage.reduce((acc, user) => acc + user.obtainedWeightage, 0);
-                standardEntry.averageObtainedWeightage = totalObtainedWeightage / classItem.classroomStudents.length;
-
-                // Check if averageObtainedWeightage is null and set it to 0
-                if (isNaN(standardEntry.averageObtainedWeightage)) {
-                    standardEntry.averageObtainedWeightage = 0;
-                }
-
-                // Calculate student distribution for obtained weightage ranges
-                standardEntry.usersWeightage?.forEach(user => {
-                    if (user.obtainedWeightage < 25) {
-                        standardEntry.studentWeightageDistribution['0-25']++;
-                    } else if (user.obtainedWeightage < 50) {
-                        standardEntry.studentWeightageDistribution['25-50']++;
-                    } else if (user.obtainedWeightage < 75) {
-                        standardEntry.studentWeightageDistribution['50-75']++;
-                    } else {
-                        standardEntry.studentWeightageDistribution['75-100']++;
-                    }
-                });
-            });
-
-            // Calculate the total obtained score for each student and the overall average
-            const studentsData = classItem.classroomStudents?.map(student => {
-                const totalObtainedScore = Array.from(standardsMap.values()).reduce((acc, standardEntry) => {
-                    const userEntry = standardEntry.usersWeightage.find(u => u.userId === student.student.id);
-                    return acc + (userEntry ? userEntry.obtainedWeightage : 0);
-                }, 0);
-                return {
-                    userId: student.student.id,
-                    userName: student.student.name,
-                    userEmail: student.student.email,
-                    image: student.student.image,
-                    totalObtainedScore: totalObtainedScore / standardsMap.size,
-                    classId: classItem.id,
-                    className: classItem.name,
-                };
-            });
-
-            let avgObtainedWeightage = 0
-            if (studentsData.length > 0) {
-                // Calculate total obtained score for all students and the overall average
-                const totalObtainedScoreSum = studentsData.reduce((acc, student) => {
-                    // Check if student.totalObtainedScore is a number, if not, add 0 to the accumulator
-                    return acc + (isNaN(student.totalObtainedScore) ? 0 : student.totalObtainedScore);
-                }, 0);
-                avgObtainedWeightage = classItem.classroomStudents.length > 0 ? totalObtainedScoreSum / classItem.classroomStudents.length : 0;
-            }
-
-            // Calculate total weightage of all standards where access date <= today
-            const totalWeightageOfStandards = classItem.classroomCourses.reduce((acc, course) => {
-                const standard = course.standard;
-                if (standard && standard.dailyUploads && standard.dailyUploads.length > 0) {
-                    const totalWeightage = standard.dailyUploads
-                        .filter(upload => new Date(upload.accessDate) <= today)
-                        .reduce((sum, upload) => sum + upload.weightage, 0);
-                    return acc + totalWeightage;
-                }
-                return acc;
-            }, 0);
-
-            // Calculate the average weightage per standard
-            const numberOfStandards = classItem.classroomCourses.length;
-            const averageWeightagePerStandard = numberOfStandards > 0 ? totalWeightageOfStandards / numberOfStandards : 0;
+            // Calculate average result for the classroom
+            const avgResult = currentClassEnrollments.length > 0
+                ? currentClassEnrollments.reduce((sum, enrollment) => sum + enrollment.class_result, 0) / currentClassEnrollments.length
+                : 0;
 
             return {
                 classId: classItem.id,
                 className: classItem.name,
-                standardList: Array.from(standardsMap.values()),
-                studentsData,
-                avgObtainedWeightage,
-                avgTotalWeightage: averageWeightagePerStandard
+                avgObtainedWeightage: avgResult.toFixed(2),
+                avgTotalWeightage: averageWeightage.toFixed(2),
             };
         });
+
+        // need at max 5 students for dashboard
+        const students = enrollments.slice(0, 5).map(enrollment => ({
+            userId: enrollment.student_id,
+            userName: enrollment.student_name,
+            userEmail: enrollment.student_email,
+            image: enrollment.student_image,
+            totalObtainedScore: enrollment.total_performance,
+            classId: enrollment.classroom_id,
+            className: enrollment.classroom_name,
+        }));
 
         return {
             code: 200,
@@ -382,9 +602,9 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                 totalClassrooms,
                 totalStudents,
                 usersJoining: cumulativeResults,
-                students: transformedData.flatMap(classItem => classItem.studentsData).filter(student => student !== undefined),
-                avgObtainedWeightage: (transformedData.reduce((acc, classItem) => acc + classItem.avgObtainedWeightage, 0) / transformedData.length).toFixed(1),
-                avgTotalWeightage: (transformedData.reduce((acc, classItem) => acc + classItem.avgTotalWeightage, 0) / transformedData.length).toFixed(1)
+                students: students,
+                avgObtainedWeightage: (transformedData.reduce((acc, classItem) => acc + parseFloat(classItem.avgObtainedWeightage), 0) / transformedData.length).toFixed(1),
+                avgTotalWeightage: (transformedData.reduce((acc, classItem) => acc + parseFloat(classItem.avgTotalWeightage), 0) / transformedData.length).toFixed(1)
             }
         };
     } catch (error) {
