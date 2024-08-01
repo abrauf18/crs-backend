@@ -202,7 +202,7 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardI
 
         const startDate = assessmentAnswer?.DailyUpload?.standard?.classroomCourses[0]?.startDate;
         const accessibleDay = assessmentAnswer?.DailyUpload?.accessibleDay;
-        const deadline = assessmentAnswer?.AssessmentResourcesDetail?.deadline;
+        const deadlineDays = assessmentAnswer?.AssessmentResourcesDetail?.deadline;
 
         const transformedAssesmentAnswer = {
             name: assessmentAnswer?.name,
@@ -210,8 +210,8 @@ const getAssessmentAnswerToCreateOrEdit = async ({ resourceId, userId, standardI
             answerURL: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.answerURL || null,
             totalMarks: assessmentAnswer?.AssessmentResourcesDetail?.totalMarks,
             obtainedMarks: assessmentAnswer?.AssessmentResourcesDetail?.assessmentAnswers[0]?.obtainedMarks || null,
-            canWrite: canSubmitAssessment(startDate, accessibleDay, deadline),
-            deadline: getDeadline(startDate, accessibleDay, deadline).toISOString().split('T')[0],
+            canWrite: canSubmitAssessment(startDate, accessibleDay, deadlineDays),
+            deadline: getDeadline(startDate, accessibleDay, deadlineDays).toISOString().split('T')[0],
         }
 
         return { code: 200, data: transformedAssesmentAnswer };
