@@ -972,9 +972,6 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                 as: 'dailyUploads',
                 attributes: ['id', 'accessDate', 'weightage'],
                 where: {
-                    // accessDate: {
-                    //     [Op.lte]: new Date()
-                    // }
                     weightage: {
                         [Op.gt]: 0
                     },
@@ -1536,7 +1533,8 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
                     {
                         model: Enrollment,
                         where: {
-                            studentId: studentId
+                            studentId: studentId,
+                            classroomId: classroomStudent.classroomId
                         },
                         attributes: ["id", "classroomId", "standardId", "result"],
                     },
@@ -1836,7 +1834,8 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                     {
                         model: Enrollment,
                         where: {
-                            studentId: studentId
+                            studentId: studentId,
+                            classroomId: classroomStudent.classroomId,
                         },
                         attributes: ["id", "classroomId", "standardId", "result"],
                     },
