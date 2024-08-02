@@ -17,7 +17,6 @@ function canSubmitAssessment(startDate, accessibleDay, daysToAdd) {
 }
 
 function isReleased(startDate, accessibleDay) {
-    console.log('\n\n\n', startDate, accessibleDay);
     accessibleDay = Number(accessibleDay);
     const accessibleDate = new Date(startDate);
     accessibleDate.setDate(accessibleDate.getDate() + accessibleDay);
@@ -1254,10 +1253,6 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
             };
         }
 
-        let assignmentsSolved = 0;
-        let assignmentsLeft = 0;
-        let assignmentsMissed = 0;
-
         const transformedData = data?.classroom?.classroomCourses?.map(course => {
             const standard = course?.standard;
             let totalWeightage = 0;
@@ -1315,7 +1310,54 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 c.id, c.name, u.id, u.name, u.email, u.image
         `,);
         // Calculate average obtained weightage
-        const averageObtainedWeightage = parseInt(studentClassroomResult[0].class_result).toFixed(1);
+        const averageObtainedWeightage = parseInt(studentClassroomResult[0][0].class_result).toFixed(1);
+
+        const rawAttemptedAssessmentsResults = await sequelize.query(`
+            SELECT
+                c.id AS classroom_Id,
+                cc."standardId" AS standard_Id,
+                cc."startDate" AS start_date,
+                du."accessibleDay" AS accessible_day,
+                ard."resourceId" AS assessment_resource_Id,
+                ard.id AS assessment_resource_detail_Id,
+                ard."deadline" AS deadline,
+                aa.id AS assessment_answer_Id
+            FROM
+                public."Classrooms" c
+            INNER JOIN
+                public."ClassroomCourses" cc
+                ON c.id = cc."classroomId"
+            INNER JOIN
+                public."DailyUploads" du
+                ON du."standardId" = cc."standardId"
+            INNER JOIN
+                public."AssessmentResourcesDetails" ard
+                ON ard."resourceId" = du."resourceId"
+            LEFT JOIN
+                public."AssessmentAnswers" aa
+                ON ard.id = aa."assessmentResourcesDetailId"
+                AND aa."userId" = '${studentId}'
+                AND aa."classroomId" = c.id
+                AND aa."standardId" = cc."standardId"
+            WHERE
+                c."status" = 'active'
+        `);
+
+        const attemptedAssessmentsResults = rawAttemptedAssessmentsResults[0];
+
+        let assignmentsSolved = 0;
+        let assignmentsLeft = 0;
+        let assignmentsMissed = 0;
+
+        attemptedAssessmentsResults.forEach(attemptedAssessment => {
+            if (attemptedAssessment.assessment_answer_Id) {
+                assignmentsSolved++;
+            } else if (!attemptedAssessment.assessment_answer_Id && canSubmitAssessment(attemptedAssessment.start_date, attemptedAssessment.accessible_day, attemptedAssessment.deadline)) {
+                assignmentsLeft++;
+            } else {
+                assignmentsMissed++;
+            }
+        });
 
         const result = {
             studentName: existingStudent.name,
