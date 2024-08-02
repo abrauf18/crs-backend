@@ -1457,23 +1457,9 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             let totalWeightage = 0;
 
             standard?.dailyUploads?.forEach(upload => {
-                let totalPossibleMarks = 0;
-
                 // Only consider uploads with startDate + accessibleDay < today
                 if (isReleased(course.startDate, upload.accessibleDay)) {
                     totalWeightage += upload.weightage;
-
-                    // Process resource's video questions
-                    if (upload.resource.video) {
-                        totalPossibleMarks = upload.resource.video?.questions?.reduce((total, question) => {
-                            return total + question.totalMarks;
-                        }, 0);
-                    }
-
-                    // Process resource's assessment answers
-                    if (upload.resource.AssessmentResourcesDetail) {
-                        totalPossibleMarks += upload.resource.AssessmentResourcesDetail?.totalMarks || 0;
-                    }
                 }
             })
             return {
