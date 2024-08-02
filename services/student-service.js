@@ -1376,7 +1376,16 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
 
         const studentClassroomId = await getClassroomIdOfStudent(studentId);
         if (!studentClassroomId) {
-            return { code: 404, message: 'Student is not enrolled in any active classroom' };
+            return {
+                code: 200,
+                data: {
+                    summarizedStandardResults: [],
+                    averageTotalWeightage: 0,
+                    averageObtainedWeightage: 0,
+                    classroomName: 'N/A',
+                    bestPerformingStandard: 'N/A'
+                }
+            };
         }
 
         const data = await ClassroomStudent.findOne({
@@ -1497,7 +1506,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                 public."Users" AS u
                 ON e."studentId" = u.id
             WHERE
-                e."studentId" = '${studentId}'
+                e."studentId" = '${studentId}' AND c."status" = 'active'
         `);
         const studentClassroomResults = retreivedStandardResults[0];
         // Find worst performing standard
