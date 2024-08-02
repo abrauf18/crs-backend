@@ -411,7 +411,7 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
     try {
         const checkActiveStandardResult = await checkStudentAndStandard({ role, studentId, standardId });
         if (checkActiveStandardResult.code !== 200) {
-            return checkActiveStandardResult
+            return checkActiveStandardResult;
         }
 
         const studentClassroomId = await getClassroomIdOfStudent(studentId);
@@ -479,10 +479,14 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
             return result;
         }, {});
 
-        const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => {
-            const { released, date } = isReleased(standard.classroomCourses[0].startDate, parseInt(day));
+        // Convert the day keys to an array and sort them
+        const sortedDays = Object.keys(uploadsByDay).map(day => parseInt(day)).sort((a, b) => a - b);
+
+        // Transform daily uploads based on sorted days
+        const transformedDailyUploads = sortedDays.map(day => {
+            const { released, date } = isReleased(standard.classroomCourses[0].startDate, day);
             return {
-                day: parseInt(day),
+                day: day,
                 date: date,
                 released: released,
                 topics: uploadsByDay[day].map(resource => ({
@@ -506,11 +510,12 @@ const getStudentStandard = async ({ role, standardId, studentId }) => {
 
         return { code: 200, data: result };
     } catch (error) {
-        console.log('\n\n\n\n', error)
+        console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while fetching the standard');
         return { code: 500 };
     }
 };
+
 
 const UpdateStudentVideoCompleted = async ({ role, videoId, studentId, standardId, watchedCompletely, last_seen_time }) => {
     try {
