@@ -24,14 +24,14 @@ router.get(
 router.get(
     "/get-school-dashboard",
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.schoolDashboard
 )
 
 router.delete(
     "/delete-teacher",
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     schoolController.deleteTeacher
 )
 
