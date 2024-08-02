@@ -929,24 +929,35 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
         const standardIds = activeClassroom.classroom?.classroomCourses?.map(course => course.standardId);
 
         const standards = await Standard?.findAll({
-            where: { id: standardIds },
+            where: { 
+                id: standardIds 
+            },
             attributes: ['id', 'name'],
             order: [[orderBy, sortBy]],
             offset,
             limit,
-            include: [{
-                model: DailyUpload,
-                as: 'dailyUploads',
-                attributes: ['id', 'resourceId', 'accessDate'],
-                include: [{
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['id', 'name', 'type', 'topic', 'url'],
+            include: [
+                {
+                    model: DailyUpload,
+                    as: 'dailyUploads',
+                    attributes: ['id', 'resourceId', 'accessibleDay'],
+                    include: [{
+                        model: Resource,
+                        as: 'resource',
+                        attributes: ['id', 'name', 'type', 'topic', 'url'],
+                        where: {
+                            type: { [Op.ne]: 'video' }
+                        },
+                    }],
+                },{
+                    model: ClassroomCourses,
+                    as: 'classroomCourses',
+                    attributes: ['id', 'startDate'],
                     where: {
-                        type: { [Op.ne]: 'video' }
+                        classroomId: activeClassroom.classroomId
                     },
-                }],
-            }],
+                }
+            ],
         });
 
         const totalStandardsCount = await Standard.count({
@@ -963,7 +974,7 @@ const getStandardsResourcesAndCount = async ({ studentId, page, limit, orderBy, 
                 type: upload.resource.type,
                 topic: upload.resource.topic,
                 url: upload.resource.url,
-                released: upload.accessDate <= new Date().toISOString(),
+                released: isReleased(standard.classroomCourses[0].startDate, upload.accessibleDay),
             }))
         }));
 
