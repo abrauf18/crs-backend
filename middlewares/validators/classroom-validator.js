@@ -52,7 +52,7 @@ const getAllClassroomsOfTeacher = createSchemaMiddleware(
 const classCoursesSchema = Joi.array().items(
     Joi.object({
         classroomId: Joi.string().guid().required(),
-        startDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+        startDate: Joi.date().required().iso().messages({'date.format': '"Start Date" should be in YYYY-MM-DD format'}),
     })
 ).required();
 const assignStandardToClassroom = createSchemaMiddleware(
