@@ -1505,7 +1505,7 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
                 bestPerformingStandard = {
                     standardId: entry.standard_id,
                     standardName: entry.standard_name,
-                    obtainedWeightage: entry.obtained_weightage
+                    obtainedWeightage: parseFloat(entry.obtained_weightage.toFixed(1))
                 };
             }
 
@@ -1514,8 +1514,8 @@ const getStudentProfileSummarizedStandards = async ({ studentId }) => {
             return {
                 standardId: entry.standard_id,
                 standardName: entry.standard_name,
-                obtainedWeightage: entry.obtained_weightage,
-                totalWeightage: standard.totalWeightage
+                obtainedWeightage: parseFloat(entry.obtained_weightage.toFixed(1)),
+                totalWeightage: parseFloat(standard.totalWeightage.toFixed(1))
             }
         });
 
