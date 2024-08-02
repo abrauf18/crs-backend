@@ -998,7 +998,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['id', 'accessDate', 'weightage'],
+                attributes: ['id', 'accessibleDay', 'weightage'],
                 where: {
                     weightage: {
                         [Op.gt]: 0
@@ -1050,9 +1050,17 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
                         }
                     ]
                 }],
+            },{
+                model: ClassroomCourses,
+                as: 'classroomCourses',
+                attributes: ['id', 'standardId', 'classroomId', 'startDate'],
+                where: {
+                    standardId: standardId,
+                    classroomId: studentClassroomId
+                },
             }],
             order: [
-                [{ model: DailyUpload, as: 'dailyUploads' }, 'accessDate', 'ASC']
+                [{ model: DailyUpload, as: 'dailyUploads' }, 'accessibleDay', 'ASC']
             ],
         });
 
@@ -1075,8 +1083,7 @@ const getStudentProfileStandardResults = async ({ role, studentId, standardId })
 
         // Add accessible field and calculate performance
         result.dailyUploads = result?.dailyUploads?.map(dailyUpload => {
-            const accessDate = new Date(dailyUpload.accessDate);
-            dailyUpload.accessible = accessDate < today;
+            dailyUpload.accessible = isReleased(result.classroomCourses[0].startDate, dailyUpload.accessibleDay)
 
             let totalObtainedMarks = 0;
             let totalPossibleMarks = 0;
