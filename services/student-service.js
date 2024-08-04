@@ -2199,7 +2199,11 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     await transaction.rollback();
                     return { code: 404, message: `Video question with Id: ${targetId} not found` };
                 }
-
+                if (marks > videoQuestion.totalMarks) {
+                    await transaction.rollback();
+                    return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
+                }
+                
                 const video = await Video.findByPk(videoQuestion.videoId);
                 if (!video) {
                     await transaction.rollback();
@@ -2223,10 +2227,6 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                 if (!videoQuestionAnswer) {
                     await transaction.rollback();
                     return { code: 404, message: `Answer for: ${videoQuestion.statement} not found` };
-                }
-                if (marks > videoQuestion.totalMarks) {
-                    await transaction.rollback();
-                    return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
 
                 if (videoQuestionAnswer.obtainedMarks > 0) {
