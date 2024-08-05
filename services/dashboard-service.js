@@ -1310,7 +1310,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 c.id, c.name, u.id, u.name, u.email, u.image
         `,);
         // Calculate average obtained weightage
-        const averageObtainedWeightage = parseInt(studentClassroomResult[0][0].class_result).toFixed(1);
+        const averageObtainedWeightage = studentClassroomResult[0][0].class_result;
 
         const rawAttemptedAssessmentsResults = await sequelize.query(`
             SELECT
@@ -1324,6 +1324,9 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 aa.id AS assessment_answer_id
             FROM
                 public."Classrooms" c
+            INNER JOIN
+                public."ClassroomStudents" cs
+                ON c.id = cs."classroomId"
             INNER JOIN
                 public."ClassroomCourses" cc
                 ON c.id = cc."classroomId"
