@@ -694,23 +694,30 @@ const getClassroomStudents = async ({ classroomId, page, limit }) => {
 
 
 const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
+    const transaction = await sequelize.transaction();
+
     try {
-        const classroom = await Classroom.findOne({ where: { id: classroomId } });
+        const classroom = await Classroom.findOne({ where: { id: classroomId }, transaction });
         if (!classroom) {
+            await transaction.rollback();
             return { code: 404 };
         }
         if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            await transaction.rollback();
             return { code: 400, message: 'Classroom is not active any more' };
         }
 
-        const student = await User.findOne({ where: { email: email } });
+        const student = await User.findOne({ where: { email: email }, transaction });
         if (!student) {
+            await transaction.rollback();
             return { code: 405 };
         }
         if (student.role !== ROLES.STUDENT) {
+            await transaction.rollback();
             return { code: 400, message: 'Only Students are allowed to be added to a classroom' };
         }
         if (student.school_id !== schoolId) {
+            await transaction.rollback();
             return { code: 403, message: 'Student does not exist in this school' };
         }
 
@@ -722,15 +729,17 @@ const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
                     as: 'classroom',
                     where: { status: CLASSROOM_STATUS.ACTIVE }
                 }
-            ]
+            ],
+            transaction
         });
         if (existingClassroomStudent) {
+            await transaction.rollback();
             return { code: 409, message: `Student is already enrolled in ${existingClassroomStudent.classroom.name}` };
         }
 
-        const classroomStudent = await ClassroomStudent.create({ classroomId: classroomId, studentId: student.id });
+        const classroomStudent = await ClassroomStudent.create({ classroomId: classroomId, studentId: student.id }, { transaction });
 
-        const classroomCourses = await ClassroomCourses.findAll({ where: { classroomId: classroomId } });
+        const classroomCourses = await ClassroomCourses.findAll({ where: { classroomId: classroomId }, transaction });
 
          // Calculate results for each enrollment
          const enrollments = await Promise.all(classroomCourses.map(async (course) => {
@@ -762,9 +771,8 @@ const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
                     du."weightage" > 0
                 AND du."standardId" = vqa."standardId"
                 AND vqa."obtainedMarks" >= 0
-            `);
+            `, { transaction });
 
-            // Calculate the result based on the fetched data
             const result = results[0].reduce((acc, row) => {
                 return acc + (row.obtainedMarks / row.totalMarks) * row.weightage;
             }, 0);
@@ -777,28 +785,35 @@ const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
             };
         }));
 
-        await Enrollment.bulkCreate(enrollments);
+        await Enrollment.bulkCreate(enrollments, { transaction });
 
+        await transaction.commit();
         return { code: 200, data: classroomStudent };
     } catch (error) {
+        await transaction.rollback();
         console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while adding student to classroom');
         return { code: 500 };
     }
-}
+};
 
 const removeStudentFromClassroom = async ({ classroomStudentId }) => {
+    const transaction = await sequelize.transaction();
+
     try {
-        const classroomStudent = await ClassroomStudent.findByPk(classroomStudentId);
+        const classroomStudent = await ClassroomStudent.findByPk(classroomStudentId, { transaction });
         if (!classroomStudent) {
+            await transaction.rollback();
             return { code: 404, message: 'Relation between student and class not found' };
         }
 
-        const classroom = await Classroom.findOne({ where: { id: classroomStudent.classroomId } });
+        const classroom = await Classroom.findOne({ where: { id: classroomStudent.classroomId }, transaction });
         if (!classroom) {
+            await transaction.rollback();
             return { code: 404, message: 'Classroom not found' };
         }
         if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
+            await transaction.rollback();
             return { code: 404, message: 'Classroom is not active any more' };
         }
 
@@ -812,7 +827,7 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
                         as: 'questions',
                         include: {
                             model: VideoQuestionAnswer,
-                            as: 'videoQuestionAnswers',
+                            as: 'answers',
                             where: {
                                 userId: classroomStudent.studentId,
                                 classroomId: classroomStudent.classroomId
@@ -822,7 +837,7 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
                 },
                 {
                     model: AssessmentResourcesDetail,
-                    as: 'assessmentResourcesDetail',
+                    as: 'AssessmentResourcesDetail',
                     include: {
                         model: AssessmentAnswer,
                         as: 'assessmentAnswers',
@@ -832,43 +847,47 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
                         }
                     }
                 }
-            ]
-        })
+            ],
+            transaction
+        });
 
         // if video questions are mcqs leave them answered else remove all assigned marks so new teacher can mark them as he wants
         await Promise.all(resources.map(async resource => {
             if (resource.video) {
                 await Promise.all(resource.video.questions.map(async question => {
                     if (!question.correctOption) {
-                        await Promise.all(question.videoQuestionAnswers.map(async answer => {
-                            await answer.update({obtainedMarks: -1});
+                        await Promise.all(question.answers.map(async answer => {
+                            await answer.update({ obtainedMarks: -1 }, { transaction });
                         }));
                     }
                 }));
             }
-            if (resource.assessmentResourcesDetail) {
-                await Promise.all(resource.assessmentResourcesDetail.assessmentAnswers.map(async answer => {
-                    await answer.update({obtainedMarks: -1});
+            if (resource.AssessmentResourcesDetail) {
+                await Promise.all(resource.AssessmentResourcesDetail.assessmentAnswers.map(async answer => {
+                    await answer.update({ obtainedMarks: -1 }, { transaction });
                 }));
             }
         }));
 
-        const deleted = await classroomStudent.destroy();
+        const deleted = await classroomStudent.destroy({ transaction });
 
         await Enrollment.destroy({
             where: {
                 classroomId: classroomStudent.classroomId,
                 studentId: classroomStudent.studentId
-            }
+            },
+            transaction
         });
 
+        await transaction.commit();
         return { code: 200, data: deleted };
     } catch (error) {
+        await transaction.rollback();
         console.log('\n\n\n\n', error);
         logger.error(error?.message || 'An error occurred while removing student from classroom');
         return { code: 500 };
     }
-}
+};
 
 const updateClassroomStudent = async ({ studentId, name, email, classroomId, image }) => {
     const t = await sequelize.transaction();

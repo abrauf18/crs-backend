@@ -2203,7 +2203,7 @@ const assignMarksToStudentAnswer = async ({ targetType, studentId, idsAndMarks, 
                     await transaction.rollback();
                     return { code: 400, message: `Obtained Marks of question: ${videoQuestion.statement} are exceeding Total Marks` };
                 }
-                
+
                 const video = await Video.findByPk(videoQuestion.videoId);
                 if (!video) {
                     await transaction.rollback();
@@ -3029,6 +3029,7 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                 u.name AS student_name,
                 u.email AS student_email,
                 u.image AS student_image,
+                cs.id AS classroom_student_id,
                 e.result AS total_performance
             FROM
                 public."Classrooms" AS c
@@ -3044,6 +3045,9 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
             INNER JOIN
                 public."Users" AS u
                 ON e."studentId" = u.id
+            INNER JOIN
+                public."ClassroomStudents" AS cs
+                ON u.id = cs."studentId"
             WHERE
                 c."teacherId" = '${teacherId}'
             ORDER BY
@@ -3065,6 +3069,7 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                     userName: studentResult.student_name,
                     userEmail: studentResult.student_email,
                     image: studentResult.student_image,
+                    userClassroomStudentId: studentResult.classroom_student_id,
                     classId: studentResult.classroom_id,
                     className: studentResult.classroom_name
                 });
@@ -3155,6 +3160,7 @@ const getAllSummarizedStudentAndStandardsForTeacher = async ({ teacherId }) => {
                 userName: result.userName,
                 userEmail: result.userEmail,
                 image: result.image,
+                userClassroomStudentId: result.userClassroomStudentId,
                 totalObtainedScore: parseFloat((result.allStandardsResult / result.standardsCount).toFixed(2)),
                 classId: result.classId,
                 className: result.className
