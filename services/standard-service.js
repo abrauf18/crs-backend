@@ -103,7 +103,12 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
                 return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
             }
 
-            const oldDailyUploads = await standard.getDailyUploads({ transaction });
+            const oldDailyUploads = await DailyUpload.findAll({
+                where: { 
+                    standardId: standardId, 
+                }, 
+                transaction
+            });
 
             // Create maps for quick lookup
             const oldUploadsMap = new Map(oldDailyUploads.map(upload => [upload.resourceId, upload]));
