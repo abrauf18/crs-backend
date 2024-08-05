@@ -109,4 +109,12 @@ router.post(
     classroomController.changeClassStatus
 )
 
+router.get(
+    "/getSchoolClassrooms",
+    classroomValidation.getSchoolClassrooms,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    classroomController.getSchoolClassrooms
+)
+
 module.exports = router;

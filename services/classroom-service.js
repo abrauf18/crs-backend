@@ -1,7 +1,7 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
+const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment, School } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
 
@@ -1105,6 +1105,38 @@ const changeClassStatus = async ({ schoolId, classroomId, status }) => {
     }
 }
 
+const getSchoolClassrooms = async ({ schoolId }) => {
+    try {
+        const school = await School.findOne({ where: { id: schoolId } });
+        if (!school) {
+            return { code: 404, message: 'School not found' };
+        }
+
+        const classrooms = await Classroom.findAll({ 
+            where: { 
+                schoolId 
+            },
+            attributes: ['id', 'name', 'status'],
+            include: {
+                model: User,
+                attributes: ['name']
+            },
+        });
+
+        const transformedClassroom = classrooms.map(classroom => ({
+            id: classroom.id,
+            name: classroom.name,
+            status: classroom.status,
+            teacher: classroom.User.name
+        }));
+
+        return { code: 200, data: transformedClassroom };
+    } catch (error) {
+        console.error('Error fetching classrooms:', error);
+        return { code: 500, message: 'Internal server error' };
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -1118,5 +1150,6 @@ module.exports = {
     removeStudentFromClassroom,
     updateClassroomStudent,
     updateTeacherClassrooms,
-    changeClassStatus
+    changeClassStatus,
+    getSchoolClassrooms
 };
