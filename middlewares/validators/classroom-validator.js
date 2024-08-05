@@ -137,6 +137,13 @@ const changeClassStatus = createSchemaMiddleware(
     })
 );
 
+const getSchoolClassrooms = createSchemaMiddleware(
+    Joi.object({
+        accesstoken: Joi.string().required(),
+        schoolid: Joi.string().guid().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -150,5 +157,6 @@ module.exports = {
     removeStudentFromClassroom,
     updateClassroomStudent,
     updateTeacherClassrooms,
-    changeClassStatus
+    changeClassStatus,
+    getSchoolClassrooms
 };
