@@ -143,7 +143,12 @@ const getStudentNameEmailForTeacher = createSchemaMiddleware(
 const marksSchema = Joi.object().pattern(
     Joi.string().uuid(),
     Joi.number().integer().min(0).required()
-);
+).messages({
+    'object.pattern.key': 'Each ID must be a valid UUID.',
+    'number.base': 'Marks must be a whole number.',
+    'number.integer': 'Marks must be a whole number.',
+    'number.min': 'Marks must be 0 or greater.',
+});
 const assignMarksToStudentAnswer = createSchemaMiddleware(
     Joi.object({
         accessToken: Joi.string().required(),
