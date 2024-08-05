@@ -601,8 +601,8 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
             return {
                 classId: classItem.id,
                 className: classItem.name,
-                avgObtainedWeightage: avgResult.toFixed(2),
-                avgTotalWeightage: averageWeightage.toFixed(2),
+                avgObtainedWeightage: avgResult,
+                avgTotalWeightage: averageWeightage,
             };
         });
 
@@ -624,8 +624,8 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                 totalStudents,
                 usersJoining: cumulativeResults,
                 students: students,
-                avgObtainedWeightage: transformedData.length > 0 ? (transformedData.reduce((acc, classItem) => acc + parseFloat(classItem.avgObtainedWeightage), 0) / transformedData.length).toFixed(1) : 0,
-                avgTotalWeightage: transformedData.length > 0 ? (transformedData.reduce((acc, classItem) => acc + parseFloat(classItem.avgTotalWeightage), 0) / transformedData.length).toFixed(1) : 0
+                avgObtainedWeightage: transformedData.length > 0 ? (transformedData.reduce((acc, classItem) => acc + parseFloat(classItem.avgObtainedWeightage), 0) / transformedData.length).toFixed(2) : 0,
+                avgTotalWeightage: transformedData.length > 0 ? (transformedData.reduce((acc, classItem) => acc + parseFloat(classItem.avgTotalWeightage), 0) / transformedData.length).toFixed(2) : 0
             }
         };
     } catch (error) {
