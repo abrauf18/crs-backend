@@ -4,7 +4,6 @@ const { logger } = require("../Logs/logger.js");
 const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User, DailyUpload, Resource, Video, VideoTracking, Question, VideoQuestionAnswer, AssessmentResourcesDetail, AssessmentAnswer, DailyProgress, Enrollment } = require("../models/index.js");
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
-const classroom = require("../models/classroom.js");
 
 const createClassroom = async ({ name, teacherId, schoolId }) => {
     try {
@@ -733,11 +732,49 @@ const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
 
         const classroomCourses = await ClassroomCourses.findAll({ where: { classroomId: classroomId } });
 
-        const enrollments = classroomCourses.map(course => ({
-            classroomId: classroomId,
-            standardId: course.standardId,
-            studentId: student.id,
-            result: 0
+         // Calculate results for each enrollment
+         const enrollments = await Promise.all(classroomCourses.map(async (course) => {
+            // Fetch data required for calculation
+            const results = await sequelize.query( `
+                SELECT
+                    du.id AS DailyUploadId,
+                    v.id AS VideoId,
+                    q.id AS QuestionId,
+                    vqa.id AS VideoQuestionAnswerId,
+                    du."weightage",
+                    v."totalMarks",
+                    vqa."obtainedMarks"
+                FROM
+                    public."DailyUploads" du
+                INNER JOIN
+                    public."Videos" v
+                ON v."resourceId" = du."resourceId"
+                INNER JOIN
+                    public."Questions" q
+                ON q."videoId" = v.id
+                INNER JOIN
+                    public."VideoQuestionAnswers" vqa
+                ON vqa."questionId" = q.id
+                AND vqa."classroomId" = '${classroomId}' 
+                AND vqa."standardId" = '${course.standardId}' 
+                AND vqa."userId" = '${student.id}' 
+                WHERE
+                    du."weightage" > 0
+                AND du."standardId" = vqa."standardId"
+                AND vqa."obtainedMarks" >= 0
+            `);
+
+            // Calculate the result based on the fetched data
+            const result = results[0].reduce((acc, row) => {
+                return acc + (row.obtainedMarks / row.totalMarks) * row.weightage;
+            }, 0);
+
+            return {
+                classroomId: classroomId,
+                standardId: course.standardId,
+                studentId: student.id,
+                result: result || 0
+            };
         }));
 
         await Enrollment.bulkCreate(enrollments);
@@ -764,6 +801,57 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
         if (classroom.status !== CLASSROOM_STATUS.ACTIVE) {
             return { code: 404, message: 'Classroom is not active any more' };
         }
+
+        const resources = await Resource.findAll({
+            include: [
+                {
+                    model: Video,
+                    as: 'video',
+                    include: {
+                        model: Question,
+                        as: 'questions',
+                        include: {
+                            model: VideoQuestionAnswer,
+                            as: 'videoQuestionAnswers',
+                            where: {
+                                userId: classroomStudent.studentId,
+                                classroomId: classroomStudent.classroomId
+                            }
+                        }
+                    }
+                },
+                {
+                    model: AssessmentResourcesDetail,
+                    as: 'assessmentResourcesDetail',
+                    include: {
+                        model: AssessmentAnswer,
+                        as: 'assessmentAnswers',
+                        where: {
+                            userId: classroomStudent.studentId,
+                            classroomId: classroomStudent.classroomId
+                        }
+                    }
+                }
+            ]
+        })
+
+        // if video questions are mcqs leave them answered else remove all assigned marks so new teacher can mark them as he wants
+        await Promise.all(resources.map(async resource => {
+            if (resource.video) {
+                await Promise.all(resource.video.questions.map(async question => {
+                    if (!question.correctOption) {
+                        await Promise.all(question.videoQuestionAnswers.map(async answer => {
+                            await answer.update({obtainedMarks: -1});
+                        }));
+                    }
+                }));
+            }
+            if (resource.assessmentResourcesDetail) {
+                await Promise.all(resource.assessmentResourcesDetail.assessmentAnswers.map(async answer => {
+                    await answer.update({obtainedMarks: -1});
+                }));
+            }
+        }));
 
         const deleted = await classroomStudent.destroy();
 
