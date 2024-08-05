@@ -5,6 +5,97 @@ const { sequelize, Classroom, Standard, ClassroomCourses, ClassroomStudent, User
 const { RESOURCE_TYPES, CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const ROLES = require("../models/roles/index.js");
 
+async function removeAllObtainedMarksExceptMCQs(classroomId, studentId, transaction) {
+    const resources = await Resource.findAll({
+        include: [
+            {
+                model: Video,
+                as: 'video',
+                include: {
+                    model: Question,
+                    as: 'questions',
+                    include: {
+                        model: VideoQuestionAnswer,
+                        as: 'answers',
+                        where: {
+                            userId: studentId,
+                            classroomId: classroomId
+                        }
+                    }
+                }
+            },
+            {
+                model: AssessmentResourcesDetail,
+                as: 'AssessmentResourcesDetail',
+                include: {
+                    model: AssessmentAnswer,
+                    as: 'assessmentAnswers',
+                    where: {
+                        userId: studentId,
+                        classroomId: classroomId
+                    }
+                }
+            }
+        ],
+        transaction
+    });
+
+    // if video questions are mcqs leave them answered else remove all assigned marks so new teacher can mark them as he wants
+    await Promise.all(resources.map(async resource => {
+        if (resource.video) {
+            await Promise.all(resource.video.questions.map(async question => {
+                if (!question.correctOption) {
+                    await Promise.all(question.answers.map(async answer => {
+                        await answer.update({ obtainedMarks: -1 }, { transaction });
+                    }));
+                }
+            }));
+        }
+        if (resource.AssessmentResourcesDetail) {
+            await Promise.all(resource.AssessmentResourcesDetail.assessmentAnswers.map(async answer => {
+                await answer.update({ obtainedMarks: -1 }, { transaction });
+            }));
+        }
+    }));
+}
+
+async function calculateResultOnStudentAddition(classroomId, standardId, studentId, transaction) {
+    const results = await sequelize.query(`
+        SELECT
+            du.id AS DailyUploadId,
+            v.id AS VideoId,
+            q.id AS QuestionId,
+            vqa.id AS VideoQuestionAnswerId,
+            du."weightage",
+            v."totalMarks",
+            vqa."obtainedMarks"
+        FROM
+            public."DailyUploads" du
+        INNER JOIN
+            public."Videos" v
+        ON v."resourceId" = du."resourceId"
+        INNER JOIN
+            public."Questions" q
+        ON q."videoId" = v.id
+        INNER JOIN
+            public."VideoQuestionAnswers" vqa
+        ON vqa."questionId" = q.id
+        AND vqa."classroomId" = '${classroomId}' 
+        AND vqa."standardId" = '${standardId}' 
+        AND vqa."userId" = '${studentId}' 
+        WHERE
+            du."weightage" > 0
+        AND du."standardId" = vqa."standardId"
+        AND vqa."obtainedMarks" >= 0
+    `, { transaction });
+
+    const result = results[0].reduce((acc, row) => {
+        return acc + (row.obtainedMarks / row.totalMarks) * row.weightage;
+    }, 0);
+
+    return result;
+} 
+
 const createClassroom = async ({ name, teacherId, schoolId }) => {
     try {
         const existingClassroom = await Classroom.findOne({
@@ -743,39 +834,7 @@ const addStudentToClassroom = async ({ classroomId, email, schoolId }) => {
 
          // Calculate results for each enrollment
          const enrollments = await Promise.all(classroomCourses.map(async (course) => {
-            // Fetch data required for calculation
-            const results = await sequelize.query( `
-                SELECT
-                    du.id AS DailyUploadId,
-                    v.id AS VideoId,
-                    q.id AS QuestionId,
-                    vqa.id AS VideoQuestionAnswerId,
-                    du."weightage",
-                    v."totalMarks",
-                    vqa."obtainedMarks"
-                FROM
-                    public."DailyUploads" du
-                INNER JOIN
-                    public."Videos" v
-                ON v."resourceId" = du."resourceId"
-                INNER JOIN
-                    public."Questions" q
-                ON q."videoId" = v.id
-                INNER JOIN
-                    public."VideoQuestionAnswers" vqa
-                ON vqa."questionId" = q.id
-                AND vqa."classroomId" = '${classroomId}' 
-                AND vqa."standardId" = '${course.standardId}' 
-                AND vqa."userId" = '${student.id}' 
-                WHERE
-                    du."weightage" > 0
-                AND du."standardId" = vqa."standardId"
-                AND vqa."obtainedMarks" >= 0
-            `, { transaction });
-
-            const result = results[0].reduce((acc, row) => {
-                return acc + (row.obtainedMarks / row.totalMarks) * row.weightage;
-            }, 0);
+            const result = await calculateResultOnStudentAddition(classroomId, course.standardId, student.id, transaction);
 
             return {
                 classroomId: classroomId,
@@ -817,57 +876,7 @@ const removeStudentFromClassroom = async ({ classroomStudentId }) => {
             return { code: 404, message: 'Classroom is not active any more' };
         }
 
-        const resources = await Resource.findAll({
-            include: [
-                {
-                    model: Video,
-                    as: 'video',
-                    include: {
-                        model: Question,
-                        as: 'questions',
-                        include: {
-                            model: VideoQuestionAnswer,
-                            as: 'answers',
-                            where: {
-                                userId: classroomStudent.studentId,
-                                classroomId: classroomStudent.classroomId
-                            }
-                        }
-                    }
-                },
-                {
-                    model: AssessmentResourcesDetail,
-                    as: 'AssessmentResourcesDetail',
-                    include: {
-                        model: AssessmentAnswer,
-                        as: 'assessmentAnswers',
-                        where: {
-                            userId: classroomStudent.studentId,
-                            classroomId: classroomStudent.classroomId
-                        }
-                    }
-                }
-            ],
-            transaction
-        });
-
-        // if video questions are mcqs leave them answered else remove all assigned marks so new teacher can mark them as he wants
-        await Promise.all(resources.map(async resource => {
-            if (resource.video) {
-                await Promise.all(resource.video.questions.map(async question => {
-                    if (!question.correctOption) {
-                        await Promise.all(question.answers.map(async answer => {
-                            await answer.update({ obtainedMarks: -1 }, { transaction });
-                        }));
-                    }
-                }));
-            }
-            if (resource.AssessmentResourcesDetail) {
-                await Promise.all(resource.AssessmentResourcesDetail.assessmentAnswers.map(async answer => {
-                    await answer.update({ obtainedMarks: -1 }, { transaction });
-                }));
-            }
-        }));
+        await removeAllObtainedMarksExceptMCQs(classroomStudent.classroomId, classroomStudent.studentId, transaction);
 
         const deleted = await classroomStudent.destroy({ transaction });
 
@@ -938,17 +947,23 @@ const updateClassroomStudent = async ({ studentId, name, email, classroomId, ima
                     }, 
                     transaction: t 
                 });
+                await removeAllObtainedMarksExceptMCQs(classroomStudent.classroomId, studentId, t)
                 await Promise.all(oldEnrollments.map(enrollment => enrollment.destroy({ transaction: t })));
                 updatedClassroomStudent = await classroomStudent.update({ classroomId: classroomId }, { transaction: t });
             }
             const classroomCourses = await ClassroomCourses.findAll({ where: { classroomId }, transaction: t });
-            const newEnrollments = classroomCourses.map(course => ({
-                classroomId: classroomId,
-                standardId: course.standardId,
-                studentId: studentId,
-                result: 0
-            }));
-            await Enrollment.bulkCreate(newEnrollments, { transaction: t });
+            // Use simple promises for creating new enrollments
+            const newEnrollmentsPromises = classroomCourses.map(async course => {
+                const result = await calculateResultOnStudentAddition(classroomId, course.standardId, studentId, t);
+                return Enrollment.create({
+                    classroomId: classroomId,
+                    standardId: course.standardId,
+                    studentId: studentId,
+                    result
+                }, { transaction: t });
+            });
+
+            await Promise.all(newEnrollmentsPromises);
         }
 
         if (email) {
