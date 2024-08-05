@@ -1315,13 +1315,13 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
         const rawAttemptedAssessmentsResults = await sequelize.query(`
             SELECT
                 c.id AS classroom_Id,
-                cc."standardId" AS standard_Id,
+                cc."standardId" AS standard_id,
                 cc."startDate" AS start_date,
                 du."accessibleDay" AS accessible_day,
-                ard."resourceId" AS assessment_resource_Id,
-                ard.id AS assessment_resource_detail_Id,
+                ard."resourceId" AS assessment_resource_id,
+                ard.id AS assessment_resource_detail_id,
                 ard."deadline" AS deadline,
-                aa.id AS assessment_answer_Id
+                aa.id AS assessment_answer_id
             FROM
                 public."Classrooms" c
             INNER JOIN
@@ -1350,9 +1350,9 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
         let assignmentsMissed = 0;
 
         attemptedAssessmentsResults.forEach(attemptedAssessment => {
-            if (attemptedAssessment.assessment_answer_Id) {
+            if (attemptedAssessment.assessment_answer_id) {
                 assignmentsSolved++;
-            } else if (!attemptedAssessment.assessment_answer_Id && canSubmitAssessment(attemptedAssessment.start_date, attemptedAssessment.accessible_day, attemptedAssessment.deadline)) {
+            } else if (!attemptedAssessment.assessment_answer_id && canSubmitAssessment(attemptedAssessment.start_date, attemptedAssessment.accessible_day, attemptedAssessment.deadline)) {
                 assignmentsLeft++;
             } else {
                 assignmentsMissed++;
