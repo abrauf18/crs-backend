@@ -657,7 +657,7 @@ const schoolDashboard = async (req, res) => {
     const classroomsStudentResults = await sequelize.query(`
       SELECT
           e."classroomId" AS classroom_id,
-          ROUND(AVG(e.result), 2) AS avg_result
+          ROUND(AVG(e.result)::numeric, 2) AS avg_result
       FROM
           public."Enrollments" e
       INNER JOIN
