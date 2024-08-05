@@ -474,7 +474,7 @@ const getTeacherDashboardSummaries = async ({ teacherId }) => {
                 COUNT(e.id) AS standard_count,
                 SUM(e.result) AS total_performance,
                 CASE 
-                    WHEN COUNT(e.id) > 0 THEN ROUND(SUM(e.result) * 1.0 / COUNT(e.id), 2)
+                    WHEN COUNT(e.id) > 0 THEN ROUND(SUM(e.result)::numeric / COUNT(e.id), 2)
                     ELSE 0 
                 END AS class_result
             FROM
@@ -1287,7 +1287,7 @@ const getStudentDashboardSummaries = async ({ studentId }) => {
                 COUNT(e.id) AS standard_count,
                 SUM(e.result) AS total_performance,
                 CASE 
-                    WHEN COUNT(e.id) > 0 THEN ROUND(SUM(e.result) * 1.0 / COUNT(e.id), 2)
+                    WHEN COUNT(e.id) > 0 THEN ROUND(SUM(e.result)::numeric / COUNT(e.id), 2)
                     ELSE 0 
                 END AS class_result
             FROM
