@@ -1105,8 +1105,10 @@ const changeClassStatus = async ({ schoolId, classroomId, status }) => {
     }
 }
 
-const getSchoolClassrooms = async ({ schoolId }) => {
+const getSchoolClassrooms = async ({ schoolId, page, limit }) => {
     try {
+        const offset = (page - 1) * limit;
+
         const school = await School.findOne({ where: { id: schoolId } });
         if (!school) {
             return { code: 404, message: 'School not found' };
@@ -1121,6 +1123,9 @@ const getSchoolClassrooms = async ({ schoolId }) => {
                 model: User,
                 attributes: ['name']
             },
+            offset,
+            limit,
+            order: [['createdAt', 'desc']]
         });
 
         const transformedClassroom = classrooms.map(classroom => ({
@@ -1130,24 +1135,23 @@ const getSchoolClassrooms = async ({ schoolId }) => {
             teacher: classroom.User.name
         }));
 
+        const totalClassrooms = await Classroom.count({ where: { schoolId } });
+        const totalPages = Math.ceil(totalClassrooms / limit);
+
         return { 
             code: 200, 
             data: {
                 classrooms: transformedClassroom,
                 pagination: {
-                    totalRecords: 2,
-                    currentPage: 1,
-                    limit: 2,
-                    totalCount: 0,
-                    totalPages: 1,
-                    hasPreviousPage: false,
-                    hasNextPage: true
+                    currentPage: page,
+                    totalPages: totalPages,
                 } 
             }
         };
     } catch (error) {
-        console.error('Error fetching classrooms:', error);
-        return { code: 500, message: 'Internal server error' };
+        console.log('\n\n\n\n', error);
+        logger.error(error?.message || 'An error occurred while converting class to inactive');
+        return { code: 500 };
     }
 }
 

@@ -287,8 +287,8 @@ const changeClassStatus = async (req, res) => {
 
 const getSchoolClassrooms = async (req, res) => {
     try {
-        const { schoolid } = req.headers;
-        const reply = await classroomService.getSchoolClassrooms({ schoolId: schoolid });
+        const { schoolid, page=1, limit=10 } = req.headers;
+        const reply = await classroomService.getSchoolClassrooms({ schoolId: schoolid, page, limit });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
