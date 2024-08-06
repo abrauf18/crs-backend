@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail } = require("../models/index.js");
+const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail, ClassroomCourses, Classroom } = require("../models/index.js");
 
 const createStandard = async ({ name, description, dailyUploads }) => {
     const transaction = await sequelize.transaction();
@@ -500,6 +500,56 @@ const getTopicResources = async ({ standardId, topicName }) => {
     }
 };
 
+const getStandardClassroomsAndTeacherClassrooms = async ({ standardId, teacherId }) => {
+    try {
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const classCourses = await ClassroomCourses.findAll({
+            where: { 
+                standardId 
+            },
+            attributes: ['id', 'startDate'],
+            include: [{
+                model: Classroom,
+                as: 'classroom',
+                attributes: ['id', 'name']
+            }]
+        }); 
+
+        const transformedClassCourses = classCourses?.map(course => ({
+            id: course.id,
+            startDate: course.startDate,
+            classroomId: course.classroom.id,
+            classroomName: course.classroom.name
+        }));
+
+        const teacherClassrooms = await Classroom.findAll({
+            where: { teacherId },
+            attributes: ['id', 'name']
+        });
+
+        const options = teacherClassrooms?.map(classroom => {
+            return { label: classroom.id, value: classroom.name };
+        });
+
+        return { 
+            code: 200, 
+            data: { 
+                standard, 
+                classCourses: transformedClassCourses || [], 
+                options 
+            } 
+        };
+    }
+    catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard classrooms');
+        return { code: 500 };
+    }
+}
 module.exports = {
     createStandard,
     updateStandard,
@@ -508,5 +558,7 @@ module.exports = {
     deleteStandard,
     getSummarizedStandard,
     getStandardTopics,
-    getTopicResources
+    getTopicResources,
+    getStandardClassroomsAndTeacherClassrooms
+
 };

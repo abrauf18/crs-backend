@@ -79,6 +79,14 @@ const getTopicResources = createSchemaMiddleware(
     }).unknown(), 'headers'
 );// has topicName in query params now
 
+const getStandardClassroomsAndTeacherClassrooms = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createStandard,
     updateStandard,
@@ -86,5 +94,6 @@ module.exports = {
     getSummarizedStandard,
     deleteStandard,
     getStandardTopics,
-    getTopicResources
+    getTopicResources,
+    getStandardClassroomsAndTeacherClassrooms
 };

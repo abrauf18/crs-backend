@@ -2,7 +2,7 @@ const express = require("express");
 const standardValidation = require("../middlewares/validators/standard-validator");
 const standardController = require("../controllers/standard-controller");
 const roleBasedAccess = require("../middlewares/rbac/index")
-const ROLES = require("../models/roles/index")
+const ROLES = require("../models/roles/index");
 
 const router = express.Router();
 
@@ -67,6 +67,14 @@ router.get(
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     standardController.getTopicResources
+);
+
+router.get(
+    "/getStandardClassroomsAndTeacherClassrooms",
+    standardValidation.getStandardClassroomsAndTeacherClassrooms,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getStandardClassroomsAndTeacherClassrooms
 );
 
 module.exports = router;

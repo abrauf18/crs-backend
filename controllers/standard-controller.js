@@ -176,6 +176,27 @@ const getTopicResources = async (req, res) => {
     }
 }
 
+const getStandardClassroomsAndTeacherClassrooms = async (req, res) => {
+    try {
+        const { standardid, teacherid } = req.headers;
+
+        const reply = await standardService.getStandardClassroomsAndTeacherClassrooms({ standardId: standardid, teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createStandard,
     updateStandard,
@@ -184,5 +205,6 @@ module.exports = {
     deleteStandard,
     getSummarizedStandard,
     getStandardTopics,
-    getTopicResources
+    getTopicResources,
+    getStandardClassroomsAndTeacherClassrooms
 };
