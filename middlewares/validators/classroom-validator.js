@@ -140,7 +140,10 @@ const changeClassStatus = createSchemaMiddleware(
 const getSchoolClassrooms = createSchemaMiddleware(
     Joi.object({
         accesstoken: Joi.string().required(),
-        schoolid: Joi.string().guid().required()
+        schoolid: Joi.string().guid().required(),
+        page: Joi.number().integer().min(1).required(),
+        limit: Joi.number().integer().min(1).required(),
+        search: Joi.string().optional().allow(''),
     }).unknown(), 'headers'
 );
 
