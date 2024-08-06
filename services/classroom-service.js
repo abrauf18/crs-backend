@@ -1130,7 +1130,21 @@ const getSchoolClassrooms = async ({ schoolId }) => {
             teacher: classroom.User.name
         }));
 
-        return { code: 200, data: transformedClassroom };
+        return { 
+            code: 200, 
+            data: {
+                classrooms: transformedClassroom,
+                pagination: {
+                    totalRecords: 2,
+                    currentPage: 1,
+                    limit: 2,
+                    totalCount: 0,
+                    totalPages: 1,
+                    hasPreviousPage: false,
+                    hasNextPage: true
+                } 
+            }
+        };
     } catch (error) {
         console.error('Error fetching classrooms:', error);
         return { code: 500, message: 'Internal server error' };
