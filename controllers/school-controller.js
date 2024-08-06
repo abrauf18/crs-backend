@@ -715,8 +715,8 @@ const schoolDashboard = async (req, res) => {
       totalClassroom: totalClassroomCount,
       getSchoolTeacher: getSchoolTeacher,
       // getSchoolTickets: getSchoolTickets,
-      totalWeightage: currentAvgWeightage,
-      obtainedWeightage: currentAvgResult,
+      totalWeightage: parseFloat(currentAvgWeightage.toFixed(2)),
+      obtainedWeightage: parseFloat(currentAvgResult.toFixed(2)),
       usersJoining: cumulativeResults,
       usersCount: users.length,
     };
