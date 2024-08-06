@@ -271,7 +271,7 @@ const changeClassStatus = async (req, res) => {
             return handleErrorResponse(res, 400, reply.message);
         }
         else if (reply.code == 403) {
-            return handleErrorResponse(res, 404, reply.message);
+            return handleErrorResponse(res, 403, reply.message);
         }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, reply.message);
