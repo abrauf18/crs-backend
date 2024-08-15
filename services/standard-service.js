@@ -1,7 +1,8 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
 const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail, ClassroomCourses, Classroom } = require("../models/index.js");
+const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
 const createStandard = async ({ name, description, dailyUploads }) => {
     const transaction = await sequelize.transaction();
@@ -204,8 +205,9 @@ const getStandard = async ({ standardId }) => {
         // Transform the data
         const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
             const day = upload.accessibleDay;
+            const transformedTopic = upload.topicName.map((tn) => ({value: tn}));
             if (!result[day]) {
-                result[day] = { topicName: upload.topicName, resources: [] };
+                result[day] = { topicName: transformedTopic, resources: [] };
             }
             if (upload.resource) {
                 result[day].resources.push({ resource: upload.resource, weightage: upload.weightage });
@@ -271,9 +273,12 @@ const getAllSummarizedStandards = async () => {
                 ],
                 [
                     Sequelize.literal(`(
-                        SELECT COUNT(DISTINCT "du"."topicName")
-                        FROM "DailyUploads" AS "du"
-                        WHERE "du"."standardId" = "Standard"."id"
+                        SELECT COUNT(*)
+                        FROM (
+                            SELECT DISTINCT unnest("du"."topicName")
+                            FROM "DailyUploads" AS "du"
+                            WHERE "du"."standardId" = "Standard"."id"
+                        ) AS distinct_topics
                     )`),
                     'topicCount'
                 ]
@@ -335,9 +340,12 @@ const getSummarizedStandard = async ({ standardId }) => {
                 ],
                 [
                     Sequelize.literal(`(
-                        SELECT COUNT(DISTINCT "du"."topicName")
-                        FROM "DailyUploads" AS "du"
-                        WHERE "du"."standardId" = "Standard"."id"
+                        SELECT COUNT(*)
+                        FROM (
+                            SELECT DISTINCT unnest("du"."topicName")
+                            FROM "DailyUploads" AS "du"
+                            WHERE "du"."standardId" = "Standard"."id"
+                        ) AS distinct_topics
                     )`),
                     'topicCount'
                 ]
@@ -388,17 +396,18 @@ const getStandardTopics = async ({ standardId }) => {
         let totalNonVideoCount = 0;
 
         standard.dailyUploads.forEach(upload => {
-            const topicName = upload.topicName;
-            if (!topicResourceCounts[topicName]) {
-                topicResourceCounts[topicName] = { videoCount: 0, nonVideoCount: 0 };
-            }
-            if (upload.resource.video) {
-                topicResourceCounts[topicName].videoCount++;
-                totalVideoCount++;
-            } else {
-                topicResourceCounts[topicName].nonVideoCount++;
-                totalNonVideoCount++;
-            }
+            upload.topicName.forEach(topic => {
+                if (!topicResourceCounts[topic]) {
+                    topicResourceCounts[topic] = { videoCount: 0, nonVideoCount: 0 };
+                }
+                if (upload.resource.video) {
+                    topicResourceCounts[topic].videoCount++;
+                    totalVideoCount++;
+                } else {
+                    topicResourceCounts[topic].nonVideoCount++;
+                    totalNonVideoCount++;
+                }
+            });
         });
 
         // topicResourceCounts['All-Topics'] = { videoCount: totalVideoCount, nonVideoCount: totalNonVideoCount };
@@ -437,7 +446,11 @@ const getTopicResources = async ({ standardId, topicName }) => {
                 model: DailyUpload,
                 as: 'dailyUploads',
                 attributes: ['accessibleDay', 'weightage', 'topicName'],
-                where: topicName? { topicName }: {},
+                where: topicName ? {
+                    topicName: {
+                        [Op.contains]: [topicName]
+                    }
+                } : {},
                 include: [{
                     model: Resource,
                     as: 'resource',
@@ -463,7 +476,7 @@ const getTopicResources = async ({ standardId, topicName }) => {
         const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
             const day = upload.accessibleDay;
             if (!result[day]) {
-                result[day] = { topicName: upload.topicName, resources: [] };
+                result[day] = { topicName: topicName, resources: [] };
             }
             if (upload.resource) {
                 result[day].resources.push({ resource: upload.resource, weightage: upload.weightage });
@@ -527,7 +540,10 @@ const getStandardClassroomsAndTeacherClassrooms = async ({ standardId, teacherId
         }));
 
         const teacherClassrooms = await Classroom.findAll({
-            where: { teacherId },
+            where: { 
+                teacherId: teacherId,
+                status: CLASSROOM_STATUS.ACTIVE
+            },
             attributes: ['id', 'name']
         });
 
@@ -560,5 +576,4 @@ module.exports = {
     getStandardTopics,
     getTopicResources,
     getStandardClassroomsAndTeacherClassrooms
-
 };

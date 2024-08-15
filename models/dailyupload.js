@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     topicName:{
-      type: DataTypes.STRING,
+      type: DataTypes.ARRAY(DataTypes.STRING),
       defaultValue:'',
       allowNull: false,
     },
