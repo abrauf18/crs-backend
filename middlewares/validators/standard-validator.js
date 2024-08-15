@@ -20,7 +20,7 @@ const createStandard = createSchemaMiddleware(
         name: Joi.string().required(),
         description: Joi.string().required(),
         dailyUploads: Joi.array().items(Joi.object({
-            topicName: Joi.string().required(),
+            topicName: Joi.array().items(Joi.string()).required(),
             resourceId: Joi.string().guid().required(),
             weightage: Joi.number().integer().required(),
             accessibleDay: Joi.number().integer().required(),
@@ -35,7 +35,7 @@ const updateStandard = createSchemaMiddleware(
         name: Joi.string().required(),
         description: Joi.string().required(),
         dailyUploads: Joi.array().items(Joi.object({
-            topicName: Joi.string().required(),
+            topicName: Joi.array().items(Joi.string()).required(),
             resourceId: Joi.string().guid().required(),
             weightage: Joi.number().integer().required(),
             accessibleDay: Joi.number().integer().required(),
