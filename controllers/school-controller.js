@@ -3,7 +3,7 @@ const { logger } = require("../Logs/logger.js");
 const { successResponse, failureResponse } = require("../utils/response.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 const jwt = require("../utils/jwt.js");
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col, literal, where } = require("sequelize");
 // @ts-ignore
 const { Invite_token, sequelize } = require("../models/index.js");
 const schoolService = require("../services/school-service.js");
@@ -13,6 +13,7 @@ const {
   handleErrorResponse,
 } = require("../utils/response-handlers.js");
 const ROLES = require("../models/roles");
+const standard = require("../models/standard");
 
 const createSchool = async (req, res) => {
   const token = req.params.token;
@@ -609,7 +610,7 @@ const schoolDashboard = async (req, res) => {
 
     // Current date for comparison
     const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
+    const formattedDate = today.toISOString().split("T")[0];
 
     const currentClassStandardsWeightagesQuery = await sequelize.query(`
         SELECT
@@ -641,9 +642,10 @@ const schoolDashboard = async (req, res) => {
         `);
 
     // Calculate the total weightage for all classes
-    const currentTotalWeightage = currentClassStandardsWeightagesQuery[0].reduce((acc, item) => {
-      return acc + parseFloat(item.avg_class_weightage); // Convert string to number and accumulate
-    }, 0);
+    const currentTotalWeightage =
+      currentClassStandardsWeightagesQuery[0].reduce((acc, item) => {
+        return acc + parseFloat(item.avg_class_weightage); // Convert string to number and accumulate
+      }, 0);
 
     const schoolClassroomsCount = await Model.Classroom.count({
       where: {
@@ -652,7 +654,10 @@ const schoolDashboard = async (req, res) => {
       },
     });
 
-    const currentAvgWeightage = schoolClassroomsCount > 0 ? currentTotalWeightage / schoolClassroomsCount : 0;
+    const currentAvgWeightage =
+      schoolClassroomsCount > 0
+        ? currentTotalWeightage / schoolClassroomsCount
+        : 0;
 
     const classroomsStudentResults = await sequelize.query(`
       SELECT
@@ -669,10 +674,18 @@ const schoolDashboard = async (req, res) => {
           e."classroomId";
     `);
 
-    const totalClassroomsResults = classroomsStudentResults[0].reduce((acc, item) =>  { return (acc + item.avg_result || 0)}, 0);
+    const totalClassroomsResults = classroomsStudentResults[0].reduce(
+      (acc, item) => {
+        return acc + item.avg_result || 0;
+      },
+      0
+    );
 
-    const currentAvgResult = schoolClassroomsCount > 0 ? totalClassroomsResults / schoolClassroomsCount : 0;
-    
+    const currentAvgResult =
+      schoolClassroomsCount > 0
+        ? totalClassroomsResults / schoolClassroomsCount
+        : 0;
+
     const users = await Model.User.findAll({});
 
     const userCountData = await Model.User.findAll({
@@ -1185,7 +1198,7 @@ const getResourceDetail = async (req, res) => {
 
 const getResourceResult = async (req, res) => {
   try {
-    let { resourceId, schoolId, teacherId } = req.query;
+    let { resourceId, schoolId, teacherId, courseId } = req.query;
 
     let teacher = {};
 
@@ -1216,6 +1229,9 @@ const getResourceResult = async (req, res) => {
                   model: Model.VideoQuestionAnswer,
                   as: "answers",
                   separate: true,
+                  where: {
+                    standardId: courseId,
+                  },
                   include: [
                     {
                       model: Model.User,
@@ -1223,19 +1239,23 @@ const getResourceResult = async (req, res) => {
                       where: {
                         school_id: schoolId,
                       },
-                      include: teacherId ? [{
-                        model: Model.ClassroomStudent,
-                        attributes: ["id", "classroomId", "studentId"],
-                        required: true,
-                        include: {
-                          model: Model.Classroom,
-                          as: 'classroom',
-                          attributes: ["id", "teacherId"],
-                          where: {
-                            teacherId: teacherId
-                          },
-                        }
-                      }] : [],
+                      include: teacherId
+                        ? [
+                            {
+                              model: Model.ClassroomStudent,
+                              attributes: ["id", "classroomId", "studentId"],
+                              required: true,
+                              include: {
+                                model: Model.Classroom,
+                                as: "classroom",
+                                attributes: ["id", "teacherId"],
+                                where: {
+                                  teacherId: teacherId,
+                                },
+                              },
+                            },
+                          ]
+                        : [],
                     },
                   ],
                 },
@@ -1252,6 +1272,9 @@ const getResourceResult = async (req, res) => {
               model: Model.AssessmentAnswer,
               as: "assessmentAnswers",
               attributes: ["id", "obtainedMarks", "answerURL"],
+              where: {
+                standardId: courseId,
+              },
               separate: true,
               include: [
                 {
@@ -1261,19 +1284,23 @@ const getResourceResult = async (req, res) => {
                   where: {
                     school_id: schoolId,
                   },
-                  include: teacherId ? [{
-                    model: Model.ClassroomStudent,
-                    attributes: ["id", "classroomId", "studentId"],
-                    required: true,
-                    include: {
-                      model: Model.Classroom,
-                      as: 'classroom',
-                      attributes: ["id", "teacherId"],
-                      where: {
-                        teacherId: teacherId
-                      },
-                    }
-                  }] : [],
+                  include: teacherId
+                    ? [
+                        {
+                          model: Model.ClassroomStudent,
+                          attributes: ["id", "classroomId", "studentId"],
+                          required: true,
+                          include: {
+                            model: Model.Classroom,
+                            as: "classroom",
+                            attributes: ["id", "teacherId"],
+                            where: {
+                              teacherId: teacherId,
+                            },
+                          },
+                        },
+                      ]
+                    : [],
                 },
               ],
             },
@@ -1330,15 +1357,15 @@ const getResourceResult = async (req, res) => {
         averageObtainedMarks: totalObtainedAverage,
         totalMarks: totalPossibleMarks,
         teacher: {
-          id: teacher.id || '',
-          name: teacher.name || '',
-        }
+          id: teacher.id || "",
+          name: teacher.name || "",
+        },
       };
     });
 
     return successResponse(res, 200, "Data fetched successfully", result);
   } catch (error) {
-    console.log('\n\n\n\ ', error)
+    console.log("\n\n\n ", error);
     return failureResponse(res, 500, error.message);
   }
 };
@@ -1385,5 +1412,5 @@ module.exports = {
   getSchoolCourses,
   getResourceDetail,
   getResourceResult,
-  getAllTeacher
+  getAllTeacher,
 };
