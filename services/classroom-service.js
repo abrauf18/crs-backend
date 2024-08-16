@@ -1132,7 +1132,7 @@ const getSchoolClassrooms = async ({ schoolId, page, limit }) => {
             id: classroom.id,
             name: classroom.name,
             status: classroom.status,
-            teacher: classroom.User.name
+            teacher: classroom?.User?.name || 'No Teacher Assigned'
         }));
 
         const totalClassrooms = await Classroom.count({ where: { schoolId } });
