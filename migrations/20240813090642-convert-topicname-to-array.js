@@ -12,7 +12,7 @@ module.exports = {
     // Step 2: Convert existing topicName strings to arrays and transfer to new column
     await queryInterface.sequelize.query(`
       UPDATE "DailyUploads"
-      SET "newTopicName" = ARRAY["topicName"]
+      SET "newTopicName" = ARRAY[ "topicName" ]::text[]
       WHERE "topicName" IS NOT NULL;
     `);
 
