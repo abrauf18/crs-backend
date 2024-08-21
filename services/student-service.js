@@ -1785,6 +1785,7 @@ const getSummarizedStudentStandardsForTeacher = async ({ studentId }) => {
                                 [Op.gt]: 0
                             }
                         },
+                        required: false,
                     }
                 ]
             }
@@ -2086,6 +2087,7 @@ const getSummarizedStudentForTeacher = async ({ studentId }) => {
                                 [Op.gt]: 0
                             }
                         },
+                        required: false,
                     }
                 ]
             }
