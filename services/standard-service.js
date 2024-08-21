@@ -454,7 +454,7 @@ const getTopicResources = async ({ standardId, topicName }) => {
                 include: [{
                     model: Resource,
                     as: 'resource',
-                    attributes: ['id', 'name', 'type', 'topic'],
+                    attributes: ['id', 'name', 'type', 'topic', 'url'],
                     include: [{
                         model: Video,
                         as: 'video',
@@ -496,6 +496,7 @@ const getTopicResources = async ({ standardId, topicName }) => {
                 weightage: weightage || 0,
                 deadline: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.deadline : null,
                 totalMarks: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.totalMarks : null,
+                URL: resource.url
             }))
         }));
 
