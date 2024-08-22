@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       DailyUpload.belongsTo(models.Standard, { foreignKey: 'standardId', as: 'standard' });
       DailyUpload.belongsTo(models.Resource, { foreignKey: 'resourceId', as: 'resource' });
+      DailyUpload.hasMany(models.TopicDailyUpload, { foreignKey: 'dailyUploadId'});
     }
   }
   DailyUpload.init({
@@ -24,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     topicName:{
       type: DataTypes.ARRAY(DataTypes.STRING),
-      defaultValue:'',
+      defaultValue:[],
       allowNull: false,
     },
     standardId: {
