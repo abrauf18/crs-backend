@@ -1,10 +1,10 @@
 const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail, ClassroomCourses, Classroom } = require("../models/index.js");
+const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail, ClassroomCourses, Classroom, Topic, TopicDailyUpload } = require("../models/index.js");
 const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
-const createStandard = async ({ name, description, dailyUploads }) => {
+const createStandard = async ({ name, description, topics, dailyUploads }) => {
     const transaction = await sequelize.transaction();
     try {
         const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
@@ -45,15 +45,38 @@ const createStandard = async ({ name, description, dailyUploads }) => {
 
         const createdStandard = await Standard.create({ name, description, courseLength }, { transaction });
 
-        const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
-            return DailyUpload.create({ ...upload, standardId: createdStandard.id }, { transaction });
-        }));
+        const createdTopics = await Promise.all(topics.map(topic => 
+            Topic.create({ name: topic.name, description: topic.description, standardId: createdStandard.id }, { transaction })
+        ));
+
+        const topicIdMap = createdTopics.reduce((map, topic) => {
+            map[topic.name] = topic.id;
+            return map;
+        }, {});
+
+        const dailyUploadPromises = dailyUploads.map(async upload => {
+            const { topicName, ...uploadData } = upload;
+            const createdDailyUpload = await DailyUpload.create({ ...uploadData, standardId: createdStandard.id }, { transaction });
+
+            // Populate TopicDailyUpload table
+            const topicDailyUploadPromises = topicName.map(async topic => {
+                const topicId = topicIdMap[topic];
+                if (topicId && createdDailyUpload.id) {
+                    await TopicDailyUpload.create({ topicId, dailyUploadId: createdDailyUpload.id }, { transaction });
+                }
+            });
+            await Promise.all(topicDailyUploadPromises);
+
+            return createdDailyUpload;
+        });
+
+        const createdDailyUploads = await Promise.all(dailyUploadPromises);
 
         await transaction.commit();
 
         const standard = {
             ...createdStandard.toJSON(),
-            dailyUploads: createdDailyUploads.map(upload => upload.toJSON())
+            dailyUploads: createdDailyUploads
         };
 
         return { code: 200, data: standard };
@@ -64,13 +87,46 @@ const createStandard = async ({ name, description, dailyUploads }) => {
     }
 };
 
-const updateStandard = async ({ standardId, name, description, dailyUploads }) => {
+const updateStandard = async ({ standardId, name, description, topics, dailyUploads }) => {
     const transaction = await sequelize.transaction();
     try {
         const standard = await Standard.findByPk(standardId, { transaction });
         if (!standard) {
             await transaction.rollback();
             return { code: 404 };
+        }
+
+        if (topics) {
+            const existingTopics = await Topic.findAll({
+                where: { standardId: standardId },
+                transaction
+            });
+
+            const existingTopicsMap = new Map(existingTopics.map(topic => [topic.name, topic]));
+
+            const newTopicsMap = new Map(topics.map(topic => [topic.name, topic]));
+
+            const topicsToDelete = Array.from(existingTopicsMap.keys()).filter(name => !newTopicsMap.has(name));
+            const topicsToUpdate = Array.from(existingTopicsMap.keys()).filter(name => newTopicsMap.has(name));
+            const topicsToCreate = Array.from(newTopicsMap.keys()).filter(name => !existingTopicsMap.has(name));
+
+            await Promise.all(topicsToDelete.map(async name => {
+                const topicToDelete = existingTopicsMap.get(name);
+                await topicToDelete.destroy({ transaction });
+            }));
+
+            await Promise.all(topicsToUpdate.map(async name => {
+                const existingTopic = existingTopicsMap.get(name);
+                const newTopic = newTopicsMap.get(name);
+                if (JSON.stringify(existingTopic.toJSON()) !== JSON.stringify(newTopic)) {
+                    await existingTopic.update(newTopic, { transaction });
+                }
+            }));
+
+            await Topic.bulkCreate(
+                topicsToCreate.map(name => newTopicsMap.get(name)),
+                { transaction }
+            );
         }
 
         let newDailyUploads = [];
@@ -124,10 +180,45 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
             await Promise.all(resourcesToUpdate.map(async id => {
                 const oldUpload = oldUploadsMap.get(id);
                 const newUpload = newUploadsMap.get(id);
+                const { topicName, ...newUploadWithoutTopicName } = newUpload.toJSON();
+    
                 // Check if any fields have changed that need updating
-                if (JSON.stringify(oldUpload.toJSON()) !== JSON.stringify(newUpload)) {
-                    await oldUpload.update(newUpload, { transaction });
+                if (JSON.stringify(oldUpload.toJSON()) !== JSON.stringify(newUploadWithoutTopicName)) {
+                    await oldUpload.update(newUploadWithoutTopicName, { transaction });
                 }
+
+                const existingTopicDailyUploads = await TopicDailyUpload.findAll({
+                    where: { dailyUploadId: id },
+                    include: [{ model: Topic, attributes: ['name'] }],
+                    transaction
+                });
+
+                const existingTopicDailyUploadsMap = new Map(existingTopicDailyUploads.map(tdu => [tdu.Topic.name, tdu]));
+
+                const newTopicTopicDailyUploadsMap = new Map(topicName.map(topic => [topic, topic]));
+
+                const topicDailyUploadsToDelete = Array.from(existingTopicDailyUploadsMap.keys()).filter(name => !newTopicTopicDailyUploadsMap.has(name));
+                const topicDailyUploadsToCreate = Array.from(newTopicTopicDailyUploadsMap.keys()).filter(name => !existingTopicDailyUploadsMap.has(name));
+
+                // Delete old topic associations
+                await Promise.all(topicDailyUploadsToDelete.map(async name => {
+                    const topicToDelete = existingTopicDailyUploadsMap.get(name);
+                    await topicToDelete.destroy({ transaction });
+                }));
+
+                // Create new topic associations
+                await Promise.all(topicDailyUploadsToCreate.map(async name => {
+                    const topic = await Topic.findOne({
+                        where: { name, standardId: standardId },
+                        transaction
+                    });
+                    if (topic) {
+                        await TopicDailyUpload.create({
+                            topicId: topic.id,
+                            dailyUploadId: id
+                        }, { transaction });
+                    }
+                }));
             }));
 
             // Handle resources to delete
@@ -136,10 +227,47 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
                 await oldUpload.destroy({ transaction });
             }));
 
+            // Create a map for new daily uploads excluding topicName
+            const newUploadsMapWithoutTopicName = new Map(
+                dailyUploads.map(upload => {
+                    const { topicName, ...uploadWithoutTopicName } = upload;
+                    return [upload.resourceId, uploadWithoutTopicName];
+                })
+            );
+            
             // Handle resources to create
             const newDailyUploads = await DailyUpload.bulkCreate(
-                resourcesToCreate.map(id => ({ ...newUploadsMap.get(id), standardId: standard.id })),
+                resourcesToCreate.map(id => ({ ...newUploadsMapWithoutTopicName.get(id), standardId: standard.id })),
                 { transaction }
+            );
+
+            // After creating new DailyUploads, create TopicDailyUpload entries
+            await Promise.all(
+                newDailyUploads.map(async dailyUpload => {
+                    const { topicName, id } = dailyUpload.toJSON(); // Extract topic names and dailyUpload id
+
+                    // Create TopicDailyUpload entries for each topic
+                    await Promise.all(
+                        topicName.map(async topic => {
+                            // Find the Topic associated with the name
+                            const foundTopic = await Topic.findOne({
+                                where: {
+                                    name: topic,
+                                    standardId: standard.id
+                                },
+                                transaction
+                            });
+
+                            if (foundTopic) {
+                                // Create TopicDailyUpload record
+                                await TopicDailyUpload.create({
+                                    topicId: foundTopic.id,
+                                    dailyUploadId: id
+                                }, { transaction });
+                            }
+                        })
+                    );
+                })
             );
 
             const days = dailyUploads.map(upload => upload.accessibleDay);
@@ -274,11 +402,8 @@ const getAllSummarizedStandards = async () => {
                 [
                     Sequelize.literal(`(
                         SELECT COUNT(*)
-                        FROM (
-                            SELECT DISTINCT unnest("du"."topicName")
-                            FROM "DailyUploads" AS "du"
-                            WHERE "du"."standardId" = "Standard"."id"
-                        ) AS distinct_topics
+                        FROM "Topics"
+                        WHERE "Topics"."standardId" = "Standard"."id"
                     )`),
                     'topicCount'
                 ]

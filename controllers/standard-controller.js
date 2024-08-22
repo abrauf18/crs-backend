@@ -3,9 +3,9 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createStandard = async (req, res) => {
     try {
-        const { name, description, dailyUploads } = req.body;
+        const { name, description, topics, dailyUploads } = req.body;
 
-        const reply = await standardService.createStandard({ name, description, dailyUploads });
+        const reply = await standardService.createStandard({ name, description, topics, dailyUploads });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -27,9 +27,9 @@ const createStandard = async (req, res) => {
 
 const updateStandard = async (req, res) => {
     try {
-        const { standardId, name, description, dailyUploads } = req.body;
+        const { standardId, name, description, topics, dailyUploads } = req.body;
 
-        const reply = await standardService.updateStandard({ standardId, name, description, dailyUploads });
+        const reply = await standardService.updateStandard({ standardId, name, description, topics, dailyUploads });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
