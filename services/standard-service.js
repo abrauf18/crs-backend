@@ -304,47 +304,69 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
 
 const getStandard = async ({ standardId }) => {
     try {
-        const standard = await Standard.findByPk(standardId, {
-            include: [{
-                model: DailyUpload,
-                as: 'dailyUploads',
-                attributes: ['accessibleDay', 'weightage', 'topicName'],
-                include: [{
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['id', 'name', 'type', 'topic'],
-                    include: [{
-                        model: Video,
-                        as: 'video',
-                        attributes: ['id']
-                    }, {
-                        model: AssessmentResourcesDetail,
-                        as: 'AssessmentResourcesDetail',
-                        attributes: ['id', 'totalMarks', 'deadline']
-                    }]
-                }]
-            },]
-        });
-
-        if (!standard) {
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
             return { code: 404, message: 'Standard not found' };
         }
 
-        // Transform the data
-        const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
-            const day = upload.accessibleDay;
-            const transformedTopic = upload.topicName.map((tn) => ({value: tn}));
-            if (!result[day]) {
-                result[day] = { topicName: transformedTopic, resources: [] };
+        const standard = await Standard.findByPk(standardId, {
+            include: {
+                model: Topic,
+                attributes: ['id', 'name', 'description'],
+                include: {
+                    model: TopicDailyUpload,
+                    attributes: ['id'],
+                    include: {
+                        model: DailyUpload,
+                        attributes: ['accessibleDay', 'weightage'],
+                        include: {
+                            model: Resource,
+                            as: 'resource',
+                            attributes: ['id', 'name', 'type', 'topic', 'url'],
+                            include: [{
+                                model: Video,
+                                as: 'video',
+                                attributes: ['id']
+                            }, {
+                                model: AssessmentResourcesDetail,
+                                as: 'AssessmentResourcesDetail',
+                                attributes: ['id', 'totalMarks', 'deadline']
+                            }]
+                        }
+                    }
+                }
             }
-            if (upload.resource) {
-                result[day].resources.push({ resource: upload.resource, weightage: upload.weightage });
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Topic or Daily Upload Resource not found' };
+        }
+
+        const topicsDescriptions = standard.Topics.map(topic => ({
+            topicName: topic.name,
+            description: topic.description
+        }));
+
+        const topic = standard.Topics[0];
+
+        // Transform the daily uploads by day
+        const uploadsByDay = topic.TopicDailyUploads.reduce((result, topicDailyUpload) => {
+            const { DailyUpload: dailyUpload } = topicDailyUpload;
+            const day = dailyUpload.accessibleDay;
+
+            if (!result[day]) {
+                uploadsByDay[day] = { topicNames: new Set(), resources: [] };
+            }
+
+            if (dailyUpload.resource) {
+                uploadsByDay[day].topicNames.add(topic.name);
+                result[day].resources.push({ resource: dailyUpload.resource, weightage: dailyUpload.weightage });
             }
             return result;
         }, {});
 
         const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
-            accessibleDay: day,
+            day: parseInt(day, 10),
             topicName: uploadsByDay[day].topicName,
             topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
@@ -355,13 +377,15 @@ const getStandard = async ({ standardId }) => {
                 weightage: weightage || 0,
                 deadline: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.deadline : null,
                 totalMarks: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.totalMarks : null,
+                URL: resource.url
             }))
         }));
 
         const result = {
             name: standard.name,
             description: standard.description,
-            dailyUploads: transformedDailyUploads
+            dailyUploads: transformedDailyUploads,
+            topicsDescriptions: topicsDescriptions,
         };
 
         return { code: 200, data: result };
