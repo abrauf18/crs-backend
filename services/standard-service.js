@@ -466,11 +466,8 @@ const getSummarizedStandard = async ({ standardId }) => {
                 [
                     Sequelize.literal(`(
                         SELECT COUNT(*)
-                        FROM (
-                            SELECT DISTINCT unnest("du"."topicName")
-                            FROM "DailyUploads" AS "du"
-                            WHERE "du"."standardId" = "Standard"."id"
-                        ) AS distinct_topics
+                        FROM "Topics"
+                        WHERE "Topics"."standardId" = "Standard"."id"
                     )`),
                     'topicCount'
                 ]
@@ -488,57 +485,68 @@ const getSummarizedStandard = async ({ standardId }) => {
 
 const getStandardTopics = async ({ standardId }) => {
     try {
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
         const standard = await Standard.findByPk(standardId, {
             include: [{
-                model: DailyUpload,
-                as: 'dailyUploads',
-                attributes: ['topicName'],
-                include: [{
-                    model: Resource,
-                    as: 'resource',
+                model: Topic,
+                attributes: ['id', 'name', 'description'],
+                include: {
+                    model: TopicDailyUpload,
                     attributes: ['id'],
-                    include: [{
-                        model: Video,
-                        as: 'video',
-                        attributes: ['id'],
-                        required: false,
-                    }, {
-                        model: AssessmentResourcesDetail,
-                        as: 'AssessmentResourcesDetail',
-                        attributes: ['id'],
-                        required: false,
-                    }]
-                }]
-            },]
+                    include: {
+                        model: DailyUpload,
+                        attributes: ['accessibleDay', 'weightage'],
+                        include: {
+                            model: Resource,
+                            as: 'resource',
+                            attributes: ['id', 'name', 'type', 'topic', 'url'],
+                            include: [{
+                                model: Video,
+                                as: 'video',
+                                attributes: ['id']
+                            }, {
+                                model: AssessmentResourcesDetail,
+                                as: 'AssessmentResourcesDetail',
+                                attributes: ['id', 'totalMarks', 'deadline']
+                            }]
+                        }
+                    }
+                }
+            }]
         });
 
         if (!standard) {
-            return { code: 404, message: 'Standard not found' };
+            return { code: 404, message: 'Topic or Daily Upload Resource not found' };
         }
 
         const topicResourceCounts = {};
         let totalVideoCount = 0;
         let totalNonVideoCount = 0;
 
-        standard.dailyUploads.forEach(upload => {
-            upload.topicName.forEach(topic => {
-                if (!topicResourceCounts[topic]) {
-                    topicResourceCounts[topic] = { videoCount: 0, nonVideoCount: 0 };
-                }
-                if (upload.resource.video) {
-                    topicResourceCounts[topic].videoCount++;
+        standard.Topics.forEach(topic => {
+            const topicName = topic.name;
+            if (!topicResourceCounts[topicName]) {
+                topicResourceCounts[topicName] = { videoCount: 0, nonVideoCount: 0 };
+            }
+
+            topic.TopicDailyUploads.forEach(topicDailyUpload => {
+                const { DailyUpload } = topicDailyUpload;
+                if (DailyUpload.resource.video) {
+                    topicResourceCounts[topicName].videoCount++;
                     totalVideoCount++;
                 } else {
-                    topicResourceCounts[topic].nonVideoCount++;
+                    topicResourceCounts[topicName].nonVideoCount++;
                     totalNonVideoCount++;
                 }
             });
         });
 
-        // topicResourceCounts['All-Topics'] = { videoCount: totalVideoCount, nonVideoCount: totalNonVideoCount };
-
-        const topicResourceCountsArray = Object.entries(topicResourceCounts).map(([topic, counts]) => ({
-            topicName: topic,
+        const topicResourceCountsArray = Object.entries(topicResourceCounts).map(([topicName, counts]) => ({
+            topicName,
             ...counts
         }));
 
@@ -553,11 +561,12 @@ const getStandardTopics = async ({ standardId }) => {
             } 
         };
     } catch (error) {
-        console.log('\n\n\n\n', error)
+        console.error(error);
         logger.error(error?.message || 'An error occurred while fetching the standard');
         return { code: 500 };
     }
 };
+
 
 const getTopicResources = async ({ standardId, topicName }) => {
     try {
@@ -567,34 +576,37 @@ const getTopicResources = async ({ standardId, topicName }) => {
         }
 
         const standard = await Standard.findByPk(standardId, {
-            include: [{
-                model: DailyUpload,
-                as: 'dailyUploads',
-                attributes: ['accessibleDay', 'weightage', 'topicName'],
-                where: topicName ? {
-                    topicName: {
-                        [Op.contains]: [topicName]
+            include: {
+                model: Topic,
+                where: { name: topicName },
+                attributes: ['id', 'name', 'description'],
+                include: {
+                    model: TopicDailyUpload,
+                    attributes: ['id'],
+                    include: {
+                        model: DailyUpload,
+                        attributes: ['accessibleDay', 'weightage'],
+                        include: {
+                            model: Resource,
+                            as: 'resource',
+                            attributes: ['id', 'name', 'type', 'topic', 'url'],
+                            include: [{
+                                model: Video,
+                                as: 'video',
+                                attributes: ['id']
+                            }, {
+                                model: AssessmentResourcesDetail,
+                                as: 'AssessmentResourcesDetail',
+                                attributes: ['id', 'totalMarks', 'deadline']
+                            }]
+                        }
                     }
-                } : {},
-                include: [{
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['id', 'name', 'type', 'topic', 'url'],
-                    include: [{
-                        model: Video,
-                        as: 'video',
-                        attributes: ['id']
-                    }, {
-                        model: AssessmentResourcesDetail,
-                        as: 'AssessmentResourcesDetail',
-                        attributes: ['id', 'totalMarks', 'deadline']
-                    }]
-                }]
-            },]
+                }
+            }
         });
 
         if (!standard) {
-            return { code: 404, message: 'Topic not found' };
+            return { code: 404, message: 'Topic or Daily Upload Resource not found' };
         }
 
         // Transform the data
