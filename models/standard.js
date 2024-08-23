@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       Standard.hasMany(models.AssessmentAnswer, { foreignKey: 'standardId' });
       Standard.hasMany(models.VideoTracking, { foreignKey: 'standardId' });
       Standard.hasMany(models.Enrollment, { foreignKey: 'standardId' });
+      Standard.hasMany(models.Topic, { foreignKey: 'standardId' });
     }
   }
   Standard.init({
