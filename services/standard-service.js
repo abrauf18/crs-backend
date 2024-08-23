@@ -310,32 +310,37 @@ const getStandard = async ({ standardId }) => {
         }
 
         const standard = await Standard.findByPk(standardId, {
-            include: {
+            include: [{
+                model: DailyUpload,
+                as: 'dailyUploads',
+                attributes: ['accessibleDay', 'weightage'],
+                include: [{
+                        model: TopicDailyUpload,
+                        attributes: ['id'],
+                        include: [{
+                            model: Topic,
+                            attributes: ['name']
+                        }]
+                    },
+                    {
+                        model: Resource,
+                        as: 'resource',
+                        attributes: ['id', 'name', 'type', 'topic', 'url'],
+                        include: [{
+                            model: Video,
+                            as: 'video',
+                            attributes: ['id']
+                        }, {
+                            model: AssessmentResourcesDetail,
+                            as: 'AssessmentResourcesDetail',
+                            attributes: ['id', 'totalMarks', 'deadline']
+                        }]
+                }]
+            },
+            {
                 model: Topic,
                 attributes: ['id', 'name', 'description'],
-                include: {
-                    model: TopicDailyUpload,
-                    attributes: ['id'],
-                    include: {
-                        model: DailyUpload,
-                        attributes: ['accessibleDay', 'weightage'],
-                        include: {
-                            model: Resource,
-                            as: 'resource',
-                            attributes: ['id', 'name', 'type', 'topic', 'url'],
-                            include: [{
-                                model: Video,
-                                as: 'video',
-                                attributes: ['id']
-                            }, {
-                                model: AssessmentResourcesDetail,
-                                as: 'AssessmentResourcesDetail',
-                                attributes: ['id', 'totalMarks', 'deadline']
-                            }]
-                        }
-                    }
-                }
-            }
+            }]
         });
 
         if (!standard) {
@@ -347,38 +352,30 @@ const getStandard = async ({ standardId }) => {
             description: topic.description
         }));
 
-        // Transform the daily uploads by day
         const uploadsByDay = {};
 
-        standard.Topics.forEach(topic => {
-            topic.TopicDailyUploads.forEach(({ DailyUpload: dailyUpload }) => {
-                const day = dailyUpload.accessibleDay;
+        standard.dailyUploads.forEach(dailyUpload => {
+            const day = dailyUpload.accessibleDay;
 
-                if (!uploadsByDay[day]) {
-                    uploadsByDay[day] = { topicName: new Set(), resources: [] };
-                }
+            if (!uploadsByDay[day]) {
+                uploadsByDay[day] = { topicName: [], resources: [] };
+            }
 
-                // Add the topic name to the Set to ensure uniqueness
-                uploadsByDay[day].topicName.add(topic.name);
-
-                if (dailyUpload.resource) {
-                    const existingResourceIndex = uploadsByDay[day].resources.findIndex(
-                        item => item.resource.id === dailyUpload.resource.id
-                    );
-
-                    if (existingResourceIndex === -1) {
-                        // Resource not found, add it
-                        uploadsByDay[day].resources.push({
-                            resource: dailyUpload.resource,
-                            weightage: dailyUpload.weightage
-                        });
-                    }
-                }
+            // Add the topic names to the Set to ensure uniqueness
+            dailyUpload.TopicDailyUploads.forEach(topicDailyUpload => {
+                uploadsByDay[day].topicName.push(topicDailyUpload.Topic.name);
             });
+
+            if (dailyUpload.resource) {
+                uploadsByDay[day].resources.push({
+                    resource: dailyUpload.resource,
+                    weightage: dailyUpload.weightage
+                });
+            }
         });
 
         const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
-            day: parseInt(day, 10),
+            accessibleDay: parseInt(day, 10),
             topicName: Array.from(uploadsByDay[day].topicName).map(name => ({ value: name })),
             topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
