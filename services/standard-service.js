@@ -591,6 +591,7 @@ const getStandardTopics = async ({ standardId }) => {
             code: 200, 
             data: {
                 name: standard.name,
+                description: standard.description,
                 totalTopics,
                 topicResourceCounts: topicResourceCountsArray
             } 
@@ -612,7 +613,9 @@ const getTopicResources = async ({ standardId, topicName }) => {
         const standard = await Standard.findByPk(standardId, {
             include: {
                 model: Topic,
-                where: { name: topicName },
+                where: { 
+                    name: topicName 
+                },
                 attributes: ['id', 'name', 'description'],
                 include: {
                     model: TopicDailyUpload,
@@ -677,8 +680,8 @@ const getTopicResources = async ({ standardId, topicName }) => {
         }));
 
         const result = {
-            name: standard.name,
-            description: standard.description,
+            name: topic.name,
+            description: topic.description,
             dailyUploads: transformedDailyUploads,
         };
 
