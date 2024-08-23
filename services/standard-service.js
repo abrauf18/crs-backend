@@ -347,27 +347,39 @@ const getStandard = async ({ standardId }) => {
             description: topic.description
         }));
 
-        const topic = standard.Topics[0];
-
         // Transform the daily uploads by day
-        const uploadsByDay = topic.TopicDailyUploads.reduce((result, topicDailyUpload) => {
-            const { DailyUpload: dailyUpload } = topicDailyUpload;
-            const day = dailyUpload.accessibleDay;
+        const uploadsByDay = {};
 
-            if (!result[day]) {
-                uploadsByDay[day] = { topicNames: new Set(), resources: [] };
-            }
+        standard.Topics.forEach(topic => {
+            topic.TopicDailyUploads.forEach(({ DailyUpload: dailyUpload }) => {
+                const day = dailyUpload.accessibleDay;
 
-            if (dailyUpload.resource) {
-                uploadsByDay[day].topicNames.add(topic.name);
-                result[day].resources.push({ resource: dailyUpload.resource, weightage: dailyUpload.weightage });
-            }
-            return result;
-        }, {});
+                if (!uploadsByDay[day]) {
+                    uploadsByDay[day] = { topicName: new Set(), resources: [] };
+                }
+
+                // Add the topic name to the Set to ensure uniqueness
+                uploadsByDay[day].topicName.add(topic.name);
+
+                if (dailyUpload.resource) {
+                    const existingResourceIndex = uploadsByDay[day].resources.findIndex(
+                        item => item.resource.id === dailyUpload.resource.id
+                    );
+
+                    if (existingResourceIndex === -1) {
+                        // Resource not found, add it
+                        uploadsByDay[day].resources.push({
+                            resource: dailyUpload.resource,
+                            weightage: dailyUpload.weightage
+                        });
+                    }
+                }
+            });
+        });
 
         const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
             day: parseInt(day, 10),
-            topicName: uploadsByDay[day].topicName,
+            topicName: Array.from(uploadsByDay[day].topicName).map(name => ({ value: name })),
             topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
                 name: resource.name,
