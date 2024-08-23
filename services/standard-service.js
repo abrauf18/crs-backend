@@ -567,7 +567,6 @@ const getStandardTopics = async ({ standardId }) => {
     }
 };
 
-
 const getTopicResources = async ({ standardId, topicName }) => {
     try {
         const existingStandard = await Standard.findByPk(standardId);
@@ -609,21 +608,26 @@ const getTopicResources = async ({ standardId, topicName }) => {
             return { code: 404, message: 'Topic or Daily Upload Resource not found' };
         }
 
-        // Transform the data
-        const uploadsByDay = standard.dailyUploads.reduce((result, upload) => {
-            const day = upload.accessibleDay;
+        const topic = standard.Topics[0];
+
+        // Transform the daily uploads by day
+        const uploadsByDay = topic.TopicDailyUploads.reduce((result, topicDailyUpload) => {
+            const { DailyUpload: dailyUpload } = topicDailyUpload;
+            const day = dailyUpload.accessibleDay;
+
             if (!result[day]) {
-                result[day] = { topicName: topicName, resources: [] };
+                result[day] = { topicName: topic.name, resources: [] };
             }
-            if (upload.resource) {
-                result[day].resources.push({ resource: upload.resource, weightage: upload.weightage });
+
+            if (dailyUpload.resource) {
+                result[day].resources.push({ resource: dailyUpload.resource, weightage: dailyUpload.weightage });
             }
             return result;
         }, {});
 
         const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
-            day: day,
-            topicName: uploadsByDay[day].topicName,
+            day: parseInt(day, 10),
+            topicName: topicName,
             topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
                 name: resource.name,
@@ -640,7 +644,7 @@ const getTopicResources = async ({ standardId, topicName }) => {
         const result = {
             name: standard.name,
             description: standard.description,
-            dailyUploads: transformedDailyUploads
+            dailyUploads: transformedDailyUploads,
         };
 
         return { code: 200, data: result };
