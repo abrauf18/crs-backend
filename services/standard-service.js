@@ -123,10 +123,9 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
                 }
             }));
 
-            await Topic.bulkCreate(
-                topicsToCreate.map(name => newTopicsMap.get(name)),
-                { transaction }
-            );
+            await Promise.all(topicsToCreate.map(topic => {
+                return Topic.create({ ...newTopicsMap.get(topic), standardId }, { transaction })
+            }));
         }
 
         let newDailyUploads = [];
@@ -150,7 +149,6 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
                     resourceIdCount[resourceId] = 1;
                 }
             });
-
             if (duplicates.length > 0) {
                 const duplicateResource = await Promise.all(duplicates.map(async resourceId => {
                     const foundResource = await Resource.findByPk(resourceId, { transaction });
@@ -180,21 +178,30 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
             await Promise.all(resourcesToUpdate.map(async id => {
                 const oldUpload = oldUploadsMap.get(id);
                 const newUpload = newUploadsMap.get(id);
-                const { topicName, ...newUploadWithoutTopicName } = newUpload.toJSON();
+                const { topicName, ...newUploadWithoutTopicName } = newUpload;
     
                 // Check if any fields have changed that need updating
                 if (JSON.stringify(oldUpload.toJSON()) !== JSON.stringify(newUploadWithoutTopicName)) {
                     await oldUpload.update(newUploadWithoutTopicName, { transaction });
                 }
 
-                const existingTopicDailyUploads = await TopicDailyUpload.findAll({
-                    where: { dailyUploadId: id },
-                    include: [{ model: Topic, attributes: ['name'] }],
+                const currentDailyUpload = await DailyUpload.findOne({
+                    where: { 
+                        resourceId: id 
+                    },
+                    include: [{
+                        model: TopicDailyUpload,
+                        attributes: ['id'],
+                        include: [{
+                            model: Topic,
+                            attributes: ['name']
+                        }]
+                    }],
                     transaction
                 });
+                const existingTopicDailyUploads = currentDailyUpload.TopicDailyUploads;
 
                 const existingTopicDailyUploadsMap = new Map(existingTopicDailyUploads.map(tdu => [tdu.Topic.name, tdu]));
-
                 const newTopicTopicDailyUploadsMap = new Map(topicName.map(topic => [topic, topic]));
 
                 const topicDailyUploadsToDelete = Array.from(existingTopicDailyUploadsMap.keys()).filter(name => !newTopicTopicDailyUploadsMap.has(name));
@@ -215,7 +222,7 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
                     if (topic) {
                         await TopicDailyUpload.create({
                             topicId: topic.id,
-                            dailyUploadId: id
+                            dailyUploadId: currentDailyUpload.id
                         }, { transaction });
                     }
                 }));
@@ -227,48 +234,42 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
                 await oldUpload.destroy({ transaction });
             }));
 
-            // Create a map for new daily uploads excluding topicName
-            const newUploadsMapWithoutTopicName = new Map(
-                dailyUploads.map(upload => {
-                    const { topicName, ...uploadWithoutTopicName } = upload;
-                    return [upload.resourceId, uploadWithoutTopicName];
-                })
-            );
-            
             // Handle resources to create
-            const newDailyUploads = await DailyUpload.bulkCreate(
-                resourcesToCreate.map(id => ({ ...newUploadsMapWithoutTopicName.get(id), standardId: standard.id })),
-                { transaction }
-            );
-
-            // After creating new DailyUploads, create TopicDailyUpload entries
             await Promise.all(
-                newDailyUploads.map(async dailyUpload => {
-                    const { topicName, id } = dailyUpload.toJSON(); // Extract topic names and dailyUpload id
+                resourcesToCreate.map(async id => {
 
-                    // Create TopicDailyUpload entries for each topic
+                    const upload = newUploadsMap.get(id);
+                    // Separate topicName from daily upload
+                    const { topicName, ...uploadWithoutTopicName } = upload;
+                
+                    // Create a daily upload record
+                    const createdDailyUpload = await DailyUpload.create(
+                        { ...uploadWithoutTopicName, standardId },
+                        { transaction }
+                    );
+                
+                    // Create TopicDailyUpload records
                     await Promise.all(
-                        topicName.map(async topic => {
-                            // Find the Topic associated with the name
-                            const foundTopic = await Topic.findOne({
-                                where: {
-                                    name: topic,
-                                    standardId: standard.id
-                                },
-                                transaction
-                            });
-
-                            if (foundTopic) {
-                                // Create TopicDailyUpload record
-                                await TopicDailyUpload.create({
-                                    topicId: foundTopic.id,
-                                    dailyUploadId: id
-                                }, { transaction });
-                            }
+                        topicName.map(async (topic) => {
+                        const foundTopic = await Topic.findOne({
+                            where: {
+                            name: topic,
+                            standardId: standardId
+                            },
+                            transaction
+                        });
+                
+                        if (foundTopic) {
+                            await TopicDailyUpload.create({
+                            topicId: foundTopic.id,
+                            dailyUploadId: createdDailyUpload.id
+                            }, { transaction });
+                        }
                         })
                     );
                 })
-            );
+              );
+              
 
             const days = dailyUploads.map(upload => upload.accessibleDay);
             const minDay = Math.min(...days);
@@ -296,6 +297,7 @@ const updateStandard = async ({ standardId, name, description, topics, dailyUplo
 
         return { code: 200, data: updatedStandard };
     } catch (error) {
+        console.log('\n\n\n', error)
         await transaction.rollback();
         logger.error(error?.message || 'An error occurred while updating the standard');
         return { code: 500 };
