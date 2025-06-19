@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'studentId',
         as: 'student',
       })
+      ClassroomStudent.hasMany(models.DailyProgress, { foreignKey: 'classroomStudentId' });
       // define association here
     }
   }

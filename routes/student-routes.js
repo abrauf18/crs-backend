@@ -95,4 +95,60 @@ router.get(
     studentController.getStudentProfileSummarizedStandards
 )
 
+router.get(
+    "/getSummarizedStudentStandardsForTeacher",
+    studentValidation.getSummarizedStudentStandardsForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getSummarizedStudentStandardsForTeacher
+)
+
+router.get(
+    "/getSummarizedStudentForTeacher",
+    studentValidation.getSummarizedStudentForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getSummarizedStudentForTeacher
+)
+
+router.get(
+    "/getStudentNameEmailForTeacher",
+    studentValidation.getStudentNameEmailForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getStudentNameEmailForTeacher
+)
+
+router.post(
+    "/assignMarksToStudentAnswer",
+    studentValidation.assignMarksToStudentAnswer,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.assignMarksToStudentAnswer
+)
+
+router.get(
+    "/getStudentAssessmentAnswer",
+    studentValidation.getStudentAssessmentAnswer,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getStudentAssessmentAnswer
+)
+
+router.get(
+    "/getAllSummarizedStudentAndStandardsForTeacher",
+    studentValidation.getAllSummarizedStudentAndStandardsForTeacher,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    studentController.getAllSummarizedStudentAndStandardsForTeacher
+)
+
+// router.get(
+//     "/getAllSummarizedStudentAndStandardsForTeacherV2",
+//     studentValidation.getAllSummarizedStudentAndStandardsForTeacherV2,
+//     roleBasedAccess.setUser,
+//     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+//     studentController.getAllSummarizedStudentAndStandardsForTeacherV2
+// )
+
 module.exports = router;

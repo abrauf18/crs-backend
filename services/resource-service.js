@@ -5,7 +5,7 @@ const { Resource, Video, AssessmentResourcesDetail } = require("../models/index.
 const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
 
 const isAssessmentResource = (type) => {
-    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.EXIT_TICKET_TEST || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET;
+    return type === RESOURCE_TYPES.ASSIGNMENT || type === RESOURCE_TYPES.QUIZ || type === RESOURCE_TYPES.WORKSHEET || type === RESOURCE_TYPES.FORMATIVE_ASSESSMENT || type === RESOURCE_TYPES.SUMMARIZE_ASSESSMENT;
 };
 
 const createResource = async ({ name, url, type, topic, thumbnailURL, duration, totalMarks, deadline }) => {
@@ -18,14 +18,14 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
         });
 
         if (type === RESOURCE_TYPES.VIDEO) {
-            
+
             const videoAttributes = await Video.create({
                 resourceId: resource.id,
                 thumbnailURL,
                 duration
             })
-    
-            return { code: 200, data: {resource, videoAttributes: {...videoAttributes.dataValues}} };
+
+            return { code: 200, data: { resource, videoAttributes: { ...videoAttributes.dataValues } } };
         }
         let resourceDetails = resource.get();
         if (isAssessmentResource(type)) {
@@ -35,12 +35,15 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
                 numberOfQuestions: 1,
                 deadline: deadline
             })
-            resourceDetails = {...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions, deadline: assessmentAttributes.deadline};
+            resourceDetails = { ...resourceDetails, totalMarks: assessmentAttributes.totalMarks, numberOfQuestions: assessmentAttributes.numberOfQuestions, deadline: assessmentAttributes.deadline };
         }
 
-        return { code: 200, data: 
-            {resource: { ...resourceDetails }
-        }};
+        return {
+            code: 200, data:
+            {
+                resource: { ...resourceDetails }
+            }
+        };
 
     } catch (error) {
         console.log('\n\n\n', error)
@@ -49,7 +52,7 @@ const createResource = async ({ name, url, type, topic, thumbnailURL, duration, 
     }
 };
 
-const deleteResource = async ({resourceID}) => {
+const deleteResource = async ({ resourceID }) => {
     try {
         const resource = await Resource.findOne({
             where: { id: resourceID },
@@ -124,12 +127,14 @@ const getResources = async ({ topic, type, page, limit, orderBy, sortBy }) => {
                     ...resourceData,
                     videoId: video?.id,
                     totalMarks: AssessmentResourcesDetail?.totalMarks,
+                    deadline: AssessmentResourcesDetail?.deadline
                 };
             })
         }
 
         return { code: 200, data: res };
     } catch (error) {
+        console.log('\n\n\n', error);
         logger.error(error?.message || 'An error occurred, but no error message was provided');
         return { code: 500 };
     }
@@ -142,9 +147,15 @@ const getResourcesCount = async ({ topic }) => {
             [RESOURCE_TYPES.SLIDESHOW]: 0,
             [RESOURCE_TYPES.VIDEO]: 0,
             [RESOURCE_TYPES.WORKSHEET]: 0,
-            [RESOURCE_TYPES.EXIT_TICKET_TEST]: 0,
             [RESOURCE_TYPES.QUIZ]: 0,
-            [RESOURCE_TYPES.ASSIGNMENT]: 0
+            [RESOURCE_TYPES.ASSIGNMENT]: 0,
+            [RESOURCE_TYPES.LAB]: 0,
+            [RESOURCE_TYPES.STATION]: 0,
+            [RESOURCE_TYPES.ACTIVITY]: 0,
+            [RESOURCE_TYPES.GUIDED_NOTE]: 0,
+            [RESOURCE_TYPES.FORMATIVE_ASSESSMENT]: 0,
+            [RESOURCE_TYPES.SUMMARIZE_ASSESSMENT]: 0,
+            [RESOURCE_TYPES.DATA_TRACKER]: 0,
         };
 
         // Get the individual counts of resources by type for a specific topic
@@ -161,15 +172,21 @@ const getResourcesCount = async ({ topic }) => {
         });
 
         // Get the total count of all resources for a specific topic
-        const totalCount = await Resource.count({ where: { topic: {[Op.iLike]: topic} } }); // Add the where clause
+        const totalCount = await Resource.count({ where: { topic: { [Op.iLike]: topic } } }); // Add the where clause
 
         const res = {
             slideshowCount: resourceCountsObject[RESOURCE_TYPES.SLIDESHOW],
             videoCount: resourceCountsObject[RESOURCE_TYPES.VIDEO],
             worksheetCount: resourceCountsObject[RESOURCE_TYPES.WORKSHEET],
-            exitTicketTestCount: resourceCountsObject[RESOURCE_TYPES.EXIT_TICKET_TEST],
             quizCount: resourceCountsObject[RESOURCE_TYPES.QUIZ],
             assignmentCount: resourceCountsObject[RESOURCE_TYPES.ASSIGNMENT],
+            labCount: resourceCountsObject[RESOURCE_TYPES.LAB],
+            stationCount: resourceCountsObject[RESOURCE_TYPES.STATION],
+            activityCount: resourceCountsObject[RESOURCE_TYPES.ACTIVITY],
+            guidedNoteCount: resourceCountsObject[RESOURCE_TYPES.GUIDED_NOTE],
+            formativeAssessmentCount: resourceCountsObject[RESOURCE_TYPES.FORMATIVE_ASSESSMENT],
+            summarizeAssessmentCount: resourceCountsObject[RESOURCE_TYPES.SUMMARIZE_ASSESSMENT],
+            dataTrackerCount: resourceCountsObject[RESOURCE_TYPES.DATA_TRACKER],
             totalCount,
         };
 
@@ -180,7 +197,7 @@ const getResourcesCount = async ({ topic }) => {
     }
 };
 
-const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => {
+const updateResource = async ({ resourceId, name, type, topic, totalMarks, deadline }) => {
     try {
         const resource = await Resource.findOne({
             where: { id: resourceId },
@@ -199,7 +216,7 @@ const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => 
             if (!assessmentResourceDetail) {
                 return { code: 404, message: 'AssessmentResourcesDetail not found' };
             }
-            await assessmentResourceDetail.update({ totalMarks });
+            await assessmentResourceDetail.update({ totalMarks, deadline });
         }
 
         await resource.update({ name, type, topic });
@@ -211,7 +228,7 @@ const updateResource = async ({ resourceId, name, type, topic, totalMarks }) => 
     }
 };
 
-const getResource = async ({resourceID}) => {
+const getResource = async ({ resourceID }) => {
     try {
         const resource = await Resource.findOne({
             where: { id: resourceID },
@@ -222,13 +239,13 @@ const getResource = async ({resourceID}) => {
         const simplifiedResource = resource.get();
         if (isAssessmentResource(resource.type)) {
             const assessmentResourcesDetail = await resource.getAssessmentResourcesDetail();
-            return { 
-                code: 200, 
+            return {
+                code: 200,
                 data: {
                     ...simplifiedResource,
                     totalMarks: assessmentResourcesDetail?.totalMarks || 0,
-                } 
-            };        
+                }
+            };
         }
         return { code: 200, data: resource };
     } catch (error) {
@@ -283,7 +300,7 @@ const getResourcesByName = async ({ resourceName, resourceType }) => {
                 },
             ],
         });
-        
+
         const transformedResources = resources.map(resource => {
             const { video, createdAt, updatedAt, ...resourceData } = resource.get();
             return {

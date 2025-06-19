@@ -1,14 +1,14 @@
 const bcrypt = require("bcrypt");
 const otpGenerator = require("otp-generator");
-
 const jwt = require("../utils/jwt.js");
-const {logger} = require("../Logs/logger.js");
+const { logger } = require("../Logs/logger.js");
 const sendEmail = require("../utils/email.js");
 const ROLES = require("../models/roles/index.js");
+// @ts-ignore
 const { User, School, Invite, OTP_code, Invite_token } = require("../models/index.js");
 const { genericSignupInvitation, teacherInvitation, verficationOTP } = require("./helper/templates/index.js");
 
-const inviteUser = async ({ name, email, role, user }) => {
+const inviteUser = async ({ name, email, role, user, schoolId }) => {
     try {
 
         if ((user.role == ROLES.SCHOOL && (role == ROLES.ADMIN || role == ROLES.SCHOOL))
@@ -16,7 +16,12 @@ const inviteUser = async ({ name, email, role, user }) => {
             return { code: 403 };
         }
 
-        const token = jwt.generateAccessToken({ name, email, role });
+        const tokenPayload = { name, email, role };
+        if (schoolId) {
+            tokenPayload.schoolId = schoolId;
+        }
+
+        const token = jwt.generateAccessToken(tokenPayload);
 
         if (!token) {
             return { code: 500 };
@@ -88,13 +93,14 @@ const createInvitedUser = async ({ name, email, password, token }) => {
         const result = jwt.verifyAccessToken(token);
 
         if (result.success) {
-            const hashedPassword = bcrypt.hashSync(password, 10);
-
             const user = await User.create({
                 name,
                 email,
+                // @ts-ignore
                 role: result.decoded.role,
-                password: hashedPassword,
+                // @ts-ignore
+                school_id: result.decoded.schoolId,
+                password,
             });
 
             if (user) {
@@ -118,7 +124,7 @@ const createInvitedUser = async ({ name, email, password, token }) => {
     }
 };
 
-const createUser = async ({ name, password, email, role }) => {
+const createUser = async ({ name, password, email, role, schoolId }) => {
     try {
         const isEmailRegisterd = await User.findOne({ where: { email } });
 
@@ -126,13 +132,12 @@ const createUser = async ({ name, password, email, role }) => {
             return { code: 403 };
         }
 
-        const hashedPassword = bcrypt.hashSync(password, 10);
-
         const user = await User.create({
             name,
             email,
             role,
-            password: hashedPassword,
+            password,
+            school_id: schoolId,
         });
 
         if (user) {
@@ -152,6 +157,10 @@ const authenticateUser = async ({ email, password }) => {
             return { code: 404 };
         }
 
+        // const result = await user.comparePassword(password)
+        // if (result.error === true){
+        //     return { code: 409 }
+        // }
         if (!bcrypt.compareSync(password, user.password)) {
             return { code: 409 };
         }
@@ -345,6 +354,7 @@ const verifyOTP = async ({ userId, OTP }) => {
         if (forgotRequest) {
             const currentDate = new Date();
             const createdAt = forgotRequest.createdAt;
+            // @ts-ignore
             const timeDifference = currentDate - createdAt;
             const minutesDifference = timeDifference / (1000 * 60);
             const isWithinLast5Minutes = minutesDifference <= 5;
@@ -371,7 +381,7 @@ const resetPassword = async ({ userId, newPassword }) => {
             return { code: 404 }
         }
 
-        user.password = await bcrypt.hash(newPassword, 10);
+        user.password = newPassword;
         await user.save();
 
         return { code: 200 }

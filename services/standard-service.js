@@ -1,103 +1,294 @@
-const { Sequelize } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { logger } = require("../Logs/logger.js");
 // @ts-ignore
-const { Standard, DailyUpload, Resource, Video } = require("../models/index.js");
-const { RESOURCE_TYPES } = require("../utils/enumTypes.js");
+const { sequelize,Standard, DailyUpload, Resource, Video, AssessmentResourcesDetail, ClassroomCourses, Classroom, Topic, TopicDailyUpload } = require("../models/index.js");
+const { CLASSROOM_STATUS } = require("../utils/enumTypes.js");
 
-const createStandard = async ({ name, description, dailyUploads }) => {
+const createStandard = async ({ name, description, topics, dailyUploads }) => {
+    const transaction = await sequelize.transaction();
     try {
-        const dates = dailyUploads.map(upload => new Date(upload.accessDate));
-        const minDate = new Date(Math.min.apply(null, dates));
-        const maxDate = new Date(Math.max.apply(null, dates));
+        const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
+        if (totalWeightage !== 100) {
+            await transaction.rollback();
+            return { code: 400, message: `The sum of weightages is ${totalWeightage}, it must be 100` };
+        }
 
-        // @ts-ignore
-        const diffTime = Math.abs(maxDate - minDate);
-        const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
+        const resourceIdCount = {};
+        const duplicates = [];
+        dailyUploads.forEach(upload => {
+            const { resourceId } = upload;
+            if (resourceIdCount[resourceId]) {
+                resourceIdCount[resourceId]++;
+                if (resourceIdCount[resourceId] === 2) {
+                    duplicates.push(resourceId);
+                }
+            } else {
+                resourceIdCount[resourceId] = 1;
+            }
+        });
 
-        const createdStandard = await Standard.create({name, description, courseLength});
-        
-        // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
-        //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
-        // }));
+        if (duplicates.length > 0) {
+            const duplicateResource = await Promise.all(duplicates.map(async resourceId => {
+                const foundResource = await Resource.findByPk(resourceId, { transaction });
+                return foundResource.name;
+            }));
+            await transaction.rollback();
+            return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
+        }
 
-        // const duplicates = existingResourceInStandards.filter(Boolean);
+        const days = dailyUploads.map(upload => upload.accessibleDay);
+        const minDay = Math.min(...days);
+        const maxDay = Math.max(...days);
 
-        // if (duplicates.length > 0) {
-        //     const duplicateResourceIds = duplicates.map(resource => resource.resourceId);
-        //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResourceIds.join(', ')}`};
-        // }
+        const dayDiff = Math.abs(maxDay - minDay);
+        const courseLength = (dayDiff / 7).toFixed(1) + " week";
 
-        const createdDailyUploads = await Promise.all(dailyUploads.map(upload => {
-            return DailyUpload.create({ ...upload, standardId: createdStandard.id });
-        }));
-    
+        const createdStandard = await Standard.create({ name, description, courseLength }, { transaction });
+
+        const createdTopics = await Promise.all(topics.map(topic => 
+            Topic.create({ name: topic.name, description: topic.description, standardId: createdStandard.id }, { transaction })
+        ));
+
+        const topicIdMap = createdTopics.reduce((map, topic) => {
+            map[topic.name] = topic.id;
+            return map;
+        }, {});
+
+        const dailyUploadPromises = dailyUploads.map(async upload => {
+            const { topicName, ...uploadData } = upload;
+            const createdDailyUpload = await DailyUpload.create({ ...uploadData, standardId: createdStandard.id }, { transaction });
+
+            // Populate TopicDailyUpload table
+            const topicDailyUploadPromises = topicName.map(async topic => {
+                const topicId = topicIdMap[topic];
+                if (topicId && createdDailyUpload.id) {
+                    await TopicDailyUpload.create({ topicId, dailyUploadId: createdDailyUpload.id }, { transaction });
+                }
+            });
+            await Promise.all(topicDailyUploadPromises);
+
+            return createdDailyUpload;
+        });
+
+        const createdDailyUploads = await Promise.all(dailyUploadPromises);
+
+        await transaction.commit();
+
         const standard = {
             ...createdStandard.toJSON(),
-            dailyUploads: createdDailyUploads.map(upload => upload.toJSON())
+            dailyUploads: createdDailyUploads
         };
 
         return { code: 200, data: standard };
     } catch (error) {
-        logger.error(error?.message || 'An error occurred while updating the standard');
+        await transaction.rollback();
+        logger.error(error?.message || 'An error occurred while creating the standard');
         return { code: 500 };
     }
 };
 
-const updateStandard = async ({ standardId, name, description, dailyUploads }) => {
+const updateStandard = async ({ standardId, name, description, topics, dailyUploads }) => {
+    const transaction = await sequelize.transaction();
     try {
-        const standard = await Standard.findByPk(standardId);
+        const standard = await Standard.findByPk(standardId, { transaction });
         if (!standard) {
+            await transaction.rollback();
             return { code: 404 };
         }
 
-        if (name) {
-            await standard.update( {name} );
-        }
+        if (topics) {
+            const existingTopics = await Topic.findAll({
+                where: { standardId: standardId },
+                transaction
+            });
 
-        if (description) {
-            await standard.update( {description} );
+            const existingTopicsMap = new Map(existingTopics.map(topic => [topic.name, topic]));
+
+            const newTopicsMap = new Map(topics.map(topic => [topic.name, topic]));
+
+            const topicsToDelete = Array.from(existingTopicsMap.keys()).filter(name => !newTopicsMap.has(name));
+            const topicsToUpdate = Array.from(existingTopicsMap.keys()).filter(name => newTopicsMap.has(name));
+            const topicsToCreate = Array.from(newTopicsMap.keys()).filter(name => !existingTopicsMap.has(name));
+
+            await Promise.all(topicsToDelete.map(async name => {
+                const topicToDelete = existingTopicsMap.get(name);
+                await topicToDelete.destroy({ transaction });
+            }));
+
+            await Promise.all(topicsToUpdate.map(async name => {
+                const existingTopic = existingTopicsMap.get(name);
+                const newTopic = newTopicsMap.get(name);
+                if (JSON.stringify(existingTopic.toJSON()) !== JSON.stringify(newTopic)) {
+                    await existingTopic.update(newTopic, { transaction });
+                }
+            }));
+
+            await Promise.all(topicsToCreate.map(topic => {
+                return Topic.create({ ...newTopicsMap.get(topic), standardId }, { transaction })
+            }));
         }
 
         let newDailyUploads = [];
         if (dailyUploads) {
-            // const existingResourceInStandards = await Promise.all(dailyUploads.map(upload => {
-            //     return DailyUpload.findOne({ where: { resourceId: upload.resourceId } });
-            // }));
-    
-            // const duplicates = existingResourceInStandards.filter(Boolean);
-    
-            // if (duplicates.length > 0) {
-            //     const duplicateResource = await Promise.all(duplicates.map(async resource => {
-            //         const foundResource = await Resource.findByPk(resource.resourceId);
-            //         return foundResource.name;
-            //     }));
-            //     return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
-            // }
-
-            const oldDailyUploads = await standard.getDailyUploads();
-
-            for (let dailyUpload of oldDailyUploads) {
-                await dailyUpload.destroy();
+            const totalWeightage = dailyUploads.reduce((acc, curr) => acc + Number(curr.weightage), 0);
+            if (totalWeightage !== 100) {
+                await transaction.rollback();
+                return { code: 400, message: `The sum of weightages is ${totalWeightage}, it must be 100` };
             }
 
-            // newDailyUploads = await Promise.all(dailyUploads.map(upload => {
-            //     return DailyUpload.create({ ...upload, standardId: standard.id });
-            // }));
-            newDailyUploads = await DailyUpload.bulkCreate(
-                dailyUploads.map((upload) => ({ ...upload, standardId: standard.id }))
-            );
+            const resourceIdCount = {};
+            const duplicates = [];
+            dailyUploads.forEach(upload => {
+                const { resourceId } = upload;
+                if (resourceIdCount[resourceId]) {
+                    resourceIdCount[resourceId]++;
+                    if (resourceIdCount[resourceId] === 2) {
+                        duplicates.push(resourceId);
+                    }
+                } else {
+                    resourceIdCount[resourceId] = 1;
+                }
+            });
+            if (duplicates.length > 0) {
+                const duplicateResource = await Promise.all(duplicates.map(async resourceId => {
+                    const foundResource = await Resource.findByPk(resourceId, { transaction });
+                    return foundResource.name;
+                }));
+                await transaction.rollback();
+                return { code: 409, message: `The following resources already exist in the standard: ${duplicateResource.join(', ')}`};
+            }
 
-            const dates = dailyUploads.map(upload => new Date(upload.accessDate));
-            const minDate = new Date(Math.min.apply(null, dates));
-            const maxDate = new Date(Math.max.apply(null, dates));
+            const oldDailyUploads = await DailyUpload.findAll({
+                where: { 
+                    standardId: standardId, 
+                }, 
+                transaction
+            });
 
-            // @ts-ignore
-            const diffTime = Math.abs(maxDate - minDate);
-            const courseLength = (diffTime / (1000 * 60 * 60 * 24 * 7)).toFixed(1) + " week";
-            await standard.update( {courseLength} );
+            // Create maps for quick lookup
+            const oldUploadsMap = new Map(oldDailyUploads.map(upload => [upload.resourceId, upload]));
+            const newUploadsMap = new Map(dailyUploads.map(upload => [upload.resourceId, upload]));
 
-            // await standard.setDailyUploads(newDailyUploads);
+            // Identify resources to delete and update
+            const resourcesToDelete = Array.from(oldUploadsMap.keys()).filter(id => !newUploadsMap.has(id));
+            const resourcesToUpdate = Array.from(oldUploadsMap.keys()).filter(id => newUploadsMap.has(id));
+            const resourcesToCreate = Array.from(newUploadsMap.keys()).filter(id => !oldUploadsMap.has(id));
+
+            // Handle resources to update
+            await Promise.all(resourcesToUpdate.map(async id => {
+                const oldUpload = oldUploadsMap.get(id);
+                const newUpload = newUploadsMap.get(id);
+                const { topicName, ...newUploadWithoutTopicName } = newUpload;
+    
+                // Check if any fields have changed that need updating
+                if (JSON.stringify(oldUpload.toJSON()) !== JSON.stringify(newUploadWithoutTopicName)) {
+                    await oldUpload.update(newUploadWithoutTopicName, { transaction });
+                }
+
+                const currentDailyUpload = await DailyUpload.findOne({
+                    where: { 
+                        resourceId: id 
+                    },
+                    include: [{
+                        model: TopicDailyUpload,
+                        attributes: ['id'],
+                        include: [{
+                            model: Topic,
+                            attributes: ['name']
+                        }]
+                    }],
+                    transaction
+                });
+                const existingTopicDailyUploads = currentDailyUpload.TopicDailyUploads;
+
+                const existingTopicDailyUploadsMap = new Map(existingTopicDailyUploads.map(tdu => [tdu.Topic.name, tdu]));
+                const newTopicTopicDailyUploadsMap = new Map(topicName.map(topic => [topic, topic]));
+
+                const topicDailyUploadsToDelete = Array.from(existingTopicDailyUploadsMap.keys()).filter(name => !newTopicTopicDailyUploadsMap.has(name));
+                const topicDailyUploadsToCreate = Array.from(newTopicTopicDailyUploadsMap.keys()).filter(name => !existingTopicDailyUploadsMap.has(name));
+
+                // Delete old topic associations
+                await Promise.all(topicDailyUploadsToDelete.map(async name => {
+                    const topicToDelete = existingTopicDailyUploadsMap.get(name);
+                    await topicToDelete.destroy({ transaction });
+                }));
+
+                // Create new topic associations
+                await Promise.all(topicDailyUploadsToCreate.map(async name => {
+                    const topic = await Topic.findOne({
+                        where: { name, standardId: standardId },
+                        transaction
+                    });
+                    if (topic) {
+                        await TopicDailyUpload.create({
+                            topicId: topic.id,
+                            dailyUploadId: currentDailyUpload.id
+                        }, { transaction });
+                    }
+                }));
+            }));
+
+            // Handle resources to delete
+            await Promise.all(resourcesToDelete.map(async id => {
+                const oldUpload = oldUploadsMap.get(id);
+                await oldUpload.destroy({ transaction });
+            }));
+
+            // Handle resources to create
+            await Promise.all(
+                resourcesToCreate.map(async id => {
+
+                    const upload = newUploadsMap.get(id);
+                    // Separate topicName from daily upload
+                    const { topicName, ...uploadWithoutTopicName } = upload;
+                
+                    // Create a daily upload record
+                    const createdDailyUpload = await DailyUpload.create(
+                        { ...uploadWithoutTopicName, standardId },
+                        { transaction }
+                    );
+                
+                    // Create TopicDailyUpload records
+                    await Promise.all(
+                        topicName.map(async (topic) => {
+                        const foundTopic = await Topic.findOne({
+                            where: {
+                            name: topic,
+                            standardId: standardId
+                            },
+                            transaction
+                        });
+                
+                        if (foundTopic) {
+                            await TopicDailyUpload.create({
+                            topicId: foundTopic.id,
+                            dailyUploadId: createdDailyUpload.id
+                            }, { transaction });
+                        }
+                        })
+                    );
+                })
+              );
+              
+
+            const days = dailyUploads.map(upload => upload.accessibleDay);
+            const minDay = Math.min(...days);
+            const maxDay = Math.max(...days);
+
+            const dayDiff = Math.abs(maxDay - minDay);
+            const courseLength = (dayDiff / 7).toFixed(1) + " week";
+            await standard.update({ courseLength }, { transaction });
         }
+
+        if (name) {
+            await standard.update({ name }, { transaction });
+        }
+
+        if (description) {
+            await standard.update({ description }, { transaction });
+        }
+
+        await transaction.commit();
 
         const updatedStandard = {
             ...standard.toJSON(),
@@ -106,7 +297,8 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
 
         return { code: 200, data: updatedStandard };
     } catch (error) {
-        console.log('\n\n\n\n', error)
+        console.log('\n\n\n', error)
+        await transaction.rollback();
         logger.error(error?.message || 'An error occurred while updating the standard');
         return { code: 500 };
     }
@@ -114,63 +306,97 @@ const updateStandard = async ({ standardId, name, description, dailyUploads }) =
 
 const getStandard = async ({ standardId }) => {
     try {
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
         const standard = await Standard.findByPk(standardId, {
             include: [{
                 model: DailyUpload,
                 as: 'dailyUploads',
-                attributes: ['accessDate', 'weightage'],
+                attributes: ['accessibleDay', 'weightage'],
                 include: [{
-                    model: Resource,
-                    as: 'resource',
-                    attributes: ['id', 'name', 'type', 'topic'],
-                    include: [{
-                        model: Video,
-                        as: 'video',
-                        attributes: ['id']
-                    }]
+                        model: TopicDailyUpload,
+                        attributes: ['id'],
+                        include: [{
+                            model: Topic,
+                            attributes: ['name']
+                        }]
+                    },
+                    {
+                        model: Resource,
+                        as: 'resource',
+                        attributes: ['id', 'name', 'type', 'topic', 'url'],
+                        include: [{
+                            model: Video,
+                            as: 'video',
+                            attributes: ['id']
+                        }, {
+                            model: AssessmentResourcesDetail,
+                            as: 'AssessmentResourcesDetail',
+                            attributes: ['id', 'totalMarks', 'deadline']
+                        }]
                 }]
+            },
+            {
+                model: Topic,
+                attributes: ['id', 'name', 'description'],
             }]
         });
 
         if (!standard) {
-            return { code: 404, message: 'Standard not found' };
+            return { code: 404, message: 'Topic or Daily Upload Resource not found' };
         }
 
-        // Transform the data
-        const uploadsByDate = standard.dailyUploads.reduce((result, upload) => {
-            const date = upload.accessDate;
-            if (!result[date]) {
-                result[date] = [];
+        const topicsDescriptions = standard.Topics.map(topic => ({
+            topicName: topic.name,
+            description: topic.description
+        }));
+
+        const uploadsByDay = {};
+
+        standard.dailyUploads.forEach(dailyUpload => {
+            const day = dailyUpload.accessibleDay;
+
+            if (!uploadsByDay[day]) {
+                uploadsByDay[day] = { topicName: [], resources: [] };
             }
-            if (upload.resource) {
-                result[date].push({ resource: upload.resource, weightage: upload.weightage });
+
+            // Add the topic names to the Set to ensure uniqueness
+            dailyUpload.TopicDailyUploads.forEach(topicDailyUpload => {
+                uploadsByDay[day].topicName.push(topicDailyUpload.Topic.name);
+            });
+
+            if (dailyUpload.resource) {
+                uploadsByDay[day].resources.push({
+                    resource: dailyUpload.resource,
+                    weightage: dailyUpload.weightage
+                });
             }
-            return result;
-        }, {});
+        });
 
-        // const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
-        //     accessDate: date,
-        //     resources: uploadsByDate[date]
-        // }));
-
-        // as required on frontend
-        const transformedDailyUploads = Object.keys(uploadsByDate).sort().map(date => ({
-            date: date,
-            topics: uploadsByDate[date].map(({ resource, weightage }) => ({
-
+        const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
+            accessibleDay: parseInt(day, 10),
+            topicName: Array.from(uploadsByDay[day].topicName).map(name => ({ value: name })),
+            topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
                 resourceId: resource.id,
                 name: resource.name,
                 type: resource.type,
                 topic: resource.topic,
                 videoId: resource.video ? resource.video.id : null,
-                weightage: weightage || 0
+                weightage: weightage || 0,
+                deadline: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.deadline : null,
+                totalMarks: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.totalMarks : null,
+                URL: resource.url
             }))
         }));
 
         const result = {
             name: standard.name,
             description: standard.description,
-            dailyUploads: transformedDailyUploads
+            dailyUploads: transformedDailyUploads,
+            topicsDescriptions: topicsDescriptions,
         };
 
         return { code: 200, data: result };
@@ -207,11 +433,19 @@ const getAllSummarizedStandards = async () => {
                         WHERE "du"."standardId" = "Standard"."id" AND "r"."type" != 'video'
                     )`),
                     'totalNonVideoUploads'
+                ],
+                [
+                    Sequelize.literal(`(
+                        SELECT COUNT(*)
+                        FROM "Topics"
+                        WHERE "Topics"."standardId" = "Standard"."id"
+                    )`),
+                    'topicCount'
                 ]
             ]
         });
 
-        return { code: 200, data: {standardsCount: totalStandards, allStandards: standards} };
+        return { code: 200, data: { standardsCount: totalStandards, allStandards: standards } };
 
     } catch (error) {
         console.log('\n\n\n\n', error);
@@ -220,51 +454,18 @@ const getAllSummarizedStandards = async () => {
     }
 };
 
-// const getAllSummarizedStandards = async () => {
-//     try {
-//         const totalStandards = await Standard.count();
-
-//         const standards = await Standard.findAll({
-//             include: [
-//                 {
-//                     model: DailyUpload,
-//                     as: 'dailyUploads',
-//                     include: [
-//                         {
-//                             model: Resource,
-//                             as: 'resource'
-//                         }
-//                     ]
-//                 }
-//             ]
-//         });
-
-//         const standardSummaries = standards.map(standard => {
-//             const dailyUploads = standard.dailyUploads;
-//             const resources = dailyUploads.map(upload => upload.resource);
-//             const totalVideoUploads = resources.filter(resource => resource.type === RESOURCE_TYPES.VIDEO).length;
-//             const totalNonVideoUploads = resources.filter(resource => resource.type !== RESOURCE_TYPES.VIDEO).length;
-
-//             return {
-//                 id: standard.id,
-//                 name: standard.name,
-//                 courseLength: standard.courseLength,
-//                 totalVideoUploads,
-//                 totalNonVideoUploads
-//             };
-//         });
-
-//         return { code: 200, data: {standardsCount: totalStandards, allStandards: standardSummaries} };
-//     } catch (error) {
-//         console.log('\n\n\n\n', error);
-//         logger.error(error?.message || 'An error occurred while fetching the summarized standards');
-//         return { code: 500 };
-//     }
-// };
-
-const deleteStandards = async () => {
+const deleteStandard = async ({ standardId }) => {
     try {
-        await Standard.destroy({ where: {} });
+        const exisitingStandard = await Standard.findByPk(standardId);
+        if (!exisitingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+        
+        await Standard.destroy({ 
+            where: {
+                id: standardId
+            } 
+        });
         return { code: 200 };
     } catch (error) {
         logger.error(error?.message || 'An error occurred while deleting the standards');
@@ -296,6 +497,14 @@ const getSummarizedStandard = async ({ standardId }) => {
                         WHERE "du"."standardId" = "Standard"."id" AND "r"."type" != 'video'
                     )`),
                     'totalNonVideoUploads'
+                ],
+                [
+                    Sequelize.literal(`(
+                        SELECT COUNT(*)
+                        FROM "Topics"
+                        WHERE "Topics"."standardId" = "Standard"."id"
+                    )`),
+                    'topicCount'
                 ]
             ]
         });
@@ -309,11 +518,242 @@ const getSummarizedStandard = async ({ standardId }) => {
     }
 }
 
+const getStandardTopics = async ({ standardId }) => {
+    try {
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const standard = await Standard.findByPk(standardId, {
+            include: [{
+                model: Topic,
+                attributes: ['id', 'name', 'description'],
+                include: {
+                    model: TopicDailyUpload,
+                    attributes: ['id'],
+                    include: {
+                        model: DailyUpload,
+                        attributes: ['accessibleDay', 'weightage'],
+                        include: {
+                            model: Resource,
+                            as: 'resource',
+                            attributes: ['id', 'name', 'type', 'topic', 'url'],
+                            include: [{
+                                model: Video,
+                                as: 'video',
+                                attributes: ['id']
+                            }, {
+                                model: AssessmentResourcesDetail,
+                                as: 'AssessmentResourcesDetail',
+                                attributes: ['id', 'totalMarks', 'deadline']
+                            }]
+                        }
+                    }
+                }
+            }]
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Topic or Daily Upload Resource not found' };
+        }
+
+        const topicResourceCounts = {};
+        let totalVideoCount = 0;
+        let totalNonVideoCount = 0;
+
+        standard.Topics.forEach(topic => {
+            const topicName = topic.name;
+            if (!topicResourceCounts[topicName]) {
+                topicResourceCounts[topicName] = { videoCount: 0, nonVideoCount: 0 };
+            }
+
+            topic.TopicDailyUploads.forEach(topicDailyUpload => {
+                const { DailyUpload } = topicDailyUpload;
+                if (DailyUpload.resource.video) {
+                    topicResourceCounts[topicName].videoCount++;
+                    totalVideoCount++;
+                } else {
+                    topicResourceCounts[topicName].nonVideoCount++;
+                    totalNonVideoCount++;
+                }
+            });
+        });
+
+        const topicResourceCountsArray = Object.entries(topicResourceCounts).map(([topicName, counts]) => ({
+            topicName,
+            ...counts
+        }));
+
+        const totalTopics = topicResourceCountsArray.length;
+
+        return { 
+            code: 200, 
+            data: {
+                name: standard.name,
+                description: standard.description,
+                totalTopics,
+                topicResourceCounts: topicResourceCountsArray
+            } 
+        };
+    } catch (error) {
+        console.error(error);
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
+const getTopicResources = async ({ standardId, topicName }) => {
+    try {
+        const existingStandard = await Standard.findByPk(standardId);
+        if (!existingStandard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const standard = await Standard.findByPk(standardId, {
+            include: {
+                model: Topic,
+                where: { 
+                    name: topicName 
+                },
+                attributes: ['id', 'name', 'description'],
+                include: {
+                    model: TopicDailyUpload,
+                    attributes: ['id'],
+                    include: {
+                        model: DailyUpload,
+                        attributes: ['accessibleDay', 'weightage'],
+                        include: {
+                            model: Resource,
+                            as: 'resource',
+                            attributes: ['id', 'name', 'type', 'topic', 'url'],
+                            include: [{
+                                model: Video,
+                                as: 'video',
+                                attributes: ['id']
+                            }, {
+                                model: AssessmentResourcesDetail,
+                                as: 'AssessmentResourcesDetail',
+                                attributes: ['id', 'totalMarks', 'deadline']
+                            }]
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!standard) {
+            return { code: 404, message: 'Topic or Daily Upload Resource not found' };
+        }
+
+        const topic = standard.Topics[0];
+
+        // Transform the daily uploads by day
+        const uploadsByDay = topic.TopicDailyUploads.reduce((result, topicDailyUpload) => {
+            const { DailyUpload: dailyUpload } = topicDailyUpload;
+            const day = dailyUpload.accessibleDay;
+
+            if (!result[day]) {
+                result[day] = { topicName: topic.name, resources: [] };
+            }
+
+            if (dailyUpload.resource) {
+                result[day].resources.push({ resource: dailyUpload.resource, weightage: dailyUpload.weightage });
+            }
+            return result;
+        }, {});
+
+        const transformedDailyUploads = Object.keys(uploadsByDay).sort().map(day => ({
+            day: parseInt(day, 10),
+            topicName: topicName,
+            topics: uploadsByDay[day].resources.map(({ resource, weightage }) => ({
+                resourceId: resource.id,
+                name: resource.name,
+                type: resource.type,
+                topic: resource.topic,
+                videoId: resource.video ? resource.video.id : null,
+                weightage: weightage || 0,
+                deadline: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.deadline : null,
+                totalMarks: resource.AssessmentResourcesDetail ? resource.AssessmentResourcesDetail.totalMarks : null,
+                URL: resource.url
+            }))
+        }));
+
+        const result = {
+            name: topic.name,
+            description: topic.description,
+            dailyUploads: transformedDailyUploads,
+        };
+
+        return { code: 200, data: result };
+    } catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard');
+        return { code: 500 };
+    }
+};
+
+const getStandardClassroomsAndTeacherClassrooms = async ({ standardId, teacherId }) => {
+    try {
+        const standard = await Standard.findByPk(standardId);
+        if (!standard) {
+            return { code: 404, message: 'Standard not found' };
+        }
+
+        const classCourses = await ClassroomCourses.findAll({
+            where: { 
+                standardId 
+            },
+            attributes: ['id', 'startDate'],
+            include: [{
+                model: Classroom,
+                as: 'classroom',
+                attributes: ['id', 'name']
+            }]
+        }); 
+
+        const transformedClassCourses = classCourses?.map(course => ({
+            id: course.id,
+            startDate: course.startDate,
+            classroomId: course.classroom.id,
+            classroomName: course.classroom.name
+        }));
+
+        const teacherClassrooms = await Classroom.findAll({
+            where: { 
+                teacherId: teacherId,
+                status: CLASSROOM_STATUS.ACTIVE
+            },
+            attributes: ['id', 'name']
+        });
+
+        const options = teacherClassrooms?.map(classroom => {
+            return { label: classroom.id, value: classroom.name };
+        });
+
+        return { 
+            code: 200, 
+            data: { 
+                standard, 
+                classCourses: transformedClassCourses || [], 
+                options 
+            } 
+        };
+    }
+    catch (error) {
+        console.log('\n\n\n\n', error)
+        logger.error(error?.message || 'An error occurred while fetching the standard classrooms');
+        return { code: 500 };
+    }
+}
 module.exports = {
-  createStandard,
-  updateStandard,
-  getStandard,
-  getAllSummarizedStandards,
-  deleteStandards,
-  getSummarizedStandard
+    createStandard,
+    updateStandard,
+    getStandard,
+    getAllSummarizedStandards,
+    deleteStandard,
+    getSummarizedStandard,
+    getStandardTopics,
+    getTopicResources,
+    getStandardClassroomsAndTeacherClassrooms
 };

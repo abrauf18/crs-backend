@@ -3,8 +3,8 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createClassroom = async (req, res) => {
     try {
-        const { name, teacherId } = req.body;
-        const reply = await classroomService.createClassroom({ name, teacherId });
+        const { name, teacherId, schoolId } = req.body;
+        const reply = await classroomService.createClassroom({ name, teacherId, schoolId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -57,8 +57,8 @@ const getAllClassroomsOfTeacher = async (req, res) => {
 
 const assignStandardToClassrooms = async (req, res) => {
     try {
-        const { classroomIds, standardId } = req.body;
-        const reply = await classroomService.assignStandardToClassrooms({ classroomIds, standardId });
+        const { classCourses, standardId } = req.body;
+        const reply = await classroomService.assignStandardToClassrooms({ classCourses, standardId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -137,7 +137,7 @@ const deleteClassCourse = async (req, res) => {
 
 const getClassroomStudents = async (req, res) => {
     try {
-        const { classroomid, page, limit } = req.headers;
+        const { classroomid, page = 1, limit = 10 } = req.headers;
         const reply = await classroomService.getClassroomStudents({ classroomId: classroomid, page, limit });
 
         if (reply.code == 200) {
@@ -157,14 +157,18 @@ const getClassroomStudents = async (req, res) => {
 
 const addStudentToClassroom = async (req, res) => {
     try {
-        const { classroomId, studentId } = req.body;
-        const reply = await classroomService.addStudentToClassroom({ classroomId, studentId });
+        const { classroomId, email } = req.body;
+        const { school_id: schoolId } = req.user;
+        const reply = await classroomService.addStudentToClassroom({ classroomId, email, schoolId });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
         else if (reply.code == 400) {
             return handleErrorResponse(res, 400, reply.message);
+        }
+        else if (reply.code == 403) {
+            return handleErrorResponse(res, 403, reply.message);
         }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Classroom not found');
@@ -180,6 +184,7 @@ const addStudentToClassroom = async (req, res) => {
         }
     }
     catch (error) {
+        console.log('\n\n\n\n', error)
         return handleInternalServerError(res);
     }
 }
@@ -206,8 +211,8 @@ const removeStudentFromClassroom = async (req, res) => {
 
 const updateClassroomStudent = async (req, res) => {
     try {
-        const { classroomStudentId, name, email, classroomId, image } = req.body;
-        const reply = await classroomService.updateClassroomStudent({ classroomStudentId, name, email, classroomId, image });
+        const { studentId, name, email, classroomId, image } = req.body;
+        const reply = await classroomService.updateClassroomStudent({ studentId, name, email, classroomId, image });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
@@ -230,6 +235,76 @@ const updateClassroomStudent = async (req, res) => {
     }
 }
 
+
+const updateTeacherClassrooms = async (req, res) => {
+    try {
+        const { schoolId, teacherId, classroomIds } = req.body;
+        const reply = await classroomService.updateTeacherClassrooms({ schoolId, teacherId, classroomIds });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const changeClassStatus = async (req, res) => {
+    try {
+        const { schoolId, classroomId, status } = req.body;
+        const reply = await classroomService.changeClassStatus({ schoolId, classroomId, status });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, reply.message);
+        }
+        else if (reply.code == 403) {
+            return handleErrorResponse(res, 403, reply.message);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getSchoolClassrooms = async (req, res) => {
+    try {
+        const { schoolid, page=1, limit=10 } = req.headers;
+        const reply = await classroomService.getSchoolClassrooms({ schoolId: schoolid, page, limit });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createClassroom,
     getClassroom,
@@ -241,5 +316,8 @@ module.exports = {
     getClassroomStudents,
     addStudentToClassroom,
     removeStudentFromClassroom,
-    updateClassroomStudent
+    updateClassroomStudent,
+    updateTeacherClassrooms,
+    changeClassStatus,
+    getSchoolClassrooms
 };

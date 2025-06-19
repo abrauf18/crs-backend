@@ -1,6 +1,5 @@
 const Joi = require('joi');
 const { logger } = require("../../Logs/logger");
-const { RESOURCE_TYPES, RESOURCE_STATUS } = require('../../utils/enumTypes');
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
 
 const createSchemaMiddleware = (schema, target = 'body') => async (req, res, next) => {
@@ -20,10 +19,15 @@ const createStandard = createSchemaMiddleware(
     Joi.object({
         name: Joi.string().required(),
         description: Joi.string().required(),
+        topics: Joi.array().items(Joi.object({
+            name: Joi.string().required(),
+            description: Joi.string().required(),
+        })).required(),
         dailyUploads: Joi.array().items(Joi.object({
+            topicName: Joi.array().items(Joi.string()).required(),
             resourceId: Joi.string().guid().required(),
             weightage: Joi.number().integer().required(),
-            accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+            accessibleDay: Joi.number().integer().required(),
         })).required(),
         accessToken: Joi.string().required()
     })
@@ -34,10 +38,15 @@ const updateStandard = createSchemaMiddleware(
         standardId: Joi.string().guid().required(),
         name: Joi.string().required(),
         description: Joi.string().required(),
+        topics: Joi.array().items(Joi.object({
+            name: Joi.string().required(),
+            description: Joi.string().required(),
+        })).required(),
         dailyUploads: Joi.array().items(Joi.object({
+            topicName: Joi.array().items(Joi.string()).required(),
             resourceId: Joi.string().guid().required(),
             weightage: Joi.number().integer().required(),
-            accessDate: Joi.date().required().iso().messages({'date.format': '"accessDate" should be in YYYY-MM-DD format'}),
+            accessibleDay: Joi.number().integer().required(),
         })).required(),
         accessToken: Joi.string().required()
     })
@@ -57,9 +66,42 @@ const getSummarizedStandard = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const deleteStandard = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const getStandardTopics = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
+const getTopicResources = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);// has topicName in query params now
+
+const getStandardClassroomsAndTeacherClassrooms = createSchemaMiddleware(
+    Joi.object({
+        standardid: Joi.string().guid().required(),
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required()
+    }).unknown(), 'headers'
+);
+
 module.exports = {
     createStandard,
     updateStandard,
     getStandard,
-    getSummarizedStandard
+    getSummarizedStandard,
+    deleteStandard,
+    getStandardTopics,
+    getTopicResources,
+    getStandardClassroomsAndTeacherClassrooms
 };

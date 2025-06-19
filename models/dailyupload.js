@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       DailyUpload.belongsTo(models.Standard, { foreignKey: 'standardId', as: 'standard' });
       DailyUpload.belongsTo(models.Resource, { foreignKey: 'resourceId', as: 'resource' });
+      DailyUpload.hasMany(models.TopicDailyUpload, { foreignKey: 'dailyUploadId'});
     }
   }
   DailyUpload.init({
@@ -20,6 +21,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
+    },
+    topicName:{
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue:[],
       allowNull: false,
     },
     standardId: {
@@ -41,6 +47,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue:0,
       allowNull: false,
+    },
+    accessibleDay: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   }, {
     sequelize,
