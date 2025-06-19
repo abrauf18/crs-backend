@@ -29,6 +29,11 @@ module.exports = {
         type: Sequelize.JSON,
         defaultValue: {}
       },
+      duration:{
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: '00:00:00',
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

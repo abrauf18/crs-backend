@@ -19,9 +19,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'classroomId',
         as: 'classroomCourses',
       });
-      models.Classroom.belongsTo(models.User, {
+      models.Classroom.hasMany(models.Enrollment, {
+        foreignKey: 'classroomId',
+      });
+      Classroom.belongsTo(models.User, {
         foreignKey: 'teacherId',
-        as: 'teacher',
       });
       // define association here
     }
@@ -39,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     teacherId: {
+      type: DataTypes.UUID,
+      defaultValue:'',
+      allowNull: true,
+    },
+    schoolId: {
       type: DataTypes.UUID,
       defaultValue:'',
       allowNull: false,

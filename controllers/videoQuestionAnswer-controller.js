@@ -3,15 +3,15 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createVideoQuestionAnswer = async (req, res) => {
     try {
-        const { userId, questionId, answer } = req.body;
+        const { userId, questionId, answer, standardId } = req.body;
 
-        const reply = await videoQuestionAnswerService.createVideoQuestionAnswer(userId, questionId, answer);
+        const reply = await videoQuestionAnswerService.createVideoQuestionAnswer({userId, questionId, answer, standardId});
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         } 
         else if (reply.code == 404) {
-            return handleErrorResponse(res, 404, 'Question not found');
+            return handleErrorResponse(res, 404, reply.message);
         } 
         else if (reply.code == 409) {
             return handleErrorResponse(res, 409, 'User has already answered this question');

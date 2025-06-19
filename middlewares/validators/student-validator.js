@@ -119,6 +119,69 @@ const getStudentProfileSummarizedStandards = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const getSummarizedStudentStandardsForTeacher = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+const getSummarizedStudentForTeacher = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+const getStudentNameEmailForTeacher = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+const marksSchema = Joi.object().pattern(
+    Joi.string().uuid(),
+    Joi.number().integer().min(0).required()
+).messages({
+    'object.pattern.key': 'Each ID must be a valid UUID.',
+    'number.base': 'Marks must be a whole number.',
+    'number.integer': 'Marks must be a whole number.',
+    'number.min': 'Marks must be 0 or greater.',
+});
+const assignMarksToStudentAnswer = createSchemaMiddleware(
+    Joi.object({
+        accessToken: Joi.string().required(),
+        targetType: Joi.string().valid('videoQuestion', 'assessmentResource').required(), 
+        studentId: Joi.string().guid().required(),
+        idsAndMarks: marksSchema.required(),
+        standardId: Joi.string().guid().required(),
+    })
+);
+
+const getStudentAssessmentAnswer = createSchemaMiddleware(
+    Joi.object({
+        studentid: Joi.string().guid().required(),
+        assessmentdetailid: Joi.string().guid().required(),
+        standardid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+const getAllSummarizedStudentAndStandardsForTeacher = createSchemaMiddleware(
+    Joi.object({
+        teacherid: Joi.string().guid().required(),
+        accesstoken: Joi.string().required(),
+    }).unknown(), 'headers'
+);
+
+// const getAllSummarizedStudentAndStandardsForTeacherV2 = createSchemaMiddleware(
+//     Joi.object({
+//         teacherid: Joi.string().guid().required(),
+//         accesstoken: Joi.string().required(),
+//     }).unknown(), 'headers'
+// );
+
 module.exports = {
     getStudentCurrentStandards,
     getStudentVideo,
@@ -130,5 +193,12 @@ module.exports = {
     getSavedVideos,
     getStandardsResourcesAndCount,
     getStudentProfileStandardResults,
-    getStudentProfileSummarizedStandards
+    getStudentProfileSummarizedStandards,
+    getSummarizedStudentStandardsForTeacher,
+    getSummarizedStudentForTeacher,
+    getStudentNameEmailForTeacher,
+    assignMarksToStudentAnswer,
+    getStudentAssessmentAnswer,
+    getAllSummarizedStudentAndStandardsForTeacher,
+    // getAllSummarizedStudentAndStandardsForTeacherV2
 };

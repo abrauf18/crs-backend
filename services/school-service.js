@@ -1,7 +1,8 @@
 const bcrypt = require("bcrypt");
 
 const jwt = require("../utils/jwt");
-const { School } = require("../models");
+// @ts-ignore
+const { User, School } = require("../models");
 const {logger} = require("../Logs/logger.js");
 const { updateUserProfile } = require("./user-service.js");
 
@@ -81,8 +82,21 @@ const updateSchoolAndUserProfile = async ({ user, image, username, email, passwo
     }
 };
 
+const getAllSchools = async () => {
+    try {
+        const schools = await School.findAll({
+            attributes: ['id', 'name'],
+        })
+
+        return { code: 200, data: schools };
+    } catch (error) {
+        logger.error(error?.message || 'An error occurred, but no error message was provided');
+        return { code: 500 };
+    }
+};
 
 module.exports = {
     getSchoolProfile,
     updateSchoolAndUserProfile,
+    getAllSchools,
 };

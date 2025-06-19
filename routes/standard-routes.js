@@ -2,7 +2,7 @@ const express = require("express");
 const standardValidation = require("../middlewares/validators/standard-validator");
 const standardController = require("../controllers/standard-controller");
 const roleBasedAccess = require("../middlewares/rbac/index")
-const ROLES = require("../models/roles/index")
+const ROLES = require("../models/roles/index");
 
 const router = express.Router();
 
@@ -38,10 +38,11 @@ router.get(
 );
 
 router.delete(
-    "/deleteStandards",
+    "/deleteStandard",
+    standardValidation.deleteStandard,
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
-    standardController.deleteStandards
+    standardController.deleteStandard
 );
 
 router.get(
@@ -50,6 +51,30 @@ router.get(
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     standardController.getSummarizedStandard
+);
+
+router.get(
+    "/getStandardTopics",
+    standardValidation.getStandardTopics,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getStandardTopics
+);
+
+router.get(
+    "/getTopicResources",
+    standardValidation.getTopicResources,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getTopicResources
+);
+
+router.get(
+    "/getStandardClassroomsAndTeacherClassrooms",
+    standardValidation.getStandardClassroomsAndTeacherClassrooms,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
+    standardController.getStandardClassroomsAndTeacherClassrooms
 );
 
 module.exports = router;

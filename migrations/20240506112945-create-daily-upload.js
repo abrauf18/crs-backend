@@ -34,6 +34,11 @@ module.exports = {
         defaultValue: Sequelize.NOW,
         type: Sequelize.DATEONLY
       },
+      weightage:{
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

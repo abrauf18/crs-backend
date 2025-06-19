@@ -53,6 +53,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
       allowNull: false,
     },
+    classroomId: {
+      type: DataTypes.UUID,
+      defaultValue: '',
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'AssessmentAnswer',

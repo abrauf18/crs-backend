@@ -226,6 +226,146 @@ const getStudentProfileSummarizedStandards = async (req, res) => {
     }
 }
 
+const getSummarizedStudentStandardsForTeacher = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getSummarizedStudentStandardsForTeacher({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getSummarizedStudentForTeacher = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getSummarizedStudentForTeacher({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getStudentNameEmailForTeacher = async (req, res) => {
+    try {
+        const { studentid } = req.headers;
+        const reply = await studentService.getStudentNameEmailForTeacher({ studentId: studentid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const assignMarksToStudentAnswer = async (req, res) => {
+    try {
+        const { targetType, studentId, idsAndMarks, standardId } = req.body;
+        const reply = await studentService.assignMarksToStudentAnswer({ targetType, studentId, idsAndMarks, standardId });
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, reply.message);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    } catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getStudentAssessmentAnswer = async (req, res) => {
+    try {
+        const { studentid, assessmentdetailid, standardid } = req.headers;
+        const reply = await studentService.getStudentAssessmentAnswer({ studentId: studentid, assessmentDetailId: assessmentdetailid, standardId: standardid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getAllSummarizedStudentAndStandardsForTeacher = async (req, res) => {
+    try {
+        const { teacherid } = req.headers;
+        const reply = await studentService.getAllSummarizedStudentAndStandardsForTeacher({ teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+// const getAllSummarizedStudentAndStandardsForTeacherV2 = async (req, res) => {
+//     try {
+//         const { teacherid } = req.headers;
+//         const reply = await studentService.getAllSummarizedStudentAndStandardsForTeacherV2({ teacherId: teacherid });
+
+//         if (reply.code == 200) {
+//             return handleSuccessResponse(res, 200, reply.data);
+//         }
+//         else if (reply.code == 404) {
+//             return handleErrorResponse(res, 404, reply.message);
+//         }
+//         else {
+//             return handleInternalServerError(res);
+//         }
+//     }
+//     catch (error) {
+//         return handleInternalServerError(res);
+//     }
+// }
 
 module.exports = {
     getStudentCurrentStandards,
@@ -238,5 +378,12 @@ module.exports = {
     getSavedVideos,
     getStandardsResourcesAndCount,
     getStudentProfileStandardResults,
-    getStudentProfileSummarizedStandards
+    getStudentProfileSummarizedStandards,
+    getSummarizedStudentStandardsForTeacher,
+    getSummarizedStudentForTeacher,
+    getStudentNameEmailForTeacher,
+    assignMarksToStudentAnswer,
+    getStudentAssessmentAnswer,
+    getAllSummarizedStudentAndStandardsForTeacher,
+    // getAllSummarizedStudentAndStandardsForTeacherV2
 };
