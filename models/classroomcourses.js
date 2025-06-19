@@ -38,6 +38,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue:'',
       allowNull: false,
     },
+    startDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
   }, {
     sequelize,
     modelName: 'ClassroomCourses',

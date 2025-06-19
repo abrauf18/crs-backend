@@ -3,16 +3,19 @@ const { handleInternalServerError, handleSuccessResponse, handleErrorResponse } 
 
 const createStandard = async (req, res) => {
     try {
-        const { name, description, dailyUploads } = req.body;
+        const { name, description, topics, dailyUploads } = req.body;
 
-        const reply = await standardService.createStandard({ name, description, dailyUploads });
+        const reply = await standardService.createStandard({ name, description, topics, dailyUploads });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
-        // if (reply.code == 409) {
-        //     return handleErrorResponse(res, 409, reply.message);
-        // }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, reply.message);
+        }
+        else if (reply.code == 409) {
+            return handleErrorResponse(res, 409, reply.message);
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -24,19 +27,22 @@ const createStandard = async (req, res) => {
 
 const updateStandard = async (req, res) => {
     try {
-        const { standardId, name, description, dailyUploads } = req.body;
+        const { standardId, name, description, topics, dailyUploads } = req.body;
 
-        const reply = await standardService.updateStandard({ standardId, name, description, dailyUploads });
+        const reply = await standardService.updateStandard({ standardId, name, description, topics, dailyUploads });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 400) {
+            return handleErrorResponse(res, 400, reply.message);
+        }
         else if (reply.code == 404) {
             return handleErrorResponse(res, 404, "Standard not found");
         }
-        // if (reply.code == 409) {
-        //     return handleErrorResponse(res, 409, reply.message);
-        // }
+        if (reply.code == 409) {
+            return handleErrorResponse(res, 409, reply.message);
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -83,12 +89,17 @@ const getAllSummarizedStandards = async (req, res) => {
     }
 };
 
-const deleteStandards = async (req, res) => {
+const deleteStandard = async (req, res) => {
     try {
-        const reply = await standardService.deleteStandards();
+        const { standardid } = req.headers;
+
+        const reply = await standardService.deleteStandard({ standardId: standardid });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
         }
         else {
             return handleInternalServerError(res);
@@ -120,11 +131,80 @@ const getSummarizedStandard = async (req, res) => {
     }
 };
 
+const getStandardTopics = async (req, res) => {
+    try {
+        const { standardid } = req.headers;
+
+        const reply = await standardService.getStandardTopics({ standardId: standardid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getTopicResources = async (req, res) => {
+    try {
+        const { standardid } = req.headers;
+        const { topicName } = req.query;
+
+        const decodedTopicName = decodeURIComponent(topicName);
+
+        const reply = await standardService.getTopicResources({ standardId: standardid, topicName: decodedTopicName });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
+const getStandardClassroomsAndTeacherClassrooms = async (req, res) => {
+    try {
+        const { standardid, teacherid } = req.headers;
+
+        const reply = await standardService.getStandardClassroomsAndTeacherClassrooms({ standardId: standardid, teacherId: teacherid });
+
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, "Standard not found");
+        }
+        else {
+            return handleInternalServerError(res);
+        }
+    }
+    catch (error) {
+        return handleInternalServerError(res);
+    }
+}
+
 module.exports = {
     createStandard,
     updateStandard,
     getStandard,
     getAllSummarizedStandards,
-    deleteStandards,
-    getSummarizedStandard
+    deleteStandard,
+    getSummarizedStandard,
+    getStandardTopics,
+    getTopicResources,
+    getStandardClassroomsAndTeacherClassrooms
 };

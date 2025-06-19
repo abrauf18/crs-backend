@@ -8,16 +8,16 @@ const roleBasedAccess = require("../middlewares/rbac/index");
 const router = express.Router();
 
 router.get(
-    "/getUserProfile", 
-    sharedValidator.verifyHeaderAccessToken, 
-    roleBasedAccess.setUser, 
+    "/getUserProfile",
+    sharedValidator.verifyHeaderAccessToken,
+    roleBasedAccess.setUser,
     userController.getUserProfile
 );
 
 router.post(
-    "/updateUserProfile", 
-    userValidation.updateUserProfile, 
-    roleBasedAccess.setUser, 
+    "/updateUserProfile",
+    userValidation.updateUserProfile,
+    roleBasedAccess.setUser,
     userController.updateUserProfile
 );
 
@@ -45,5 +45,12 @@ router.delete(
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
     userController.deleteAnotherUsersProfile
 );
+
+router.get(
+    "/getAllTeachers",
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.SCHOOL]),
+    userController.getAllTeachers
+)
 
 module.exports = router;

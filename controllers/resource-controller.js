@@ -22,13 +22,13 @@ const createResource = async (req, res) => {
 const deleteResource = async (req, res) => {
     try {
         const { resourceid } = req.headers;
-  
+
         const reply = await resourceService.deleteResource({ resourceID: resourceid });
-    
+
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
-        else if (reply.code == 404) {  
+        else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Resource not found')
         }
         else {
@@ -59,13 +59,13 @@ const getResources = async (req, res) => {
 const getResource = async (req, res) => {
     try {
         const { resourceid } = req.headers;
-  
+
         const reply = await resourceService.getResource({ resourceID: resourceid });
-    
+
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
-        else if (reply.code == 404) {  
+        else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Resource not found')
         }
         else {
@@ -81,7 +81,7 @@ const getResourcesCount = async (req, res) => {
     try {
         const { topic } = req.headers;
 
-        const resources = await resourceService.getResourcesCount({topic});
+        const resources = await resourceService.getResourcesCount({ topic });
 
         if (resources.code == 200) {
             return handleSuccessResponse(res, 200, resources.data);
@@ -95,14 +95,14 @@ const getResourcesCount = async (req, res) => {
 
 const updateResource = async (req, res) => {
     try {
-        const { resourceId, name, type, topic, totalMarks = 0 } = req.body
+        const { resourceId, name, type, topic, totalMarks = 0, deadline = 0 } = req.body
 
-        const reply = await resourceService.updateResource({ resourceId, name, type, topic, totalMarks });
+        const reply = await resourceService.updateResource({ resourceId, name, type, topic, totalMarks, deadline });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
-        else if (reply.code == 404) {  
+        else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Resource not found')
         }
         else {
@@ -138,7 +138,7 @@ const getResourcesByType = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
-        else if (reply.code == 404) {  
+        else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Resource not found')
         }
         else {
@@ -154,12 +154,12 @@ const getResourcesByName = async (req, res) => {
     try {
         const { resourcename, resourcetype } = req.headers;
 
-        const reply = await resourceService.getResourcesByName({ resourceName: resourcename, resourceType: resourcetype});
+        const reply = await resourceService.getResourcesByName({ resourceName: resourcename, resourceType: resourcetype });
 
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
-        else if (reply.code == 404) {  
+        else if (reply.code == 404) {
             return handleErrorResponse(res, 404, 'Resource not found')
         }
         else {

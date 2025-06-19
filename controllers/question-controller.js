@@ -10,6 +10,9 @@ const createVideoQuestions = async (req, res) => {
         if (reply.code == 200) {
             return handleSuccessResponse(res, 200, reply.data);
         }
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
         else {
             return handleInternalServerError(res);
         }
@@ -23,11 +26,15 @@ const getVideoQuestions = async (req, res) => {
     try {
         const { videoid } = req.headers;
 
-        const resources = await questionService.getVideoQuestions({ videoId: videoid });
+        const reply = await questionService.getVideoQuestions({ videoId: videoid });
 
-        if (resources.code == 200) {
-            return handleSuccessResponse(res, 200, resources.data);
-        } else {
+        if (reply.code == 200) {
+            return handleSuccessResponse(res, 200, reply.data);
+        } 
+        else if (reply.code == 404) {
+            return handleErrorResponse(res, 404, reply.message);
+        }
+        else {
             return handleInternalServerError(res);
         }
     } catch (error) {

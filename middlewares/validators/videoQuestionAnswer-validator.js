@@ -23,6 +23,7 @@ const createVideoQuestionAnswer = createSchemaMiddleware(
         userId: Joi.string().guid().required(),
         questionId: Joi.string().guid().required(),
         answer: Joi.string().required().allow(""),
+        standardId: Joi.string().guid().required(),
     })
 );
 

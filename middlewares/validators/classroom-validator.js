@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const { logger } = require("../../Logs/logger");
 const { handleInternalServerError, handleErrorResponse } = require('../../utils/response-handlers');
+const { CLASSROOM_STATUS } = require('../../utils/enumTypes');
 
 const createSchemaMiddleware = (schema, target = 'body') => async (req, res, next) => {
     try {
@@ -18,6 +19,7 @@ const createSchemaMiddleware = (schema, target = 'body') => async (req, res, nex
 const createClassroom = async (req, res, next) => {
     try {
         const schema = Joi.object({
+            schoolId: Joi.string().guid().required(),
             teacherId: Joi.string().guid().required(),
             name: Joi.string().required(),
             accessToken: Joi.string().required()
@@ -47,11 +49,17 @@ const getAllClassroomsOfTeacher = createSchemaMiddleware(
     }).unknown(), 'headers'
 );
 
+const classCoursesSchema = Joi.array().items(
+    Joi.object({
+        classroomId: Joi.string().guid().required(),
+        startDate: Joi.date().required().iso().messages({'date.format': '"Start Date" should be in YYYY-MM-DD format'}),
+    })
+).required();
 const assignStandardToClassroom = createSchemaMiddleware(
     Joi.object({
-        classroomIds: Joi.array().items(Joi.string().guid()).required(),
         standardId: Joi.string().guid().required(),
-        accessToken: Joi.string().required()
+        accessToken: Joi.string().required(),
+        classCourses: classCoursesSchema
     })
 );
 
@@ -88,7 +96,7 @@ const getClassroomStudents = createSchemaMiddleware(
 const addStudentToClassroom = createSchemaMiddleware(
     Joi.object({
         classroomId: Joi.string().guid().required(),
-        studentId: Joi.string().guid().required(),
+        email: Joi.string().email().required(),
         accessToken: Joi.string().required()
     })
 );
@@ -102,13 +110,41 @@ const removeStudentFromClassroom = createSchemaMiddleware(
 
 const updateClassroomStudent = createSchemaMiddleware(
     Joi.object({
-        classroomStudentId: Joi.string().guid().required(),
-        name: Joi.string().required(),
-        email: Joi.string().email().required(),
-        classroomId: Joi.string().guid().required(),
-        image: Joi.string().required(),
+        studentId: Joi.string().guid().required(),
+        name: Joi.string().optional(),
+        email: Joi.string().email().optional(),
+        classroomId: Joi.string().guid().optional(),
+        image: Joi.string().optional(),
         accessToken: Joi.string().required()
     })
+);
+
+const updateTeacherClassrooms = createSchemaMiddleware(
+    Joi.object({
+        schoolId: Joi.string().guid().required(),
+        teacherId: Joi.string().guid().required(),
+        classroomIds: Joi.array().items(Joi.string().guid().optional()).required(),
+        accessToken: Joi.string().required(),
+    })
+);
+
+const changeClassStatus = createSchemaMiddleware(
+    Joi.object({
+        schoolId: Joi.string().guid().required(),
+        classroomId: Joi.string().guid().required(),
+        status: Joi.string().valid(CLASSROOM_STATUS.ACTIVE, CLASSROOM_STATUS.INACTIVE).required(),
+        accessToken: Joi.string().required()
+    })
+);
+
+const getSchoolClassrooms = createSchemaMiddleware(
+    Joi.object({
+        accesstoken: Joi.string().required(),
+        schoolid: Joi.string().guid().required(),
+        page: Joi.number().integer().min(1).required(),
+        limit: Joi.number().integer().min(1).required(),
+        search: Joi.string().optional().allow(''),
+    }).unknown(), 'headers'
 );
 
 module.exports = {
@@ -122,5 +158,8 @@ module.exports = {
     getClassroomStudents,
     addStudentToClassroom,
     removeStudentFromClassroom,
-    updateClassroomStudent
+    updateClassroomStudent,
+    updateTeacherClassrooms,
+    changeClassStatus,
+    getSchoolClassrooms
 };

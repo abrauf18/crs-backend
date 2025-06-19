@@ -23,6 +23,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
       },
+      schoolId: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        references: {
+          model: 'Schools',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

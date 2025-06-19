@@ -42,6 +42,16 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: -1,
       allowNull: false,
     },
+    standardId: {
+      type: DataTypes.UUID,
+      defaultValue:'',
+      allowNull: false,
+    },
+    classroomId: {
+      type: DataTypes.UUID,
+      defaultValue:'',
+      allowNull: false,
+    }
   }, {
     sequelize,
     modelName: 'VideoQuestionAnswer',

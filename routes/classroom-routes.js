@@ -10,7 +10,7 @@ router.post(
     "/createClassroom",
     classroomValidation.createClassroom,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
     classroomController.createClassroom
 );
 
@@ -92,6 +92,29 @@ router.put(
     roleBasedAccess.setUser,
     roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     classroomController.updateClassroomStudent
+)
+router.put(
+    "/updateTeacherClassrooms",
+    classroomValidation.updateTeacherClassrooms,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    classroomController.updateTeacherClassrooms
+)
+
+router.post(
+    "/changeClassStatus",
+    classroomValidation.changeClassStatus,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    classroomController.changeClassStatus
+)
+
+router.get(
+    "/getSchoolClassrooms",
+    classroomValidation.getSchoolClassrooms,
+    roleBasedAccess.setUser,
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL]),
+    classroomController.getSchoolClassrooms
 )
 
 module.exports = router;
