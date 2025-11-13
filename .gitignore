@@ -1,5 +1,5 @@
 node_modules/
 .cache/
-.env
 !.env.example
 Logs/combined.log
+config.bat
