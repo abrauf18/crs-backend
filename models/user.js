@@ -52,7 +52,6 @@ module.exports = (sequelize, DataTypes) => {
       },
       role: {
         type: DataTypes.ENUM(
-          ROLES.STUDENT,
           ROLES.TEACHER,
           ROLES.SCHOOL,
           ROLES.ADMIN

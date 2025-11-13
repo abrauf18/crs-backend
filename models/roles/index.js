@@ -1,8 +1,7 @@
 const ROLES = Object.freeze ({
     ADMIN: "admin",
     SCHOOL: "school",
-    TEACHER: "teacher",
-    STUDENT: "student"
+    TEACHER: "teacher"
 });
 
 module.exports = ROLES;

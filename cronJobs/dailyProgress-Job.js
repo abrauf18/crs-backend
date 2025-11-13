@@ -213,4 +213,5 @@ const calculateAndStoreAveragesForAllStudents = async () => {
 };
 
 
-cron.schedule('0 0 * * *', calculateAndStoreAveragesForAllStudents);
+// Disabled: Student functionality has been removed from the system
+// cron.schedule('0 0 * * *', calculateAndStoreAveragesForAllStudents);

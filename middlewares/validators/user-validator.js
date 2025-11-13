@@ -41,7 +41,7 @@ const updateAnotherUsersProfile = createSchemaMiddleware(
         email: Joi.string().email().required(),
         name: Joi.string().required(),
         image: Joi.string().required(),
-        role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
+        role: Joi.string().valid('teacher', 'school', 'admin').required(),
         accessToken: Joi.string().required()
     })
 );

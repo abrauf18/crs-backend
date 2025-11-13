@@ -34,7 +34,7 @@ router.get(
     "/getResource",
     resourceValidation.getResource,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER]),
     resourceController.getResource
 );
 

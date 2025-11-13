@@ -16,10 +16,10 @@ const createSchemaMiddleware = (schema) => async (req, res, next) => {
 const emailBasedInvite = createSchemaMiddleware(
     Joi.object({
         email: Joi.string().email().required(),
-        role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
+        role: Joi.string().valid('teacher', 'school', 'admin').required(),
         name: Joi.string().required(),
         schoolId: Joi.when('role', {
-            is: Joi.string().valid('student', 'teacher'),
+            is: Joi.string().valid('teacher'),
             then: Joi.string().required(),
             otherwise: Joi.string().optional()
         }),
@@ -31,19 +31,6 @@ const emailBasedSignup = createSchemaMiddleware(
         email: Joi.string().email().required(),
         name: Joi.string().min(3).max(30).required(),
         password: Joi.string().required(),
-    })
-);
-const signupSchema = createSchemaMiddleware(
-    Joi.object({
-        name: Joi.string().min(3).max(30).required(),
-        password: Joi.string().required(),
-        email: Joi.string().email().required(),
-        role: Joi.string().valid('student', 'teacher', 'school', 'admin').required(),
-        schoolId: Joi.when('role', {
-            is: Joi.string().valid('student', 'teacher'),
-            then: Joi.string().required(),
-            otherwise: Joi.string().optional()
-        }),
     })
 );
 const loginSchema = createSchemaMiddleware(
@@ -93,7 +80,6 @@ const resetPasswordSchema = createSchemaMiddleware(
 module.exports = {
     emailBasedInvite,
     emailBasedSignup,
-    signupSchema,
     loginSchema,
     registerSchoolSchema,
     inviteTeacherSchema,

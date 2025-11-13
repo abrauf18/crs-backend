@@ -574,13 +574,6 @@ const schoolDashboard = async (req, res) => {
     //   return failureResponse(res, 400, "Missing Required Fields");
     // }
 
-    const totalStudentCount = await Model.User.count({
-      where: {
-        school_id: schoolId,
-        role: ROLES.STUDENT,
-      },
-    });
-
     const totalClassroomCount = await Model.Classroom.count({
       where: {
         schoolId: schoolId,
@@ -724,7 +717,6 @@ const schoolDashboard = async (req, res) => {
     });
 
     const response = {
-      totalStudent: totalStudentCount,
       totalClassroom: totalClassroomCount,
       getSchoolTeacher: getSchoolTeacher,
       // getSchoolTickets: getSchoolTickets,

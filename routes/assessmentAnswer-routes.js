@@ -10,7 +10,7 @@ router.post(
     "/createAssessmentAnswer",
     assessmentAnswerValidation.createAssessmentAnswer,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER, ROLES.STUDENT]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER]),
     assessmentAnswerController.createAssessmentAnswer
 );
 
@@ -18,7 +18,7 @@ router.get(
     "/getAssessmentAnswer",
     assessmentAnswerValidation.getAssessmentAnswer,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER, ROLES.STUDENT]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER]),
     assessmentAnswerController.getAssessmentAnswer
 );
 
@@ -26,7 +26,7 @@ router.get(
     "/getAssessmentAnswerToCreateOrEdit",
     assessmentAnswerValidation.getAssessmentAnswerToCreateOrEdit,
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER, ROLES.STUDENT]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER]),
     assessmentAnswerController.getAssessmentAnswerToCreateOrEdit
 );
 

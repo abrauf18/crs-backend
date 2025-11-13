@@ -21,12 +21,4 @@ router.get(
     dashboardController.getAdminDashboardSummaries
 )
 
-router.get(
-    "/getStudentDashboardSummaries",
-    dashboardValidation.getStudentDashboardSummaries,
-    roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
-    dashboardController.getStudentDashboardSummaries
-)
-
 module.exports = router;

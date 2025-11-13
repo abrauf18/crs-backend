@@ -19,11 +19,6 @@ router.post(
     authController.emailBasedSignup
 );
 router.post(
-    "/signup",
-    authValidation.signupSchema,
-    authController.signup
-);
-router.post(
     "/login",
     authValidation.loginSchema,
     authController.login

@@ -9,7 +9,7 @@ const router = express.Router();
 router.post(
     "/createVideoQuestionAnswer",
     roleBasedAccess.setUser,
-    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER, ROLES.STUDENT]),
+    roleBasedAccess.VerifyAllowedRole([ROLES.ADMIN, ROLES.SCHOOL, ROLES.TEACHER]),
     videoQuestionAnswerValidation.createVideoQuestionAnswer,
     videoQuestionAnswerController.createVideoQuestionAnswer
 );

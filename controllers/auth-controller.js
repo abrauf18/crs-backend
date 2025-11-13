@@ -57,35 +57,6 @@ const emailBasedSignup = async (req, res) => {
   }
 };
 
-const signup = async (req, res) => {
-  try {
-    const { name, password, email, role, schoolId } = req.body
-
-    const reply = await authService.createUser({ name, password, email, role, schoolId });
-
-    if (reply.code == 200) {
-      const user = {
-        id: reply.data.id,
-        name: reply.data.name,
-        email: reply.data.email,
-        role: reply.data.role,
-        schoolId: reply.data.role
-      };
-
-      return handleSuccessResponse(res, 200, user);
-    }
-    else if (reply.code == 403) {
-      return handleErrorResponse(res, 403, "Email already in use, please try another");
-    }
-    else {
-      return handleInternalServerError(res);
-    }
-  }
-  catch (error) {
-    return handleInternalServerError(res);
-  }
-};
-
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -287,7 +258,6 @@ const logout = async (req, res) => {
 module.exports = {
   emailBasedInvite,
   emailBasedSignup,
-  signup,
   login,
   createSchoolProfile,
   sendInviteToTeacher,

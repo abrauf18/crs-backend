@@ -1163,10 +1163,6 @@ module.exports = {
     getSummarizedClassroomsOfTeacher,
     getClassesAndCourses,
     deleteClassCourse,
-    getClassroomStudents,
-    addStudentToClassroom,
-    removeStudentFromClassroom,
-    updateClassroomStudent,
     updateTeacherClassrooms,
     changeClassStatus,
     getSchoolClassrooms
